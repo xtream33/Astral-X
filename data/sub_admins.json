@@ -1,0 +1,14 @@
+{
+  "sub_1779952074718": {
+    "id": "sub_1779952074718",
+    "username": "Admin",
+    "email": "hafsananteza1@gmail.com",
+    "passwordHash": "e96c1bbe3f494d47b3e608f8ae4bfff07d76fb2d4157a16d4e0016a1a480f3cd",
+    "sessionQuota": 8,
+    "activatedSessions": [
+      "ASTRAX-NNT2DETX"
+    ],
+    "createdAt": "2026-05-28T07:07:54.722Z",
+    "active": true
+  }
+}

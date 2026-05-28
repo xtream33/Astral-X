@@ -1,0 +1,4 @@
+const D = ['Send a voice message singing any song','Change your status to something embarrassing for 1 hour','Send a selfie right now','Text your 3rd contact I love you','Do 20 push-ups and send a video','Tell a joke out loud right now','Speak in rhymes for the next 5 minutes','Do your best impression of a celebrity','Send the last photo in your gallery','Say something nice to everyone in this chat'];
+module.exports = { name: 'dare', category: 'fun', description: 'Get a dare',
+  execute: async (sock, msg) => { await sock.sendMessage(msg.key.remoteJid, { text: '\ud83c\udfaf *DARE*\n\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\n' + D[Math.floor(Math.random()*D.length)] }); }
+};

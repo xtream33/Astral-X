@@ -1,0 +1,22 @@
+{
+  "ASTRAX-5FZEVC85": {
+    "sessionId": "ASTRAX-5FZEVC85",
+    "userId": "user_1779825075106_256708923750",
+    "phoneNumber": "256708923750",
+    "active": false,
+    "createdAt": "2026-05-28T07:05:53.148Z",
+    "activatedAt": null,
+    "note": ""
+  },
+  "ASTRAX-NNT2DETX": {
+    "sessionId": "ASTRAX-NNT2DETX",
+    "userId": "user_1779953149579_256772433078",
+    "phoneNumber": "256772433078",
+    "active": true,
+    "createdAt": "2026-05-28T07:25:49.597Z",
+    "activatedAt": "2026-05-28T07:27:57.680Z",
+    "note": "",
+    "expiresAt": "2026-06-27T07:27:57.680Z",
+    "activatedBy": "owner"
+  }
+}

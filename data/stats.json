@@ -1,0 +1,216 @@
+{
+  "commands": {
+    "ping": {
+      "uses": 7,
+      "errors": 0,
+      "lastUsed": "2026-05-28T07:36:07.484Z"
+    },
+    "menu": {
+      "uses": 10,
+      "errors": 0,
+      "lastUsed": "2026-05-28T07:36:19.517Z"
+    },
+    "alive": {
+      "uses": 3,
+      "errors": 0,
+      "lastUsed": "2026-05-26T20:55:37.371Z"
+    },
+    "3d": {
+      "uses": 3,
+      "errors": 0,
+      "lastUsed": "2026-05-26T20:55:39.352Z"
+    },
+    "livescores": {
+      "uses": 3,
+      "errors": 0,
+      "lastUsed": "2026-05-26T20:55:41.496Z"
+    },
+    "topscorers": {
+      "uses": 3,
+      "errors": 0,
+      "lastUsed": "2026-05-26T20:55:43.557Z"
+    },
+    "seriatable": {
+      "uses": 3,
+      "errors": 0,
+      "lastUsed": "2026-05-26T20:55:45.342Z"
+    },
+    "nai": {
+      "uses": 6,
+      "errors": 0,
+      "lastUsed": "2026-05-26T20:55:54.761Z"
+    },
+    "noordownload": {
+      "uses": 3,
+      "errors": 0,
+      "lastUsed": "2026-05-26T20:55:56.587Z"
+    },
+    "vvdm": {
+      "uses": 4,
+      "errors": 0,
+      "lastUsed": "2026-05-26T21:38:05.490Z"
+    },
+    "novv": {
+      "uses": 2,
+      "errors": 0,
+      "lastUsed": "2026-05-26T20:51:54.224Z"
+    },
+    "dl": {
+      "uses": 4,
+      "errors": 0,
+      "lastUsed": "2026-05-26T20:54:43.162Z"
+    },
+    "song": {
+      "uses": 6,
+      "errors": 0,
+      "lastUsed": "2026-05-26T20:55:25.673Z"
+    },
+    "music": {
+      "uses": 4,
+      "errors": 0,
+      "lastUsed": "2026-05-26T20:55:04.673Z"
+    },
+    "play": {
+      "uses": 4,
+      "errors": 0,
+      "lastUsed": "2026-05-26T20:54:50.038Z"
+    },
+    "lyrics": {
+      "uses": 2,
+      "errors": 0,
+      "lastUsed": "2026-05-26T20:52:27.684Z"
+    },
+    "botinfo": {
+      "uses": 2,
+      "errors": 0,
+      "lastUsed": "2026-05-26T20:52:34.812Z"
+    },
+    "ram": {
+      "uses": 2,
+      "errors": 0,
+      "lastUsed": "2026-05-26T20:52:43.292Z"
+    },
+    "sslcheck": {
+      "uses": 2,
+      "errors": 0,
+      "lastUsed": "2026-05-26T20:52:49.259Z"
+    },
+    "screenshot": {
+      "uses": 8,
+      "errors": 0,
+      "lastUsed": "2026-05-26T20:53:19.239Z"
+    },
+    "listmembers": {
+      "uses": 1,
+      "errors": 0,
+      "lastUsed": "2026-05-26T20:20:30.665Z"
+    },
+    "online": {
+      "uses": 4,
+      "errors": 0,
+      "lastUsed": "2026-05-26T20:53:32.407Z"
+    },
+    "lock": {
+      "uses": 1,
+      "errors": 0,
+      "lastUsed": "2026-05-26T20:23:15.442Z"
+    },
+    "mute": {
+      "uses": 1,
+      "errors": 0,
+      "lastUsed": "2026-05-26T20:23:34.064Z"
+    },
+    "announce": {
+      "uses": 1,
+      "errors": 0,
+      "lastUsed": "2026-05-26T20:25:08.916Z"
+    },
+    "everyone": {
+      "uses": 1,
+      "errors": 0,
+      "lastUsed": "2026-05-26T20:26:09.625Z"
+    },
+    "id": {
+      "uses": 2,
+      "errors": 0,
+      "lastUsed": "2026-05-26T20:53:38.801Z"
+    },
+    "ip": {
+      "uses": 2,
+      "errors": 0,
+      "lastUsed": "2026-05-26T20:53:45.716Z"
+    },
+    "disappear": {
+      "uses": 2,
+      "errors": 0,
+      "lastUsed": "2026-05-26T20:54:07.433Z"
+    },
+    "wallpaper": {
+      "uses": 2,
+      "errors": 0,
+      "lastUsed": "2026-05-26T20:54:14.679Z"
+    },
+    "vv": {
+      "uses": 2,
+      "errors": 0,
+      "lastUsed": "2026-05-28T07:53:28.646Z"
+    },
+    "define": {
+      "uses": 2,
+      "errors": 0,
+      "lastUsed": "2026-05-26T20:54:36.346Z"
+    },
+    "ytmp4": {
+      "uses": 2,
+      "errors": 0,
+      "lastUsed": "2026-05-26T20:55:12.572Z"
+    },
+    "ytmp3": {
+      "uses": 2,
+      "errors": 0,
+      "lastUsed": "2026-05-26T20:55:19.236Z"
+    },
+    "advice": {
+      "uses": 1,
+      "errors": 0,
+      "lastUsed": "2026-05-26T21:33:42.781Z"
+    },
+    "drawing": {
+      "uses": 1,
+      "errors": 0,
+      "lastUsed": "2026-05-26T21:34:58.950Z"
+    },
+    "city": {
+      "uses": 1,
+      "errors": 0,
+      "lastUsed": "2026-05-26T21:35:23.049Z"
+    },
+    "diet": {
+      "uses": 2,
+      "errors": 0,
+      "lastUsed": "2026-05-26T21:36:10.798Z"
+    },
+    "paranoid": {
+      "uses": 1,
+      "errors": 0,
+      "lastUsed": "2026-05-26T21:37:01.875Z"
+    },
+    "mode": {
+      "uses": 3,
+      "errors": 0,
+      "lastUsed": "2026-05-26T21:40:38.528Z"
+    },
+    "setprefix": {
+      "uses": 1,
+      "errors": 0,
+      "lastUsed": "2026-05-28T07:53:11.841Z"
+    },
+    "antilink": {
+      "uses": 1,
+      "errors": 0,
+      "lastUsed": "2026-05-28T07:54:02.158Z"
+    }
+  },
+  "startedAt": "2026-05-28T07:25:12.747Z",
+  "totalMessages": 570
+}

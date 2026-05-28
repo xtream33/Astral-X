@@ -1,0 +1,30 @@
+{
+  "name": "xtream7",
+  "version": "5.0.0",
+  "description": "NOOR-X TECH \u2014 Advanced WhatsApp Bot",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "nodemon src/index.js",
+    "setup": "node -e \"['data','sessions','public'].forEach(d=>{const fs=require('fs'),path=require('path');const p=path.join(__dirname,d);if(!fs.existsSync(p)){fs.mkdirSync(p,{recursive:true});console.log('Created:',d);}}); ['data/settings.json','data/restrictions.json','data/users.json'].forEach(f=>{const fs=require('fs'),path=require('path');const p=path.join(__dirname,f);if(!fs.existsSync(p)){fs.writeFileSync(p,'[]');console.log('Created:',f);}});\""
+  },
+  "dependencies": {
+    "@whiskeysockets/baileys": "^6.5.0",
+    "bcryptjs": "^2.4.3",
+    "chalk": "^4.1.2",
+    "dotenv": "^16.0.3",
+    "express": "^4.18.2",
+    "express-session": "^1.17.3",
+    "node-cron": "^3.0.2",
+    "pino": "^8.13.0",
+    "pino-pretty": "^10.2.0",
+    "qrcode": "^1.5.3",
+    "sharp": "^0.33.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
