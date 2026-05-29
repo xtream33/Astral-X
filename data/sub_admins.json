@@ -6,7 +6,9 @@
     "passwordHash": "e96c1bbe3f494d47b3e608f8ae4bfff07d76fb2d4157a16d4e0016a1a480f3cd",
     "sessionQuota": 8,
     "activatedSessions": [
-      "ASTRAX-NNT2DETX"
+      "ASTRAX-NNT2DETX",
+      "ASTRAX-H4B83QFE",
+      "ASTRAX-78ZRL6KY"
     ],
     "createdAt": "2026-05-28T07:07:54.722Z",
     "active": true

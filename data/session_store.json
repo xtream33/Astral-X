@@ -18,5 +18,36 @@
     "note": "",
     "expiresAt": "2026-06-27T07:27:57.680Z",
     "activatedBy": "owner"
+  },
+  "ASTRAX-H4B83QFE": {
+    "sessionId": "ASTRAX-H4B83QFE",
+    "userId": "user_1780016112576_256772433078",
+    "phoneNumber": "256772433078",
+    "active": true,
+    "createdAt": "2026-05-29T00:55:12.589Z",
+    "activatedAt": "2026-05-29T00:57:13.108Z",
+    "note": "",
+    "expiresAt": "2026-06-28T00:57:13.108Z",
+    "activatedBy": "owner"
+  },
+  "ASTRAX-78ZRL6KY": {
+    "sessionId": "ASTRAX-78ZRL6KY",
+    "userId": "user_1780036123946_256772433078",
+    "phoneNumber": "256772433078",
+    "active": true,
+    "createdAt": "2026-05-29T06:28:43.968Z",
+    "activatedAt": "2026-05-29T06:30:57.891Z",
+    "note": "",
+    "expiresAt": "2026-06-28T06:30:57.891Z",
+    "activatedBy": "owner"
+  },
+  "ASTRAX-CPX93JUR": {
+    "sessionId": "ASTRAX-CPX93JUR",
+    "userId": "user_1779952384272_256772433078",
+    "phoneNumber": "256772433078",
+    "active": false,
+    "createdAt": "2026-05-29T11:39:58.089Z",
+    "activatedAt": null,
+    "note": ""
   }
 }

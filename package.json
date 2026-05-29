@@ -1,7 +1,7 @@
 {
-  "name": "xtream7",
+  "name": "astra-x",
   "version": "5.0.0",
-  "description": "NOOR-X TECH \u2014 Advanced WhatsApp Bot",
+  "description": "ASTRA-X TECH \u2014 Advanced WhatsApp Bot",
   "main": "src/index.js",
   "scripts": {
     "start": "node src/index.js",
@@ -19,7 +19,9 @@
     "pino": "^8.13.0",
     "pino-pretty": "^10.2.0",
     "qrcode": "^1.5.3",
-    "sharp": "^0.33.0"
+    "sharp": "^0.33.0",
+    "@distube/ytdl-core": "^4.16.10",
+    "axios": "^1.6.7"
   },
   "devDependencies": {
     "nodemon": "^3.0.1"

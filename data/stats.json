@@ -1,14 +1,14 @@
 {
   "commands": {
     "ping": {
-      "uses": 7,
+      "uses": 19,
       "errors": 0,
-      "lastUsed": "2026-05-28T07:36:07.484Z"
+      "lastUsed": "2026-05-29T06:58:15.163Z"
     },
     "menu": {
-      "uses": 10,
+      "uses": 20,
       "errors": 0,
-      "lastUsed": "2026-05-28T07:36:19.517Z"
+      "lastUsed": "2026-05-29T07:08:44.030Z"
     },
     "alive": {
       "uses": 3,
@@ -46,9 +46,9 @@
       "lastUsed": "2026-05-26T20:55:56.587Z"
     },
     "vvdm": {
-      "uses": 4,
+      "uses": 7,
       "errors": 0,
-      "lastUsed": "2026-05-26T21:38:05.490Z"
+      "lastUsed": "2026-05-29T08:35:47.929Z"
     },
     "novv": {
       "uses": 2,
@@ -56,19 +56,19 @@
       "lastUsed": "2026-05-26T20:51:54.224Z"
     },
     "dl": {
-      "uses": 4,
+      "uses": 5,
       "errors": 0,
-      "lastUsed": "2026-05-26T20:54:43.162Z"
+      "lastUsed": "2026-05-29T00:58:48.466Z"
     },
     "song": {
-      "uses": 6,
+      "uses": 7,
       "errors": 0,
-      "lastUsed": "2026-05-26T20:55:25.673Z"
+      "lastUsed": "2026-05-29T00:59:38.845Z"
     },
     "music": {
-      "uses": 4,
+      "uses": 6,
       "errors": 0,
-      "lastUsed": "2026-05-26T20:55:04.673Z"
+      "lastUsed": "2026-05-29T06:38:59.376Z"
     },
     "play": {
       "uses": 4,
@@ -151,9 +151,9 @@
       "lastUsed": "2026-05-26T20:54:14.679Z"
     },
     "vv": {
-      "uses": 2,
+      "uses": 3,
       "errors": 0,
-      "lastUsed": "2026-05-28T07:53:28.646Z"
+      "lastUsed": "2026-05-29T06:38:16.098Z"
     },
     "define": {
       "uses": 2,
@@ -166,9 +166,9 @@
       "lastUsed": "2026-05-26T20:55:12.572Z"
     },
     "ytmp3": {
-      "uses": 2,
+      "uses": 6,
       "errors": 0,
-      "lastUsed": "2026-05-26T20:55:19.236Z"
+      "lastUsed": "2026-05-29T01:11:19.904Z"
     },
     "advice": {
       "uses": 1,
@@ -201,16 +201,46 @@
       "lastUsed": "2026-05-26T21:40:38.528Z"
     },
     "setprefix": {
-      "uses": 1,
+      "uses": 3,
       "errors": 0,
-      "lastUsed": "2026-05-28T07:53:11.841Z"
+      "lastUsed": "2026-05-29T06:33:36.898Z"
     },
     "antilink": {
       "uses": 1,
       "errors": 0,
       "lastUsed": "2026-05-28T07:54:02.158Z"
+    },
+    "tiktok": {
+      "uses": 9,
+      "errors": 0,
+      "lastUsed": "2026-05-29T07:51:30.878Z"
+    },
+    "speed": {
+      "uses": 1,
+      "errors": 0,
+      "lastUsed": "2026-05-29T06:37:43.417Z"
+    },
+    "apk": {
+      "uses": 1,
+      "errors": 0,
+      "lastUsed": "2026-05-29T06:39:24.107Z"
+    },
+    "autoread": {
+      "uses": 2,
+      "errors": 0,
+      "lastUsed": "2026-05-29T06:40:46.820Z"
+    },
+    "time": {
+      "uses": 2,
+      "errors": 0,
+      "lastUsed": "2026-05-29T08:33:17.912Z"
+    },
+    "wikipedia": {
+      "uses": 2,
+      "errors": 0,
+      "lastUsed": "2026-05-29T08:33:37.864Z"
     }
   },
-  "startedAt": "2026-05-28T07:25:12.747Z",
-  "totalMessages": 570
+  "startedAt": "2026-05-29T11:39:56.424Z",
+  "totalMessages": 784
 }
