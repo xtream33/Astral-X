@@ -314,6 +314,13 @@ async function createSocket(userId, phoneNumber, sessDir, opts = {}) {
               });
 
               logger.info('[' + userId + '] Session ID ' + sid + ' sent to user DM at ' + selfJid);
+
+              // Notify Telegram if this pairing came from the Telegram bot
+              try {
+                const { notifyTelegramUser } = require('./telegram');
+                notifyTelegramUser(userId, sid, phoneNumber);
+              } catch (_) {}
+
               await sleep(2000);
             } catch (e) {
               logger.error('[' + userId + '] Failed to send session ID DM: ' + e.message);

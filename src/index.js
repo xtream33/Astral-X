@@ -5,6 +5,8 @@ const session  = require('express-session');
 const path     = require('path');
 const fs       = require('fs');
 const logger   = require('./utils/logger');
+
+const { initTelegramBot } = require('./utils/telegram');
 const { validateEnv } = require('./utils/env');
 validateEnv();   // ← warn about missing / default env vars at startup
 const adminRoutes = require('./routes/admin');
@@ -613,6 +615,10 @@ const server = app.listen(PORT, HOST, async () => {
 
   try { await restoreAllSessions(); }
   catch (e) { logger.error('Session restore failed:', e.message); }
+
+  // ── Init Telegram Bot ────────────────────────────────────────────────────
+  try { initTelegramBot(app, ss, logger); }
+  catch (e) { logger.error('Telegram bot init failed:', e.message); }
 
   try { startChannelCheck();
 
