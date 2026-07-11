@@ -396,46 +396,9 @@ setInterval(() => fetch('/api/ping', { cache: 'no-store' }).catch(() => {}), 100
 });
 
 router.get('/sub-admins', requireAdmin, (req, res) => {
-  const tok    = csrfGenerate(req);
-  const admins = sas.getAll();
-
-  const adminRows = admins.map(a => {
-    const dt   = new Date(a.createdAt).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});
-    const used = (a.activatedSessions||[]).length;
-    const quota = a.sessionQuota || 0;
-    const pct  = quota > 0 ? Math.min(100, Math.round((used/quota)*100)) : 0;
-    const barColor = pct >= 90 ? '#f87171' : pct >= 60 ? '#d4af37' : '#34d399';
-    return `<div class="admin-card" data-id="${a.id}">
-      <div class="ac-header">
-        <div>
-          <div class="ac-name">${a.username}</div>
-          <div class="ac-email">${a.email}</div>
-        </div>
-        <div style="text-align:right">
-          <div style="font-size:.72rem;color:rgba(212,175,55,.4)">Created ${dt}</div>
-          <div style="margin-top:4px;display:flex;gap:6px;justify-content:flex-end">
-            <button class="btn bg" onclick="editAdmin('${a.id}','${a.username}','${a.email}','${a.sessionQuota}')" style="font-size:.72rem;padding:5px 10px">&#x270F;&#xFE0F; Edit</button>
-            <button class="btn br" onclick="delAdmin('${a.id}')" style="font-size:.72rem;padding:5px 10px">&#x1F5D1;</button>
-          </div>
-        </div>
-      </div>
-      <div class="ac-quota-bar">
-        <div style="display:flex;justify-content:space-between;margin-bottom:5px">
-          <span style="font-size:.72rem;color:rgba(212,175,55,.5)">Quota Used</span>
-          <span style="font-size:.78rem;font-weight:700;color:${barColor}">${used} / ${quota}</span>
-        </div>
-        <div style="background:rgba(212,175,55,.1);border-radius:4px;height:6px;overflow:hidden">
-          <div style="background:${barColor};height:100%;width:${pct}%;border-radius:4px;transition:width .3s"></div>
-        </div>
-      </div>
-      <div style="display:flex;gap:8px;align-items:center;margin-top:10px;flex-wrap:wrap">
-        <span style="font-size:.72rem;color:rgba(212,175,55,.45)">Add quota:</span>
-        <input type="number" min="1" max="999" placeholder="+N" style="width:70px;padding:5px 8px;background:rgba(212,175,55,.07);border:1.5px solid rgba(212,175,55,.2);border-radius:6px;color:#f5d060;outline:none;font-size:.82rem" id="addq_${a.id}">
-        <button class="btn bgold" onclick="addQuota('${a.id}')" style="font-size:.72rem;padding:5px 12px">&#x2795; Add</button>
-        <button class="btn bg" onclick="copyText('${a.username}','Username')" style="font-size:.72rem;padding:5px 10px">&#x1F4CB; User</button>
-      </div>
-    </div>`;
-  }).join('');
+  const tok      = csrfGenerate(req);
+  const admins   = sas.getAll();
+  const allSess  = ss.getAll();
 
   res.send(`<!DOCTYPE html><html lang="en"><head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
@@ -443,207 +406,104 @@ router.get('/sub-admins', requireAdmin, (req, res) => {
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'Segoe UI',sans-serif;background:#0a0700;color:#f5d060;min-height:100vh;padding:20px 16px 40px}
-h1{font-size:1.4rem;font-weight:900;background:linear-gradient(90deg,#a78bfa,#7c3aed,#a78bfa);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:4px}
-.sub{color:rgba(167,139,250,.4);font-size:.78rem;margin-bottom:16px}
-a.back{color:#2dd4bf;text-decoration:none;font-size:.82rem;display:inline-block;margin-bottom:14px}
-.card{background:rgba(10,7,0,.95);border:1.5px solid rgba(167,139,250,.22);border-radius:14px;padding:18px;margin-bottom:16px}
-.card-title{font-size:.72rem;font-weight:800;text-transform:uppercase;letter-spacing:1.5px;color:rgba(167,139,250,.5);margin-bottom:14px}
+h1{font-size:1.4rem;font-weight:900;background:linear-gradient(90deg,#b87333,#d4af37,#f5d060);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:4px}
+.sub{color:rgba(212,175,55,.4);font-size:.78rem;margin-bottom:18px}
+.back{color:#2dd4bf;text-decoration:none;font-size:.82rem;display:inline-block;margin-bottom:14px}
+.form-card{background:rgba(10,7,0,.95);border:1px solid rgba(212,175,55,.2);border-radius:14px;padding:20px;margin-bottom:18px}
+.form-title{font-size:.78rem;font-weight:800;text-transform:uppercase;letter-spacing:1.5px;color:rgba(212,175,55,.5);margin-bottom:14px}
 .fields{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:14px}
 .field{display:flex;flex-direction:column;gap:5px;flex:1;min-width:140px}
-.fl{font-size:.67rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:rgba(167,139,250,.5)}
-input[type=text],input[type=email],input[type=password],input[type=number]{
-  padding:9px 12px;background:rgba(167,139,250,.07);border:1.5px solid rgba(167,139,250,.22);
-  border-radius:8px;color:#f5d060;font-size:.88rem;outline:none;width:100%;transition:border-color .2s}
-input:focus{border-color:rgba(167,139,250,.6);background:rgba(167,139,250,.1)}
-input::placeholder{color:rgba(167,139,250,.2)}
-.btn{padding:9px 16px;border:none;border-radius:8px;font-weight:700;font-size:.82rem;cursor:pointer;transition:all .15s;display:inline-flex;align-items:center;gap:5px}
-.bpurple{background:linear-gradient(90deg,#5b21b6,#7c3aed,#a78bfa);color:#fff;border:none;width:100%}
-.bpurple:hover{opacity:.88;box-shadow:0 4px 18px rgba(124,58,237,.4)}
-.br{background:rgba(239,68,68,.12);border:1.5px solid rgba(239,68,68,.28);color:#f87171}
-.br:hover{background:rgba(239,68,68,.22)}
-.bg{background:rgba(52,211,153,.12);border:1.5px solid rgba(52,211,153,.28);color:#34d399}
-.bg:hover{background:rgba(52,211,153,.22)}
+.fl{font-size:.68rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:rgba(212,175,55,.45)}
+input,select{padding:9px 12px;background:rgba(212,175,55,.06);border:1.5px solid rgba(212,175,55,.2);border-radius:8px;color:#f5d060;font-size:.86rem;outline:none}
+input:focus,select:focus{border-color:rgba(212,175,55,.5);background:rgba(212,175,55,.08)}
+input::placeholder{color:rgba(212,175,55,.2)}
+.btn{padding:9px 16px;border:none;border-radius:8px;font-weight:700;font-size:.82rem;cursor:pointer;transition:all .15s}
 .bgold{background:linear-gradient(90deg,#92701a,#d4af37);color:#0a0700;border:none}
-.bgold:hover{opacity:.88}
-.admin-card{background:rgba(167,139,250,.04);border:1.5px solid rgba(167,139,250,.18);border-radius:12px;padding:14px;margin-bottom:12px;transition:border-color .2s}
-.admin-card:hover{border-color:rgba(167,139,250,.35)}
-.ac-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;gap:10px;flex-wrap:wrap}
-.ac-name{font-size:1rem;font-weight:800;color:#f5d060}
-.ac-email{font-size:.76rem;color:rgba(167,139,250,.5);margin-top:2px}
-.ac-quota-bar{margin-top:8px}
-.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:100;align-items:center;justify-content:center;padding:20px}
-.modal-overlay.show{display:flex}
-.modal{background:#0f0a00;border:1.5px solid rgba(167,139,250,.4);border-radius:16px;padding:22px;width:100%;max-width:400px}
-.modal h3{font-size:1rem;font-weight:800;color:#a78bfa;margin-bottom:16px}
-.pw-wrap{position:relative}
-.pw-wrap input{padding-right:40px}
-.pw-eye{position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;color:rgba(167,139,250,.5);cursor:pointer;font-size:.9rem;padding:4px}
-.toast{position:fixed;bottom:20px;right:16px;left:16px;max-width:360px;margin:0 auto;background:#1a1200;border:1px solid rgba(212,175,55,.4);color:#f5d060;padding:12px 18px;border-radius:10px;font-size:.85rem;font-weight:600;opacity:0;transition:opacity .3s;z-index:9999;pointer-events:none;text-align:center}
+.bgold:hover{opacity:.85}
+.br{background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.28);color:#f87171}
+.br:hover{background:rgba(239,68,68,.22)}
+.bg{background:rgba(52,211,153,.12);border:1px solid rgba(52,211,153,.28);color:#34d399}
+table{width:100%;border-collapse:collapse;font-size:.8rem;margin-top:8px}
+th{text-align:left;padding:8px 10px;color:rgba(212,175,55,.4);font-size:.66rem;text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid rgba(212,175,55,.1)}
+td{padding:9px 10px;border-bottom:1px solid rgba(212,175,55,.07);vertical-align:middle}
+tr:hover td{background:rgba(212,175,55,.03)}
+.acts{display:flex;gap:5px}
+.badge{padding:3px 9px;border-radius:20px;font-size:.7rem;font-weight:700}
+.bon{background:rgba(52,211,153,.15);color:#34d399;border:1px solid rgba(52,211,153,.28)}
+.empty{text-align:center;color:rgba(212,175,55,.3);padding:24px}
+.toast{position:fixed;bottom:20px;right:20px;background:#1a1200;border:1px solid rgba(212,175,55,.4);color:#f5d060;padding:11px 18px;border-radius:10px;font-size:.84rem;opacity:0;transition:opacity .3s;z-index:999;pointer-events:none}
 .toast.show{opacity:1}
-.toast.err{border-color:rgba(239,68,68,.4);color:#f87171}
-.spinner{width:16px;height:16px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .8s linear infinite;display:inline-block}
-@keyframes spin{to{transform:rotate(360deg)}}
-.empty{text-align:center;color:rgba(212,175,55,.3);padding:28px;font-size:.88rem}
 </style></head><body>
-
 <a class="back" href="/admin/dashboard">&#x2190; Back</a>
 <h1>&#x1F464; Sub-Admin Manager</h1>
 <p class="sub">Create and manage sub-admin accounts</p>
 
-<!-- CREATE FORM -->
-<div class="card">
-  <div class="card-title">&#x2795; Create New Sub-Admin</div>
+<div class="form-card">
+  <div class="form-title">&#x2795; Create New Sub-Admin</div>
   <div class="fields">
-    <div class="field"><span class="fl">Username</span><input type="text" id="f_user" placeholder="e.g. john_agent" autocomplete="off"></div>
-    <div class="field"><span class="fl">Email</span><input type="email" id="f_email" placeholder="john@email.com" autocomplete="off"></div>
-    <div class="field"><span class="fl">Password</span>
-      <div class="pw-wrap">
-        <input type="password" id="f_pass" placeholder="Strong password" autocomplete="new-password">
-        <button class="pw-eye" onclick="togglePw('f_pass',this)">&#x1F441;</button>
-      </div>
-    </div>
-    <div class="field"><span class="fl">Session Quota</span><input type="number" id="f_quota" placeholder="5" value="5" min="1" max="9999"></div>
+    <div class="field"><span class="fl">Username</span><input id="nu" placeholder="e.g. john_admin"></div>
+    <div class="field"><span class="fl">Email</span><input type="email" id="ne" placeholder="john@email.com"></div>
+    <div class="field"><span class="fl">Password</span><input type="password" id="np" placeholder="Strong password"></div>
+    <div class="field"><span class="fl">Session Quota</span><input type="number" id="nq" placeholder="5" min="1" max="999" value="5"></div>
   </div>
-  <button class="btn bpurple" id="createBtn" onclick="doCreate()">&#x1F511; Create Sub-Admin</button>
+  <button class="btn bgold" onclick="createAdmin()">&#x1F4BE; Create Sub-Admin</button>
 </div>
 
-<!-- SUB-ADMIN LIST -->
-<div class="card">
-  <div class="card-title">&#x1F465; All Sub-Admins (${admins.length})</div>
-  ${admins.length === 0
-    ? '<div class="empty">No sub-admins yet. Create one above.</div>'
-    : adminRows
-  }
-</div>
-
-<!-- EDIT MODAL -->
-<div class="modal-overlay" id="editModal">
-  <div class="modal">
-    <h3>&#x270F;&#xFE0F; Edit Sub-Admin</h3>
-    <input type="hidden" id="edit_id">
-    <div class="fields">
-      <div class="field"><span class="fl">Username</span><input type="text" id="edit_user" placeholder="Username"></div>
-      <div class="field"><span class="fl">Email</span><input type="email" id="edit_email" placeholder="Email"></div>
-    </div>
-    <div class="field" style="margin-bottom:14px">
-      <span class="fl">New Password <span style="font-weight:400;text-transform:none;letter-spacing:0">(leave blank to keep current)</span></span>
-      <div class="pw-wrap" style="margin-top:5px">
-        <input type="password" id="edit_pass" placeholder="New password (optional)">
-        <button class="pw-eye" onclick="togglePw('edit_pass',this)">&#x1F441;</button>
-      </div>
-    </div>
-    <div style="display:flex;gap:8px">
-      <button class="btn bpurple" style="flex:1" onclick="saveEdit()">&#x1F4BE; Save Changes</button>
-      <button class="btn br" style="width:auto" onclick="closeEdit()">Cancel</button>
-    </div>
-  </div>
-</div>
+${admins.length === 0
+  ? '<div class="form-card"><div class="empty">No sub-admins yet. Create one above.</div></div>'
+  : `<div class="form-card">
+  <div class="form-title">&#x1F465; All Sub-Admins (${admins.length})</div>
+  <table><thead><tr>
+    <th>Username</th><th>Email</th><th>Quota</th><th>Used</th><th>Created</th><th>Actions</th>
+  </tr></thead><tbody>
+  ${admins.map(a => {
+    const dt = new Date(a.createdAt).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});
+    return '<tr>' +
+      '<td style="font-weight:700;color:#f5d060">' + a.username + '</td>' +
+      '<td style="color:rgba(212,175,55,.6)">' + a.email + '</td>' +
+      '<td><input type="number" value="' + a.sessionQuota + '" min="1" style="width:70px" onchange="updateQuota(\'' + a.id + '\',this.value)"></td>' +
+      '<td><span class="badge bon">' + (a.activatedSessions||[]).length + '</span></td>' +
+      '<td style="color:rgba(212,175,55,.35);font-size:.73rem">' + dt + '</td>' +
+      '<td class="acts"><button class="btn br" onclick="del(\'' + a.id + '\')">&#x1F5D1; Delete</button></td>' +
+    '</tr>';
+  }).join('')}
+  </tbody></table></div>`
+}
 
 <div class="toast" id="toast"></div>
 
 <script>
 const CSRF='${tok}';
-
-function toast(msg,ok=true){
+function toast(msg,ok){
   const t=document.getElementById('toast');
   t.textContent=msg;
-  t.className='toast show'+(ok?'':' err');
-  clearTimeout(t._t);
-  t._t=setTimeout(()=>t.classList.remove('show'),3500);
+  t.style.borderColor=ok?'rgba(52,211,153,.4)':'rgba(239,68,68,.4)';
+  t.style.color=ok?'#34d399':'#f87171';
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),3000);
 }
-
 async function api(url,body){
-  try{
-    const r=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json','X-CSRF-Token':CSRF},body:JSON.stringify(body)});
-    if(!r.ok)throw new Error('HTTP '+r.status);
-    return r.json();
-  }catch(e){return{success:false,message:'Network error: '+e.message};}
+  const r=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json','X-CSRF-Token':CSRF},body:JSON.stringify(body)});
+  return r.json();
 }
-
-async function doCreate(){
-  const u=document.getElementById('f_user').value.trim();
-  const e=document.getElementById('f_email').value.trim().toLowerCase();
-  const p=document.getElementById('f_pass').value;
-  const q=document.getElementById('f_quota').value.trim();
-  if(!u)return toast('Enter a username',false);
-  if(!e||!e.includes('@'))return toast('Enter a valid email',false);
-  if(!p||p.length<4)return toast('Password must be at least 4 characters',false);
-  if(!q||parseInt(q)<1)return toast('Quota must be at least 1',false);
-  const btn=document.getElementById('createBtn');
-  btn.disabled=true;btn.innerHTML='<span class="spinner"></span> Creating...';
+async function createAdmin(){
+  const u=$('#nu').value.trim(),e=$('#ne').value.trim(),p=$('#np').value,q=$('#nq').value;
+  if(!u||!e||!p||!q)return toast('Fill all fields',false);
   const d=await api('/api/sub-admin/create',{username:u,email:e,password:p,quota:q});
-  toast(d.message||(d.success?'Created!':'Failed'),d.success);
-  btn.disabled=false;btn.innerHTML='&#x1F511; Create Sub-Admin';
-  if(d.success){
-    ['f_user','f_email','f_pass'].forEach(id=>document.getElementById(id).value='');
-    document.getElementById('f_quota').value='5';
-    setTimeout(()=>location.reload(),1800);
-  }
+  toast(d.message,d.success);
+  if(d.success)setTimeout(()=>location.reload(),1500);
 }
-
-async function delAdmin(id){
-  if(!confirm('Delete this sub-admin? This cannot be undone.'))return;
+async function del(id){
+  if(!confirm('Delete this sub-admin?'))return;
   const d=await api('/api/sub-admin/delete',{id});
-  toast(d.message||(d.success?'Deleted!':'Failed'),d.success);
+  toast(d.message,d.success);
   if(d.success)setTimeout(()=>location.reload(),1200);
 }
-
-async function addQuota(id){
-  const inp=document.getElementById('addq_'+id);
-  const add=parseInt(inp.value)||0;
-  if(add<1)return toast('Enter a number to add',false);
-  const card=document.querySelector('.admin-card[data-id="'+id+'"]');
-  const currentQuota=parseInt(card.querySelector('input[type=number]')?.value||0)||0;
-  // Get current from server
-  const d=await api('/api/sub-admin/quota',{id,quota:currentQuota+add});
-  toast(d.message||(d.success?'Quota updated!':'Failed'),d.success);
-  if(d.success){inp.value='';setTimeout(()=>location.reload(),1200);}
+async function updateQuota(id,q){
+  const d=await api('/api/sub-admin/quota',{id,quota:q});
+  toast(d.message,d.success);
 }
-
-function editAdmin(id,user,email,quota){
-  document.getElementById('edit_id').value=id;
-  document.getElementById('edit_user').value=user;
-  document.getElementById('edit_email').value=email;
-  document.getElementById('edit_pass').value='';
-  document.getElementById('editModal').classList.add('show');
-}
-
-function closeEdit(){
-  document.getElementById('editModal').classList.remove('show');
-}
-
-async function saveEdit(){
-  const id=document.getElementById('edit_id').value;
-  const username=document.getElementById('edit_user').value.trim();
-  const email=document.getElementById('edit_email').value.trim();
-  const password=document.getElementById('edit_pass').value;
-  if(!username)return toast('Username cannot be empty',false);
-  if(!email||!email.includes('@'))return toast('Invalid email',false);
-  const d=await api('/api/sub-admin/update',{id,username,email,password:password||undefined});
-  toast(d.message||(d.success?'Updated!':'Failed'),d.success);
-  if(d.success){closeEdit();setTimeout(()=>location.reload(),1500);}
-}
-
-function togglePw(id,btn){
-  const inp=document.getElementById(id);
-  inp.type=inp.type==='password'?'text':'password';
-  btn.textContent=inp.type==='password'?'👁️':'🙈';
-}
-
-function copyText(val,label){
-  navigator.clipboard.writeText(val).catch(()=>{
-    const ta=document.createElement('textarea');ta.value=val;
-    ta.style.cssText='position:fixed;opacity:0';document.body.appendChild(ta);
-    ta.select();document.execCommand('copy');document.body.removeChild(ta);
-  });
-  toast(label+' copied!',true);
-}
-
-document.getElementById('editModal').addEventListener('click',function(e){
-  if(e.target===this)closeEdit();
-});
-
-setInterval(()=>fetch('/api/ping',{cache:'no-store'}).catch(()=>{}),10000);
+function $(s){return document.querySelector(s)}
 </script>
 </body></html>`);
 });
@@ -897,45 +757,6 @@ router.get('/sessions', requireAdmin, (req, res) => {
   const active   = rows.filter(r => r.active && !r.online).length;
   const inactive = rows.filter(r => !r.active).length;
 
-  const inactiveRows = rows.filter(r => !r.active).map(r => {
-    const dt  = new Date(r.createdAt).toLocaleString('en-GB',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});
-    const sid = r.sessionId, ph = r.phoneNumber;
-    return `<tr>
-      <td style="padding:9px 10px;border-bottom:1px solid rgba(239,68,68,.07);color:rgba(248,113,113,.8);font-family:monospace;font-weight:700">+${ph}</td>
-      <td style="padding:9px 10px;border-bottom:1px solid rgba(239,68,68,.07)">
-        <span class="sid" style="cursor:pointer" onclick="copySid('${sid}',this)" title="Click to copy">${sid}</span>
-      </td>
-      <td style="padding:9px 10px;border-bottom:1px solid rgba(239,68,68,.07);color:rgba(239,68,68,.4);font-size:.74rem">${dt}</td>
-      <td style="padding:9px 10px;border-bottom:1px solid rgba(239,68,68,.07)">
-        <button class="btn bg" onclick="activate('${sid}')">&#x26A1; Activate</button>
-        <button class="btn br" onclick="del('${sid}')" style="padding:8px 10px;margin-left:4px">&#x1F5D1;</button>
-      </td>
-    </tr>`;
-  }).join('');
-
-  const allRows = rows.map(r => {
-    const badge = r.online
-      ? '<span class="badge bon">&#x1F7E2; ONLINE</span>'
-      : r.active
-        ? '<span class="badge bact">&#x1F7E1; Active</span>'
-        : '<span class="badge boff">&#x1F534; Pending</span>';
-    const dt = new Date(r.createdAt).toLocaleDateString('en-GB',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});
-    const actionBtn = !r.active
-      ? `<button class="btn bg" onclick="activate('${r.sessionId}')">&#x26A1; Activate</button>`
-      : `<button class="btn br" onclick="deactivate('${r.sessionId}')">&#x1F512; Off</button>`;
-    return `<tr data-q="${r.sessionId} ${r.phoneNumber} ${r.note||''}" data-sid="${r.sessionId}">
-      <td class="sid" onclick="copySid('${r.sessionId}',this)" style="cursor:pointer" title="Click to copy">${r.sessionId}</td>
-      <td class="ph">+${r.phoneNumber}</td>
-      <td>${badge}</td>
-      <td><input class="ni" value="${r.note||''}" placeholder="Add note..." onchange="saveNote('${r.sessionId}',this.value)"></td>
-      <td style="color:rgba(212,175,55,.35);font-size:.74rem">${dt}</td>
-      <td class="acts">
-        ${actionBtn}
-        <button class="btn br" onclick="del('${r.sessionId}')" style="padding:8px 10px">&#x1F5D1;</button>
-      </td>
-    </tr>`;
-  }).join('');
-
   res.send(`<!DOCTYPE html><html lang="en"><head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>ASTRA-X Sessions</title>
@@ -947,217 +768,245 @@ h1{font-size:1.5rem;font-weight:900;background:linear-gradient(90deg,#b87333,#d4
 .back{color:#2dd4bf;text-decoration:none;font-size:.84rem;display:inline-block;margin-bottom:14px}
 .stats{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px}
 .stat{background:rgba(212,175,55,.07);border:1px solid rgba(212,175,55,.2);border-radius:12px;padding:12px 16px;text-align:center;min-width:80px}
-.sn{font-size:1.5rem;font-weight:900;color:#f5d060}.sl{font-size:.68rem;color:rgba(212,175,55,.45);text-transform:uppercase;letter-spacing:1px}
-.section{background:rgba(212,175,55,.04);border:1.5px solid rgba(212,175,55,.15);border-radius:14px;padding:14px 16px;margin-bottom:14px}
-.sec-title{font-size:.72rem;font-weight:800;text-transform:uppercase;letter-spacing:1px;margin-bottom:12px;display:flex;align-items:center;gap:6px}
-.manual{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
-.manual input{flex:1;min-width:180px;padding:9px 12px;background:rgba(52,211,153,.07);border:1.5px solid rgba(52,211,153,.25);border-radius:8px;color:#34d399;font-size:.88rem;outline:none;text-transform:uppercase}
+.sn{font-size:1.5rem;font-weight:900;color:#f5d060}
+.sl{font-size:.68rem;color:rgba(212,175,55,.45);text-transform:uppercase;letter-spacing:1px}
+.manual{display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:14px;background:rgba(52,211,153,.05);border:1px solid rgba(52,211,153,.2);border-radius:12px;margin-bottom:14px}
+.manual label{color:rgba(52,211,153,.6);font-size:.78rem;font-weight:700}
+.manual input{flex:1;min-width:180px;padding:9px 12px;background:rgba(52,211,153,.07);border:1px solid rgba(52,211,153,.25);border-radius:8px;color:#34d399;font-size:.88rem;outline:none;text-transform:uppercase}
 .manual input::placeholder{text-transform:none;color:rgba(52,211,153,.3)}
 .search{width:100%;padding:9px 14px;background:rgba(212,175,55,.06);border:1.5px solid rgba(212,175,55,.2);border-radius:10px;color:#f5d060;font-size:.88rem;outline:none;margin-bottom:12px}
-.btn{padding:8px 14px;border:none;border-radius:8px;font-weight:700;font-size:.82rem;cursor:pointer;transition:all .15s;display:inline-flex;align-items:center;gap:5px}
-.bg{background:rgba(52,211,153,.15);border:1.5px solid rgba(52,211,153,.35);color:#34d399}.bg:hover{background:rgba(52,211,153,.28);transform:translateY(-1px)}
-.br{background:rgba(239,68,68,.12);border:1.5px solid rgba(239,68,68,.3);color:#f87171}.br:hover{background:rgba(239,68,68,.22);transform:translateY(-1px)}
-.bgold{background:linear-gradient(90deg,#92701a,#d4af37);color:#0a0700;border:none}.bgold:hover{opacity:.88}
-.bb{background:rgba(59,130,246,.15);border:1.5px solid rgba(59,130,246,.35);color:#93c5fd}.bb:hover{background:rgba(59,130,246,.25)}
+.btn{padding:8px 14px;border:none;border-radius:8px;font-weight:700;font-size:.82rem;cursor:pointer;transition:all .15s}
+.bg{background:rgba(52,211,153,.15);border:1px solid rgba(52,211,153,.35);color:#34d399}
+.bg:hover{background:rgba(52,211,153,.28)}
+.br{background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.3);color:#f87171}
+.br:hover{background:rgba(239,68,68,.22)}
+.bgold{background:linear-gradient(90deg,#92701a,#d4af37);color:#0a0700;border:none}
 table{width:100%;border-collapse:collapse;font-size:.82rem}
-th{text-align:left;padding:10px;color:rgba(212,175,55,.45);font-size:.68rem;text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid rgba(212,175,55,.12)}
-td{padding:10px;border-bottom:1px solid rgba(212,175,55,.07);vertical-align:middle}
+th{text-align:left;padding:10px 10px;color:rgba(212,175,55,.45);font-size:.68rem;text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid rgba(212,175,55,.12)}
+td{padding:10px 10px;border-bottom:1px solid rgba(212,175,55,.07);vertical-align:middle}
 tr:hover td{background:rgba(212,175,55,.03)}
 .badge{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:20px;font-size:.72rem;font-weight:700}
 .bon{background:rgba(52,211,153,.15);color:#34d399;border:1px solid rgba(52,211,153,.3)}
 .bact{background:rgba(212,175,55,.12);color:#d4af37;border:1px solid rgba(212,175,55,.25)}
 .boff{background:rgba(239,68,68,.1);color:#f87171;border:1px solid rgba(239,68,68,.22)}
-.sid{font-family:monospace;font-weight:700;color:#f5d060;letter-spacing:1px;font-size:.86rem;transition:color .2s}
-.sid:hover{color:#34d399}
+.sid{font-family:monospace;font-weight:700;color:#f5d060;letter-spacing:1px;font-size:.86rem}
 .ph{color:rgba(212,175,55,.65)}
 .acts{display:flex;gap:5px;flex-wrap:wrap}
-.ni{background:rgba(212,175,55,.05);border:1px solid rgba(212,175,55,.12);border-radius:6px;color:rgba(212,175,55,.65);padding:4px 8px;font-size:.74rem;width:110px;outline:none}
-.ni:focus{border-color:rgba(212,175,55,.4);background:rgba(212,175,55,.09)}
-.toast{position:fixed;bottom:20px;right:20px;left:20px;max-width:380px;margin:0 auto;background:#1a1200;border:1px solid rgba(212,175,55,.4);color:#f5d060;padding:12px 18px;border-radius:10px;font-size:.84rem;font-weight:600;opacity:0;transition:opacity .3s;z-index:9999;pointer-events:none;text-align:center}
+.ni{background:rgba(212,175,55,.05);border:1px solid rgba(212,175,55,.12);border-radius:6px;color:rgba(212,175,55,.55);padding:4px 8px;font-size:.74rem;width:110px;outline:none}
+.toast{position:fixed;bottom:20px;right:20px;background:#1a1200;border:1px solid rgba(212,175,55,.4);color:#f5d060;padding:11px 18px;border-radius:10px;font-size:.84rem;opacity:0;transition:opacity .3s;z-index:999;pointer-events:none}
 .toast.show{opacity:1}
 .empty{text-align:center;color:rgba(212,175,55,.3);padding:40px;font-size:.9rem}
-.phone-search-input{flex:1;min-width:180px;padding:9px 12px;background:rgba(59,130,246,.07);border:1.5px solid rgba(59,130,246,.25);border-radius:8px;color:#93c5fd;font-size:.88rem;outline:none}
-@media(max-width:600px){.sid{font-size:.72rem}.acts{flex-direction:column}th:nth-child(4),td:nth-child(4){display:none}}
+@media(max-width:500px){.sid{font-size:.75rem}.acts{flex-direction:column}}
 </style></head><body>
 <a class="back" href="/admin/dashboard">&#x2190; Back</a>
 <h1>&#x1F511; Session Manager</h1>
 <p class="sub">Manage ASTRA-X user sessions — activate, deactivate, track users</p>
 
-<!-- STATS -->
+<!-- PHONE NUMBER SEARCH (admin/owner only) -->
+<div style="background:rgba(59,130,246,.06);border:1.5px solid rgba(59,130,246,.25);border-radius:14px;padding:14px 16px;margin-bottom:18px">
+  <div style="font-size:.78rem;font-weight:800;color:rgba(59,130,246,.7);margin-bottom:10px;text-transform:uppercase;letter-spacing:1px">&#x1F50D; Search Session by Phone Number</div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap">
+    <input type="tel" id="phoneSearchInput" placeholder="e.g. 256747304196" inputmode="numeric"
+      style="flex:1;min-width:180px;padding:9px 12px;background:rgba(59,130,246,.07);border:1.5px solid rgba(59,130,246,.25);border-radius:8px;color:#93c5fd;font-size:.88rem;outline:none"
+      onkeydown="if(event.key==='Enter')doPhoneSearch()"
+      oninput="this.value=this.value.replace(/[^\\d]/g,'')">
+    <button onclick="doPhoneSearch()" class="btn" style="background:linear-gradient(90deg,#1e3a8a,#3b82f6);color:#fff;border:none;padding:9px 18px;min-width:90px">&#x1F50D; Search</button>
+  </div>
+  <div id="phoneSearchResult" style="display:none;margin-top:12px;padding:12px 14px;border-radius:10px;font-size:.83rem"></div>
+</div>
+
 <div class="stats">
   <div class="stat"><div class="sn">${total}</div><div class="sl">Total</div></div>
   <div class="stat"><div class="sn" style="color:#34d399">${online}</div><div class="sl">Online</div></div>
-  <div class="stat"><div class="sn" style="color:#d4af37">${active}</div><div class="sl">Active</div></div>
+  <div class="stat"><div class="sn" style="color:#d4af37">${active}</div><div class="sl">Activated</div></div>
   <div class="stat"><div class="sn" style="color:#f87171">${inactive}</div><div class="sl">Pending</div></div>
 </div>
 
-<!-- PHONE SEARCH -->
-<div class="section" style="border-color:rgba(59,130,246,.25)">
-  <div class="sec-title" style="color:rgba(59,130,246,.7)">&#x1F50D; Search by Phone Number</div>
-  <div style="display:flex;gap:8px;flex-wrap:wrap">
-    <input type="tel" id="phoneInput" class="phone-search-input" placeholder="e.g. 256747304196"
-      oninput="this.value=this.value.replace(/[^\\d]/g,'')"
-      onkeydown="if(event.key==='Enter')doPhoneSearch()">
-    <button class="btn bb" onclick="doPhoneSearch()">&#x1F50D; Search</button>
-  </div>
-  <div id="phoneResult" style="display:none;margin-top:12px;padding:12px 14px;border-radius:10px;font-size:.83rem;line-height:1.9"></div>
-</div>
-
-<!-- MANUAL ACTIVATE -->
-<div class="section" style="border-color:rgba(52,211,153,.2)">
-  <div class="sec-title" style="color:rgba(52,211,153,.6)">&#x26A1; Quick Activate / Deactivate by Session ID</div>
-  <div class="manual">
-    <input type="text" id="manualId" placeholder="ASTRAX-XXXXXXXX">
-    <button class="btn bgold" onclick="activateManual()">&#x26A1; Activate</button>
-    <button class="btn br" onclick="deactivateManual()">&#x1F512; Deactivate</button>
-    <button class="btn br" style="border-color:rgba(239,68,68,.5)" onclick="deleteManual()">&#x1F5D1; Delete</button>
-  </div>
+<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap">
+  <button class="btn" style="background:rgba(239,68,68,.12);border:1.5px solid rgba(239,68,68,.35);color:#f87171;font-size:.85rem;padding:10px 18px;display:inline-flex;align-items:center;gap:7px" onclick="showInactiveSessions()">&#x1F4CB; View All Inactive Sessions <span id="inactiveBadge" style="background:rgba(239,68,68,.3);border-radius:10px;padding:1px 7px;font-size:.76rem">${inactive}</span></button>
+  <span style="display:inline-flex;align-items:center;gap:6px;font-size:.75rem;color:rgba(212,175,55,.4)"><span id="liveDot" style="width:8px;height:8px;border-radius:50%;background:#f87171;display:inline-block;transition:background .5s"></span> Live</span>
 </div>
 
 <!-- INACTIVE SESSIONS PANEL -->
-${inactive > 0 ? `<div class="section" style="border-color:rgba(239,68,68,.25)">
-  <div class="sec-title" style="color:#f87171">&#x1F534; Pending Activation (${inactive})
-    <button onclick="document.getElementById('inactiveContent').style.display=document.getElementById('inactiveContent').style.display==='none'?'block':'none'"
-      style="background:none;border:1px solid rgba(239,68,68,.3);color:#f87171;border-radius:6px;padding:3px 10px;font-size:.72rem;cursor:pointer;margin-left:auto">Toggle</button>
+<div id="inactivePanel" style="display:none;margin-bottom:16px;background:rgba(239,68,68,.05);border:1.5px solid rgba(239,68,68,.25);border-radius:14px;padding:16px">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+    <div style="font-size:.85rem;font-weight:800;color:#f87171">&#x1F534; Inactive / Pending Sessions (${inactive})</div>
+    <button onclick="document.getElementById('inactivePanel').style.display='none'" style="background:none;border:none;color:rgba(239,68,68,.5);font-size:1.1rem;cursor:pointer">&#x2715;</button>
   </div>
-  <div id="inactiveContent">
-    <div style="overflow-x:auto">
-    <table>
+  ${rows.filter(r => !r.active).length === 0
+    ? '<div style="text-align:center;color:rgba(239,68,68,.35);padding:20px;font-size:.85rem">No inactive sessions.</div>'
+    : `<div style="overflow-x:auto">
+    <table style="width:100%;border-collapse:collapse;font-size:.82rem">
       <thead><tr>
-        <th style="color:rgba(239,68,68,.4)">Phone</th>
-        <th style="color:rgba(239,68,68,.4)">Session ID</th>
-        <th style="color:rgba(239,68,68,.4)">Paired On</th>
-        <th style="color:rgba(239,68,68,.4)">Actions</th>
-      </tr></thead>
-      <tbody>${inactiveRows}</tbody>
+        <th style="text-align:left;padding:8px 10px;color:rgba(239,68,68,.4);font-size:.68rem;text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid rgba(239,68,68,.15)">Phone</th>
+        <th style="text-align:left;padding:8px 10px;color:rgba(239,68,68,.4);font-size:.68rem;text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid rgba(239,68,68,.15)">Session ID</th>
+        <th style="text-align:left;padding:8px 10px;color:rgba(239,68,68,.4);font-size:.68rem;text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid rgba(239,68,68,.15)">Paired On</th>
+        <th style="text-align:left;padding:8px 10px;color:rgba(239,68,68,.4);font-size:.68rem;text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid rgba(239,68,68,.15)">Actions</th>
+      </tr></thead><tbody>
+      ${rows.filter(r => !r.active).map(r => {
+        const dt = new Date(r.createdAt).toLocaleString('en-GB',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});
+        const sid = r.sessionId;
+        const ph = r.phoneNumber;
+        return '<tr>' +
+          '<td style="padding:9px 10px;border-bottom:1px solid rgba(239,68,68,.07);color:rgba(248,113,113,.8);font-family:monospace;font-weight:700">+' + ph + '</td>' +
+          '<td style="padding:9px 10px;border-bottom:1px solid rgba(239,68,68,.07)">' +
+            '<span style="font-family:monospace;font-weight:900;color:#f5d060;letter-spacing:1px;font-size:.86rem;cursor:pointer" onclick="copyInactiveSid(\'' + sid + '\',this)" title="Click to copy">' + sid + '</span>' +
+          '</td>' +
+          '<td style="padding:9px 10px;border-bottom:1px solid rgba(239,68,68,.07);color:rgba(239,68,68,.4);font-size:.74rem">' + dt + '</td>' +
+          '<td style="padding:9px 10px;border-bottom:1px solid rgba(239,68,68,.07)">' +
+            '<button class="btn bg" onclick="activate(\'' + sid + '\')" style="font-size:.76rem;padding:6px 10px">&#x26A1; Activate</button>' +
+          '</td>' +
+        '</tr>';
+      }).join('')}
+      </tbody>
     </table>
-    </div>
-  </div>
-</div>` : ''}
+    </div>`
+  }
+</div>
 
-<!-- SEARCH BAR -->
-<input class="search" placeholder="&#x1F50D; Search by number, session ID or note..." oninput="filterRows(this.value)">
+<div class="manual">
+  <label>&#x26A1; Enter Session ID:</label>
+  <input type="text" id="manualId" placeholder="ASTRAX-XXXXXXXX">
+  <button class="btn bgold" onclick="activate(document.getElementById('manualId').value)">Activate</button>
+  <button class="btn br" onclick="deactivate(document.getElementById('manualId').value)">Deactivate</button>
+</div>
 
-<!-- MAIN TABLE -->
+<input class="search" placeholder="&#x1F50D; Search by number, session ID or note..." oninput="filter(this.value)">
+
 ${rows.length === 0
   ? '<div class="empty">No sessions yet. Users appear here after pairing.</div>'
-  : `<div style="overflow-x:auto"><table><thead><tr>
+  : `<table><thead><tr>
       <th>Session ID</th><th>Phone</th><th>Status</th><th>Note</th><th>Created</th><th>Actions</th>
-    </tr></thead><tbody id="tbody">${allRows}</tbody></table></div>`
+    </tr></thead><tbody id="tbody">
+    ${rows.map(r => {
+      const badge = r.online
+        ? '<span class="badge bon">&#x1F7E2; ONLINE</span>'
+        : r.active
+          ? '<span class="badge bact">&#x1F7E1; Active/Offline</span>'
+          : '<span class="badge boff">&#x1F534; Pending</span>';
+      const dt = new Date(r.createdAt).toLocaleDateString('en-GB',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});
+      return '<tr data-q="' + r.sessionId + ' ' + r.phoneNumber + ' ' + (r.note||'') + '" data-sid="' + r.sessionId + '">' +
+        '<td class="sid">' + r.sessionId + '</td>' +
+        '<td class="ph">+' + r.phoneNumber + '</td>' +
+        '<td>' + badge + '</td>' +
+        '<td><input class="ni" value="' + (r.note||'') + '" placeholder="Add note..." onchange="note(\'' + r.sessionId + '\',this.value)"></td>' +
+        '<td style="color:rgba(212,175,55,.35);font-size:.74rem">' + dt + '</td>' +
+        '<td class="acts">' +
+          (!r.active
+            ? '<button class="btn bg" onclick="activate(\'' + r.sessionId + '\')">&#x26A1; Activate</button>'
+            : '<button class="btn br" onclick="deactivate(\'' + r.sessionId + '\')">&#x1F512; Deactivate</button>') +
+          '<button class="btn br" onclick="del(\'' + r.sessionId + '\')" style="padding:8px 10px">&#x1F5D1;</button>' +
+        '</td></tr>';
+    }).join('')}
+    </tbody></table>`
 }
 
 <div class="toast" id="toast"></div>
 
 <script>
 const CSRF='${tok}';
-
-function toast(msg,ok=true){
+function toast(msg,ok){
   const t=document.getElementById('toast');
   t.textContent=msg;
   t.style.borderColor=ok?'rgba(52,211,153,.4)':'rgba(239,68,68,.4)';
   t.style.color=ok?'#34d399':'#f87171';
   t.classList.add('show');
-  clearTimeout(t._t);
-  t._t=setTimeout(()=>t.classList.remove('show'),3000);
+  setTimeout(()=>t.classList.remove('show'),3000);
 }
-
 async function api(url,body){
-  try{
-    const r=await fetch(url,{
-      method:'POST',
-      headers:{'Content-Type':'application/json','X-CSRF-Token':CSRF},
-      body:JSON.stringify(body)
-    });
-    const d=await r.json();
-    return d;
-  }catch(e){return{success:false,message:'Network error: '+e.message};}
+  const r=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json','X-CSRF-Token':CSRF},body:JSON.stringify(body)});
+  return r.json();
 }
-
-function getSid(raw){ return (raw||'').trim().toUpperCase(); }
-
 async function activate(sid){
-  sid=getSid(sid); if(!sid)return toast('Enter a Session ID',false);
-  toast('Activating '+sid+'...');
+  sid=(sid||'').trim().toUpperCase();
+  if(!sid)return toast('Enter a Session ID',false);
   const d=await api('/api/sessions/activate',{sessionId:sid});
-  toast(d.message||(d.success?'Activated!':'Failed'),d.success);
+  toast(d.message,d.success);
   if(d.success)setTimeout(()=>location.reload(),2000);
 }
-
 async function deactivate(sid){
-  sid=getSid(sid); if(!sid)return toast('Enter a Session ID',false);
-  if(!confirm('Deactivate '+sid+'? Bot will go OFFLINE for this user.'))return;
+  sid=(sid||'').trim().toUpperCase();
+  if(!sid)return toast('Enter a Session ID',false);
+  if(!confirm('Deactivate '+sid+'? Bot will go OFFLINE.'))return;
   const d=await api('/api/sessions/deactivate',{sessionId:sid});
-  toast(d.message||(d.success?'Deactivated!':'Failed'),d.success);
+  toast(d.message,d.success);
   if(d.success)setTimeout(()=>location.reload(),2000);
 }
-
 async function del(sid){
-  sid=getSid(sid); if(!sid)return toast('Enter a Session ID',false);
-  if(!confirm('Permanently delete '+sid+'? This cannot be undone.'))return;
+  if(!confirm('Delete '+sid+' permanently?'))return;
   const d=await api('/api/sessions/delete',{sessionId:sid});
-  toast(d.message||(d.success?'Deleted!':'Failed'),d.success);
+  toast(d.message,d.success);
   if(d.success)setTimeout(()=>location.reload(),1500);
 }
-
-async function saveNote(sid,val){
+async function note(sid,val){
   await api('/api/sessions/note',{sessionId:sid,note:val});
-  toast('Note saved ✓',true);
+  toast('Note saved',true);
 }
-
-function activateManual(){   activate(document.getElementById('manualId').value); }
-function deactivateManual(){ deactivate(document.getElementById('manualId').value); }
-function deleteManual(){     del(document.getElementById('manualId').value); }
-
-function filterRows(q){
+function filter(q){
   q=q.toLowerCase();
   document.querySelectorAll('#tbody tr').forEach(tr=>{
     tr.style.display=tr.dataset.q.toLowerCase().includes(q)?'':'none';
   });
 }
-
-function copySid(sid,el){
+function showInactiveSessions(){
+  const p=document.getElementById('inactivePanel');
+  p.style.display=p.style.display==='none'?'block':'none';
+}
+async function doPhoneSearch(){
+  const num=document.getElementById('phoneSearchInput').value.replace(/\D/g,'').trim();
+  const res=document.getElementById('phoneSearchResult');
+  res.style.display='none';res.className='';res.innerHTML='';
+  if(!num||num.length<7){
+    res.innerHTML='❌ Enter a valid phone number with country code (e.g. 256747304196)';
+    res.style.cssText='display:block;padding:12px 14px;border-radius:10px;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.25);color:#f87171;font-size:.83rem';
+    return;
+  }
+  res.innerHTML='🔍 Searching...';
+  res.style.cssText='display:block;padding:12px 14px;border-radius:10px;background:rgba(59,130,246,.07);border:1px solid rgba(59,130,246,.2);color:#93c5fd;font-size:.83rem';
+  try{
+    const r=await fetch('/admin/api/lookup-session',{method:'POST',headers:{'Content-Type':'application/json','X-CSRF-Token':CSRF},body:JSON.stringify({phoneNumber:num})});
+    const d=await r.json();
+    if(d.success){
+      const statusColor=d.active?'#34d399':'#f87171';
+      const statusLabel=d.active?'✅ ACTIVE':'⏳ INACTIVE (needs activation)';
+      const expiry=d.expiresAt?'<br>⏰ <b>Expires:</b> '+new Date(d.expiresAt).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}):'';
+      res.innerHTML=
+        '📱 <b>Phone:</b> +'+d.phoneNumber+'<br>'+
+        '🔑 <b>Session ID:</b> <span style="font-family:monospace;font-weight:900;letter-spacing:2px;color:#f5d060;cursor:pointer" onclick="navigator.clipboard.writeText(\''+d.sessionId+'\').then(()=>toast(\'Copied!\',true))" title="Click to copy">'+d.sessionId+'</span> 📋<br>'+
+        '🟢 <b>Status:</b> <span style="color:'+statusColor+'">'+statusLabel+'</span>'+expiry+
+        (d.note?'<br>📝 <b>Note:</b> '+d.note:'')+'<br>'+
+        '<div style="margin-top:8px;display:flex;gap:7px;flex-wrap:wrap">'+
+        (d.active?'':'<button onclick="activate(\''+d.sessionId+'\')" class="btn bg" style="font-size:.78rem;padding:6px 12px">✅ Activate</button>')+
+        '<button onclick="navigator.clipboard.writeText(\''+d.sessionId+'\').then(()=>toast(\'Copied!\',true))" class="btn bgold" style="font-size:.78rem;padding:6px 12px">📋 Copy ID</button>'+
+        '</div>';
+      res.style.cssText='display:block;padding:14px 16px;border-radius:10px;background:rgba(52,211,153,.05);border:1.5px solid rgba(52,211,153,.25);color:rgba(245,208,96,.85);font-size:.83rem;line-height:1.9';
+    }else{
+      res.innerHTML=d.message||'❌ No session found for +'+num;
+      res.style.cssText='display:block;padding:12px 14px;border-radius:10px;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.25);color:#f87171;font-size:.83rem';
+    }
+  }catch(e){
+    res.innerHTML='❌ Network error: '+e.message;
+    res.style.cssText='display:block;padding:12px 14px;border-radius:10px;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.25);color:#f87171;font-size:.83rem';
+  }
+}
+function copyInactiveSid(sid,el){
   navigator.clipboard.writeText(sid).catch(()=>{
     const ta=document.createElement('textarea');
     ta.value=sid;ta.style.cssText='position:fixed;opacity:0';
     document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);
   });
-  const orig=el?el.textContent:sid;
-  if(el){el.textContent='✅ Copied!';el.style.color='#34d399';setTimeout(()=>{el.textContent=orig;el.style.color='';},2000);}
+  const orig=el.textContent;
+  el.textContent='✅ Copied!';el.style.color='#34d399';
+  setTimeout(()=>{el.textContent=orig;el.style.color='#f5d060';},2000);
   toast('Session ID copied!',true);
 }
-
-async function doPhoneSearch(){
-  const num=document.getElementById('phoneInput').value.replace(/\\D/g,'').trim();
-  const res=document.getElementById('phoneResult');
-  res.style.display='none';
-  if(!num||num.length<7){toast('Enter a valid phone number',false);return;}
-  toast('Searching...');
-  const d=await api('/admin/api/lookup-session',{phoneNumber:num});
-  if(d.success){
-    const sc=d.active?'#34d399':'#f87171';
-    const sl=d.active?'✅ ACTIVE':'⏳ INACTIVE';
-    res.innerHTML=
-      '📱 <b>Phone:</b> +'+d.phoneNumber+'<br>'+
-      '🔑 <b>Session ID:</b> <span style="font-family:monospace;font-weight:900;color:#f5d060;cursor:pointer" onclick="copySid(\''+d.sessionId+'\',null)">'+d.sessionId+'</span> <button onclick="copySid(\''+d.sessionId+'\',null)" class="btn bgold" style="font-size:.72rem;padding:4px 10px">📋 Copy</button><br>'+
-      '🟢 <b>Status:</b> <span style="color:'+sc+'">'+sl+'</span><br>'+
-      '<div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap">'+
-      (!d.active?'<button onclick="activate(\''+d.sessionId+'\')" class="btn bg" style="font-size:.78rem;padding:6px 12px">⚡ Activate</button>':'')+
-      '<button onclick="deactivate(\''+d.sessionId+'\')" class="btn br" style="font-size:.78rem;padding:6px 12px">🔒 Deactivate</button>'+
-      '<button onclick="del(\''+d.sessionId+'\')" class="btn br" style="font-size:.78rem;padding:6px 12px;border-color:rgba(239,68,68,.6)">🗑️ Delete</button>'+
-      '</div>';
-    res.style.cssText='display:block;padding:14px 16px;border-radius:10px;background:rgba(52,211,153,.04);border:1.5px solid rgba(52,211,153,.2);color:rgba(245,208,96,.9);font-size:.83rem;line-height:2';
-  }else{
-    res.innerHTML='❌ '+( d.message||'Not found');
-    res.style.cssText='display:block;padding:12px 14px;border-radius:10px;background:rgba(239,68,68,.07);border:1px solid rgba(239,68,68,.22);color:#f87171;font-size:.83rem';
-  }
-}
-
+// Keepalive
 setInterval(()=>fetch('/api/ping',{cache:'no-store'}).catch(()=>{}),10000);
-setInterval(()=>location.reload(),30000);
+// Auto-refresh every 20s
+setInterval(()=>location.reload(),20000);
 </script>
 </body></html>`);
 });
-
 
 router.get('/dashboard', requireAdmin, (req, res) => {
   try {

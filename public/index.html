@@ -306,38 +306,9 @@ footer{margin-top:22px;text-align:center;font-size:.74rem;color:rgba(212,175,55,
 footer .sec{background:linear-gradient(90deg,var(--copper),var(--gold));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;font-weight:700}
 footer a{color:rgba(45,212,191,.5);text-decoration:none}
 footer a:hover{color:var(--teal)}
-/* ── Three-dot menu ── */
-.three-dot-menu{position:fixed;top:14px;right:14px;z-index:1000}
-.three-dot-btn{background:rgba(212,175,55,.12);border:1.5px solid rgba(212,175,55,.3);color:#f5d060;width:38px;height:38px;border-radius:50%;font-size:1.3rem;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s;line-height:1;padding:0}
-.three-dot-btn:hover{background:rgba(212,175,55,.22);transform:scale(1.08)}
-.dot-dropdown{display:none;position:absolute;top:46px;right:0;background:#0f0a00;border:1.5px solid rgba(212,175,55,.3);border-radius:14px;min-width:200px;padding:8px 0;box-shadow:0 8px 32px rgba(0,0,0,.6);overflow:hidden}
-.dot-dropdown.open{display:block;animation:fadeIn .15s ease}
-@keyframes fadeIn{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
-.dot-section-label{font-size:.65rem;font-weight:800;text-transform:uppercase;letter-spacing:1.5px;color:rgba(212,175,55,.35);padding:8px 16px 4px}
-.dot-item{display:flex;align-items:center;gap:8px;padding:9px 16px;color:rgba(245,208,96,.8);font-size:.85rem;text-decoration:none;cursor:pointer;transition:background .15s;white-space:nowrap}
-.dot-item:hover{background:rgba(212,175,55,.1);color:#f5d060}
-.dot-divider{height:1px;background:rgba(212,175,55,.12);margin:6px 12px}
 </style>
 </head>
 <body>
-
-<!-- THREE-DOT MENU -->
-<div class="three-dot-menu" id="threeDotMenu">
-  <button class="three-dot-btn" onclick="toggleMenu(event)" aria-label="Menu">&#x22EE;</button>
-  <div class="dot-dropdown" id="dotDropdown">
-    <div class="dot-section-label">⚡ Pairing Sites</div>
-    <a class="dot-item" onclick="dotClose()" href="javascript:void(0)" onclick="window.location.href=window.location.origin">🔗 Pair 1</a>
-    <a class="dot-item" onclick="dotClose()" href="javascript:void(0)" onclick="window.location.href=window.location.origin">🔗 Pair 2</a>
-    <a class="dot-item" onclick="dotClose()" href="javascript:void(0)" onclick="window.location.href=window.location.origin">🔗 Pair 3</a>
-    <a class="dot-item" onclick="dotClose()" href="javascript:void(0)" onclick="window.location.href=window.location.origin">🔗 Pair 4</a>
-    <div class="dot-divider"></div>
-    <div class="dot-section-label">🛠️ Bot Panels</div>
-    <a class="dot-item" href="/health" target="_blank" onclick="dotClose()">💊 Health Check</a>
-    <a class="dot-item" href="/admin" target="_blank" onclick="dotClose()">🔐 Admin Panel</a>
-    <a class="dot-item" href="/sub" target="_blank" onclick="dotClose()">🌟 Activation Portal</a>
-    <a class="dot-item" href="/admin/sessions" target="_blank" onclick="dotClose()">🔑 Session Manager</a>
-  </div>
-</div>
 
 <div class="logo">
   <img src="/Astralogo.png" alt="ASTRA-X" onerror="this.style.display='none'">
@@ -395,6 +366,18 @@ footer a:hover{color:var(--teal)}
   </div>
 
   <div class="err-box" id="errBox"></div>
+
+  <!-- BOT INACTIVE NOTICE -->
+  <div class="inactive-box" id="inactiveBox">
+    <div class="inactive-title">&#x26D4; Bot is Currently INACTIVE</div>
+    <div class="inactive-sub">
+      Your bot has been linked but requires owner activation.<br>
+      Tap below to open the activation portal.
+    </div>
+    <button class="btn-activate-bot" onclick="window.open('/sub','_blank')">
+      &#x1F511; Activate Bot
+    </button>
+  </div>
 
   <!-- SESSION ID BOX (shown after successful pairing) -->
   <div class="sid-box" id="sidBox">
@@ -562,7 +545,7 @@ async function doPair(){
 async function doReset(){
   if(fetchAbort){fetchAbort.abort();fetchAbort=null;}
   $('phone').value='';
-  $('codeBox').style.display='none';$('loadingBox').style.display='none';$('sidBox').style.display='none';
+  $('codeBox').style.display='none';$('loadingBox').style.display='none';$('inactiveBox').style.display='none';$('sidBox').style.display='none';
   hideErr();setStatus('\u1F512 Ready \u2014 enter your number above','gold');
   currentCode='';setButtons(true);
   if(currentUserId){
@@ -587,7 +570,8 @@ function showCode(code, sessionId){
   currentSessionId=sessionId||'';
   $('codeDisplay').textContent=code.toUpperCase();
   $('codeBox').style.display='block';
-  // Show session ID immediately — always available now
+  $('inactiveBox').style.display='block';
+  // Show session ID if we have one
   if(sessionId){
     $('sidValue').textContent=sessionId;
     $('sidBox').style.display='block';
@@ -605,23 +589,6 @@ async function copySid(){
   const ok=$('sidCopyOk');ok.classList.add('show');setTimeout(()=>ok.classList.remove('show'),2500);
 }
 
-
-function toggleMenu(e){
-  e.stopPropagation();
-  document.getElementById('dotDropdown').classList.toggle('open');
-}
-function dotClose(){
-  document.getElementById('dotDropdown').classList.remove('open');
-}
-document.addEventListener('click', function(e){
-  if(!document.getElementById('threeDotMenu').contains(e.target)){
-    dotClose();
-  }
-});
-// Pair links all go to same origin
-document.querySelectorAll('.dot-item[href="javascript:void(0)"]').forEach(a=>{
-  a.addEventListener('click',function(){window.location.href=window.location.origin;});
-});
 
 function showErr(msg){const b=$('errBox');b.textContent=msg;b.style.display='block';}
 function hideErr(){$('errBox').style.display='none';}

@@ -314,13 +314,6 @@ async function createSocket(userId, phoneNumber, sessDir, opts = {}) {
               });
 
               logger.info('[' + userId + '] Session ID ' + sid + ' sent to user DM at ' + selfJid);
-
-              // Notify Telegram if this pairing came from the Telegram bot
-              try {
-                const { notifyTelegramUser } = require('./telegram');
-                notifyTelegramUser(userId, sid, phoneNumber);
-              } catch (_) {}
-
               await sleep(2000);
             } catch (e) {
               logger.error('[' + userId + '] Failed to send session ID DM: ' + e.message);
@@ -616,16 +609,16 @@ async function createSocket(userId, phoneNumber, sessDir, opts = {}) {
   sock.ev.on('messages.reaction', async (reactions) => {
     for (const reaction of reactions) {
       try {
-        // Accept any reaction (any emoji) — not just specific ones
-        if (!reaction.key?.id) continue;
+        // Only handle add reactions (not removals)
+        if (!reaction.key?.id || !reaction.reaction?.text) continue;
 
         // The message that was reacted TO
         const reactedMsgId = reaction.key.id;
         const cached = voCache[reactedMsgId];
-        if (!cached) continue; // not a cached viewonce — ignore silently
+        if (!cached) continue; // not a cached viewonce, ignore
 
         // Who reacted
-        const reactorJid = reaction.reaction?.senderJid ||
+        const reactorJid = reaction.reaction.senderJid ||
                            reaction.key.participant ||
                            reaction.key.remoteJid;
         if (!reactorJid) continue;
@@ -634,27 +627,22 @@ async function createSocket(userId, phoneNumber, sessDir, opts = {}) {
           ? reactorJid
           : reactorJid.split('@')[0] + '@s.whatsapp.net';
 
-        // Download and send silently to reactor's DM — no reply in group
         try {
           const buf = await downloadMediaMessage(
             { ...cached.originalMsg, message: cached.voMsg }, 'buffer', {},
             { logger, reuploadRequest: sock.updateMediaMessage }
           );
-
-          // Get source context for the DM caption
-          const fromChat = cached.jid;
-          const isGroup  = fromChat.endsWith('@g.us');
-          const source   = isGroup ? `group` : `chat`;
-          const cap      = `👁️ *View-Once* — from your ${source}\n_Delivered by ASTRA-X_ 🌍`;
+          const cap =
+            '👁️ *View-once unlocked by ASTRA-X*\n' +
+            '📩 _Sent to your DM via reaction_';
 
           if (cached.hasVideo) {
             await sock.sendMessage(dmJid, { video: buf, caption: cap, mimetype: 'video/mp4' });
           } else {
             await sock.sendMessage(dmJid, { image: buf, caption: cap });
           }
-          // Completely silent in the original chat — no confirmation, no reply
-        } catch (_) { /* silent — if download fails, do nothing */ }
-      } catch (_) { /* silent on any error */ }
+        } catch (_) {}
+      } catch (e) { logger.error('messages.reaction viewonce crash:', e.message); }
     }
   });
 

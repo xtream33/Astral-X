@@ -5,7 +5,7 @@
     "activatedBy": "Admin",
     "activatedAt": "2026-05-28T07:27:57.694Z",
     "expiresAt": "2026-06-27T07:27:57.694Z",
-    "active": true
+    "active": false
   },
   "user_1780016112576_256772433078": {
     "userId": "user_1780016112576_256772433078",
@@ -13,7 +13,7 @@
     "activatedBy": "Admin",
     "activatedAt": "2026-05-29T00:57:13.155Z",
     "expiresAt": "2026-06-28T00:57:13.155Z",
-    "active": true
+    "active": false
   },
   "user_1780036123946_256772433078": {
     "userId": "user_1780036123946_256772433078",
@@ -21,6 +21,6 @@
     "activatedBy": "Admin",
     "activatedAt": "2026-05-29T06:30:57.957Z",
     "expiresAt": "2026-06-28T06:30:57.957Z",
-    "active": true
+    "active": false
   }
 }

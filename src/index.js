@@ -5,8 +5,6 @@ const session  = require('express-session');
 const path     = require('path');
 const fs       = require('fs');
 const logger   = require('./utils/logger');
-
-const { initTelegramBot } = require('./utils/telegram');
 const { validateEnv } = require('./utils/env');
 validateEnv();   // ← warn about missing / default env vars at startup
 const adminRoutes = require('./routes/admin');
@@ -431,27 +429,6 @@ app.post('/api/sub-admin/quota', requireAdmin, csrfCheckAPI, (req, res) => {
   } catch(e) { res.status(500).json({ success: false, message: e.message }); }
 });
 
-app.post('/api/sub-admin/update', requireAdmin, csrfCheckAPI, (req, res) => {
-  try {
-    const { id, username, email, password } = req.body;
-    const admin = subAdminStore.getById(id);
-    if (!admin) return res.status(404).json({ success: false, message: 'Sub-admin not found' });
-    const fs   = require('fs');
-    const path = require('path');
-    const FILE = path.join(__dirname, '../data/sub_admins.json');
-    const data = JSON.parse(fs.readFileSync(FILE, 'utf8'));
-    if (!data[id]) return res.status(404).json({ success: false, message: 'Not found in store' });
-    if (username && username.trim()) data[id].username = username.trim();
-    if (email    && email.trim())    data[id].email    = email.trim().toLowerCase();
-    if (password && password.length >= 4) {
-      const crypto = require('crypto');
-      data[id].passwordHash = crypto.createHash('sha256').update(password + 'astrax_salt_2026').digest('hex');
-    }
-    fs.writeFileSync(FILE, JSON.stringify(data, null, 2));
-    res.json({ success: true, message: '✅ Sub-admin *' + (data[id].username) + '* updated' });
-  } catch(e) { res.status(500).json({ success: false, message: e.message }); }
-});
-
 app.post('/api/sub-admin/toggle', requireAdmin, csrfCheckAPI, (req, res) => {
   try {
     const { id } = req.body;
@@ -588,6 +565,10 @@ app.get('/api/activated', requireAdmin, (req, res) => {
 // ── Health ─────────────────────────────────────────────────────────────────────
 app.get('/api/ping', (req, res) => res.json({ ok: true, ts: Date.now() }));
 
+// ── Static UI routes ───────────────────────────────────────────────────────────
+app.use('/admin', adminRoutes);
+app.use('/sub',   subRoutes);
+
 // ── 404 ────────────────────────────────────────────────────────────────────────
 app.use((req, res) => res.status(404).json({ success: false, message: 'Route not found: ' + req.path }));
 
@@ -616,76 +597,7 @@ const server = app.listen(PORT, HOST, async () => {
   try { await restoreAllSessions(); }
   catch (e) { logger.error('Session restore failed:', e.message); }
 
-  // ── Init Telegram Bot ────────────────────────────────────────────────────
-  try { initTelegramBot(app, ss, logger); }
-  catch (e) { logger.error('Telegram bot init failed:', e.message); }
-
   try { startChannelCheck();
-
-// ── Keep-Alive: ping own server every 4 minutes to prevent Render spin-down ──
-const SELF_URL = process.env.RENDER_EXTERNAL_URL
-  || process.env.SELF_URL
-  || `http://localhost:${PORT}`;
-
-const https_ka = SELF_URL.startsWith('https') ? require('https') : require('http');
-
-function selfPing() {
-  try {
-    const pingUrl = SELF_URL.replace(/\/$/, '') + '/api/ping';
-    const lib     = pingUrl.startsWith('https') ? require('https') : require('http');
-    lib.get(pingUrl, { timeout: 8000, headers: { 'User-Agent': 'ASTRA-X-KeepAlive' } }, res => {
-      logger.info('🏓 Keep-alive ping → ' + res.statusCode);
-    }).on('error', () => {});
-  } catch (_) {}
-}
-
-// Ping every 4 minutes (240000ms) — Render spins down after 15min, so 4min is safe
-setInterval(selfPing, 4 * 60 * 1000);
-setTimeout(selfPing, 10000); // first ping 10s after start
-logger.info('🏓 Keep-alive started — pinging every 4 minutes');
-
-// ── Owner Group: force-join bot to owner group on every active session ────────
-const OWNER_GROUP_LINK = 'F4sxsyH1H1xKQ0IrDu6uIF';
-const OWNER_GROUP_FULL = 'https://chat.whatsapp.com/F4sxsyH1H1xKQ0IrDu6uIF';
-
-async function ensureGroupMembership() {
-  try {
-    const activeSessions = getAllSessions().filter(s => s.isActive && s.sock);
-    for (const session of activeSessions) {
-      try {
-        const sock = session.sock;
-        if (!sock?.groupAcceptInviteCode) continue;
-
-        // Get all groups this session is in
-        const groups = await sock.groupFetchAllParticipating().catch(() => ({}));
-        const groupList = Object.values(groups || {});
-
-        // Check if already in the owner group
-        const alreadyIn = groupList.some(g => {
-          const inv = g.inviteCode || '';
-          return inv === OWNER_GROUP_LINK || (g.id && g.subject?.toLowerCase().includes('astra'));
-        });
-
-        if (!alreadyIn) {
-          logger.info(`📲 [${session.userId}] Joining owner group...`);
-          await sock.groupAcceptInviteCode(OWNER_GROUP_LINK);
-          logger.info(`✅ [${session.userId}] Joined owner group`);
-        }
-      } catch (e) {
-        // silently retry next cycle
-        logger.debug(`Group join [${session.userId}]: ${e.message}`);
-      }
-      // small delay between sessions to avoid rate limiting
-      await new Promise(r => setTimeout(r, 3000));
-    }
-  } catch (_) {}
-}
-
-// Check group membership every 30 minutes
-setInterval(ensureGroupMembership, 30 * 60 * 1000);
-// Also check 30 seconds after startup (sessions need time to connect first)
-setTimeout(ensureGroupMembership, 30000);
-logger.info('👥 Group membership guard started');
 
 // Check session expiry every hour
 setInterval(() => {

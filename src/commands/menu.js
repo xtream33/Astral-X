@@ -52,132 +52,90 @@ module.exports = {
       '  ➤ *Date:* ' + date + '\n' +
       '  ➤ *Mode:* ' + mode + '\n' +
       '━━━━━━━━━━━━━━━━━━━━━\n\n' +
+
       '┏━━━━━━━━━━━━━━━━━━━▣\n' +
       '┃ 🛡️ *MODE SETTINGS*\n' +
-      '┃ ' + p + 'mode\n' +
+      '┃ ' + p + 'mode public\n' +
+      '┃ ' + p + 'mode private\n' +
       '┃ ' + p + 'owneronly\n' +
       '┗━━━━━━━━━━━━━━━━━━━▣\n\n' +
+
       '┏━━━━━━━━━━━━━━━━━━━▣\n' +
       '┃ ℹ️ *INFO & UTILITY*\n' +
       '┃ ' + p + 'alive\n' +
       '┃ ' + p + 'ping\n' +
-      '┃ ' + p + 'speed\n' +
-      '┃ ' + p + 'latency\n' +
-      '┃ ' + p + 'pong\n' +
+      '┃   » speed, latency, pong\n' +
       '┃ ' + p + 'stats\n' +
       '┃ ' + p + 'botinfo\n' +
-      '┃ ' + p + 'bot\n' +
-      '┃ ' + p + 'botstatus\n' +
-      '┃ ' + p + 'sysinfo\n' +
+      '┃   » bot, botstatus, sysinfo\n' +
       '┃ ' + p + 'ram\n' +
       '┃ ' + p + 'owner\n' +
       '┃ ' + p + 'time\n' +
       '┃ ' + p + 'weather\n' +
-      '┃ ' + p + 'w\n' +
-      '┃ ' + p + 'forecast\n' +
-      '┃ ' + p + 'temp\n' +
-      '┃ ' + p + 'climate\n' +
+      '┃   » w, forecast, temp, climate\n' +
       '┃ ' + p + 'calc\n' +
-      '┃ ' + p + 'calculator\n' +
-      '┃ ' + p + 'compute\n' +
-      '┃ ' + p + 'evaluate\n' +
+      '┃   » calculator, compute, evaluate\n' +
       '┃ ' + p + 'ip\n' +
-      '┃ ' + p + 'ipinfo\n' +
-      '┃ ' + p + 'iplookup\n' +
-      '┃ ' + p + 'geoip\n' +
+      '┃   » ipinfo, iplookup, geoip\n' +
       '┃ ' + p + 'id\n' +
       '┃ ' + p + 'wiki\n' +
-      '┃ ' + p + 'wikipedia\n' +
-      '┃ ' + p + 'search\n' +
-      '┃ ' + p + 'lookup\n' +
+      '┃   » wikipedia, search, lookup\n' +
       '┃ ' + p + 'define\n' +
-      '┃ ' + p + 'dict\n' +
-      '┃ ' + p + 'dictionary\n' +
-      '┃ ' + p + 'whatis\n' +
+      '┃   » dict, dictionary, whatis\n' +
       '┃ ' + p + 'shorten\n' +
-      '┃ ' + p + 'short\n' +
-      '┃ ' + p + 'tiny\n' +
+      '┃   » short, tiny, tinyurl\n' +
       '┃ ' + p + 'tinyurl\n' +
+      '┃ ' + p + 'urlexpand\n' +
+      '┃ ' + p + 'whois\n' +
       '┃ ' + p + 'qr\n' +
       '┃ ' + p + 'base64\n' +
       '┗━━━━━━━━━━━━━━━━━━━▣\n\n' +
+
       '┏━━━━━━━━━━━━━━━━━━━▣\n' +
       '┃ 👁️ *VIEWONCE*\n' +
-      '┃ ' + p + 'vv\n' +
-      '┃ ' + p + 'vvdm\n' +
-      '┃ ' + p + 'viewonce\n' +
-      '┃ ' + p + 'novv\n' +
+      '┃ ' + p + 'vv — unlock (reply)\n' +
+      '┃ ' + p + 'vvdm — unlock → your DM\n' +
+      '┃ ' + p + 'viewonce on/off\n' +
+      '┃ ' + p + 'novv on/off\n' +
+      '┃ 💡 _React to viewonce → get in DM_\n' +
       '┗━━━━━━━━━━━━━━━━━━━▣\n\n' +
+
       '┏━━━━━━━━━━━━━━━━━━━▣\n' +
       '┃ 🎵 *MEDIA & DOWNLOADS*\n' +
       '┃ ' + p + 'dl\n' +
-      '┃ ' + p + 'down\n' +
-      '┃ ' + p + 'get\n' +
-      '┃ ' + p + 'fetch\n' +
-      '┃ ' + p + 'grab\n' +
+      '┃   » down, get, fetch, grab\n' +
       '┃ ' + p + 'song\n' +
-      '┃ ' + p + 'music\n' +
-      '┃ ' + p + 'sing\n' +
-      '┃ ' + p + 'track\n' +
-      '┃ ' + p + 'beat\n' +
+      '┃   » music, sing, track, beat, sc\n' +
       '┃ ' + p + 'play\n' +
-      '┃ ' + p + 'video\n' +
-      '┃ ' + p + 'watch\n' +
-      '┃ ' + p + 'ytsearch\n' +
-      '┃ ' + p + 'stream\n' +
+      '┃   » video, watch, ytsearch, stream\n' +
       '┃ ' + p + 'ytmp3\n' +
-      '┃ ' + p + 'yta\n' +
-      '┃ ' + p + 'youtubemp3\n' +
-      '┃ ' + p + 'ytaudio\n' +
+      '┃   » yta, youtubemp3, ytaudio\n' +
       '┃ ' + p + 'ytmp4\n' +
-      '┃ ' + p + 'ytv\n' +
-      '┃ ' + p + 'youtubemp4\n' +
-      '┃ ' + p + 'ytdown\n' +
+      '┃   » ytv, youtubemp4, ytdown\n' +
       '┃ ' + p + 'tiktok\n' +
-      '┃ ' + p + 'tt\n' +
-      '┃ ' + p + 'tok\n' +
-      '┃ ' + p + 'tikdown\n' +
-      '┃ ' + p + 'tiktokdl\n' +
+      '┃   » tt, tok, tikdown, tiktokdl\n' +
       '┃ ' + p + 'instagram\n' +
-      '┃ ' + p + 'ig\n' +
-      '┃ ' + p + 'insta\n' +
-      '┃ ' + p + 'reel\n' +
-      '┃ ' + p + 'igdl\n' +
+      '┃   » ig, insta, reel, igdl\n' +
       '┃ ' + p + 'facebook\n' +
-      '┃ ' + p + 'fb\n' +
-      '┃ ' + p + 'fbvid\n' +
-      '┃ ' + p + 'fbdown\n' +
-      '┃ ' + p + 'fbreels\n' +
+      '┃   » fb, fbvid, fbdown, fbreels\n' +
       '┃ ' + p + 'twitter\n' +
-      '┃ ' + p + 'tw\n' +
-      '┃ ' + p + 'xvideo\n' +
-      '┃ ' + p + 'tweet\n' +
-      '┃ ' + p + 'xdown\n' +
+      '┃   » tw, xvideo, tweet, xdown\n' +
       '┃ ' + p + 'sticker\n' +
-      '┃ ' + p + 's\n' +
-      '┃ ' + p + 'stik\n' +
+      '┃   » s, stik\n' +
       '┃ ' + p + 'lyrics\n' +
-      '┃ ' + p + 'lyric\n' +
-      '┃ ' + p + 'lyr\n' +
+      '┃   » lyric, lyr\n' +
       '┃ ' + p + 'shazam\n' +
-      '┃ ' + p + 'identify\n' +
-      '┃ ' + p + 'whatsong\n' +
-      '┃ ' + p + 'recognize\n' +
+      '┃   » identify, whatsong, recognize\n' +
       '┃ ' + p + 'gif\n' +
-      '┃ ' + p + 'giphy\n' +
-      '┃ ' + p + 'gifs\n' +
+      '┃   » giphy, gifs, anime\n' +
       '┃ ' + p + 'wallpaper\n' +
-      '┃ ' + p + 'wall\n' +
-      '┃ ' + p + 'wp\n' +
-      '┃ ' + p + 'bg\n' +
-      '┃ ' + p + 'background\n' +
+      '┃   » wall, wp, bg, background\n' +
       '┃ ' + p + 'tts\n' +
-      '┃ ' + p + 'speak\n' +
-      '┃ ' + p + 'voice\n' +
-      '┃ ' + p + 'say\n' +
+      '┃   » speak, voice, say\n' +
       '┃ ' + p + 'tomp3\n' +
       '┃ ' + p + 'ocr\n' +
       '┗━━━━━━━━━━━━━━━━━━━▣\n\n' +
+
       '┏━━━━━━━━━━━━━━━━━━━▣\n' +
       '┃ 🔒 *PRIVACY*\n' +
       '┃ ' + p + 'privacy\n' +
@@ -201,80 +159,61 @@ module.exports = {
       '┃ ' + p + 'myblacklist\n' +
       '┃ ' + p + 'disappear\n' +
       '┗━━━━━━━━━━━━━━━━━━━▣\n\n' +
+
       '┏━━━━━━━━━━━━━━━━━━━▣\n' +
       '┃ 🛡️ *ANTI & PROTECTION*\n' +
       '┃ ' + p + 'antilink\n' +
-      '┃ ' + p + 'nolinks\n' +
-      '┃ ' + p + 'linkfilter\n' +
+      '┃   » nolinks, linkfilter\n' +
       '┃ ' + p + 'antibadword\n' +
-      '┃ ' + p + 'nobadword\n' +
-      '┃ ' + p + 'wordfilter\n' +
+      '┃   » nobadword, wordfilter\n' +
       '┃ ' + p + 'antispam\n' +
-      '┃ ' + p + 'nospam\n' +
-      '┃ ' + p + 'stopspam\n' +
+      '┃   » nospam, stopspam\n' +
       '┃ ' + p + 'antiflood\n' +
-      '┃ ' + p + 'floodcontrol\n' +
-      '┃ ' + p + 'ratelimit\n' +
+      '┃   » floodcontrol, ratelimit\n' +
       '┃ ' + p + 'antifake\n' +
       '┃ ' + p + 'antibot\n' +
       '┃ ' + p + 'antidelete\n' +
-      '┃ ' + p + 'ad\n' +
-      '┃ ' + p + 'antirevoke\n' +
+      '┃   » ad, antirevoke\n' +
       '┃ ' + p + 'blacklist\n' +
       '┗━━━━━━━━━━━━━━━━━━━▣\n\n' +
+
       '┏━━━━━━━━━━━━━━━━━━━▣\n' +
       '┃ 👥 *GROUP MANAGEMENT*\n' +
       '┃ ' + p + 'welcome\n' +
       '┃ ' + p + 'goodbye\n' +
       '┃ ' + p + 'mute\n' +
-      '┃ ' + p + 'mutegroup\n' +
-      '┃ ' + p + 'silence\n' +
-      '┃ ' + p + 'closegroup\n' +
+      '┃   » mutegroup, silence, closegroup\n' +
       '┃ ' + p + 'unmute\n' +
-      '┃ ' + p + 'unmutegroup\n' +
-      '┃ ' + p + 'opengroup\n' +
+      '┃   » unmutegroup, opengroup\n' +
       '┃ ' + p + 'lock\n' +
-      '┃ ' + p + 'lockgroup\n' +
-      '┃ ' + p + 'lockinfo\n' +
+      '┃   » lockgroup, lockinfo\n' +
       '┃ ' + p + 'unlock\n' +
-      '┃ ' + p + 'unlockgroup\n' +
+      '┃   » unlockgroup, unlockinfo\n' +
       '┃ ' + p + 'everyone\n' +
-      '┃ ' + p + 'tagall\n' +
-      '┃ ' + p + 'mentionall\n' +
-      '┃ ' + p + 'all\n' +
+      '┃   » tagall, mentionall, all\n' +
       '┃ ' + p + 'hidetag\n' +
-      '┃ ' + p + 'ht\n' +
-      '┃ ' + p + 'hiddentag\n' +
-      '┃ ' + p + 'silentping\n' +
+      '┃   » ht, hiddentag, silentping\n' +
       '┃ ' + p + 'promote\n' +
-      '┃ ' + p + 'makeadmin\n' +
-      '┃ ' + p + 'admin\n' +
+      '┃   » makeadmin, admin\n' +
       '┃ ' + p + 'demote\n' +
-      '┃ ' + p + 'removeadmin\n' +
-      '┃ ' + p + 'unadmin\n' +
+      '┃   » removeadmin, unadmin\n' +
       '┃ ' + p + 'kick\n' +
-      '┃ ' + p + 'remove\n' +
-      '┃ ' + p + 'kickmember\n' +
+      '┃   » remove, kickmember\n' +
       '┃ ' + p + 'add\n' +
-      '┃ ' + p + 'addmember\n' +
-      '┃ ' + p + 'adduser\n' +
-      '┃ ' + p + 'invite\n' +
+      '┃   » addmember, adduser, invite\n' +
       '┃ ' + p + 'warn\n' +
-      '┃ ' + p + 'warning\n' +
-      '┃ ' + p + 'strike\n' +
+      '┃   » warning, strike\n' +
       '┃ ' + p + 'clearwarn\n' +
-      '┃ ' + p + 'resetwarn\n' +
-      '┃ ' + p + 'clearwarns\n' +
+      '┃   » resetwarn, clearwarns\n' +
       '┃ ' + p + 'rules\n' +
-      '┃ ' + p + 'grouprules\n' +
-      '┃ ' + p + 'showrules\n' +
+      '┃   » grouprules, showrules\n' +
       '┃ ' + p + 'announce\n' +
-      '┃ ' + p + 'pin\n' +
-      '┃ ' + p + 'groupannounce\n' +
+      '┃   » pin, groupannounce\n' +
       '┃ ' + p + 'poll\n' +
       '┃ ' + p + 'listmembers\n' +
       '┃ ' + p + 'listadmins\n' +
       '┗━━━━━━━━━━━━━━━━━━━▣\n\n' +
+
       '┏━━━━━━━━━━━━━━━━━━━▣\n' +
       '┃ ⚙️ *BOT SETTINGS*\n' +
       '┃ ' + p + 'setprefix\n' +
@@ -287,18 +226,13 @@ module.exports = {
       '┃ ' + p + 'autolikestatus\n' +
       '┃ ' + p + 'afk\n' +
       '┗━━━━━━━━━━━━━━━━━━━▣\n\n' +
+
       '┏━━━━━━━━━━━━━━━━━━━▣\n' +
       '┃ 🤖 *GEMINI AI*\n' +
       '┃ ' + p + 'ai\n' +
-      '┃ ' + p + 'ask\n' +
-      '┃ ' + p + 'chat\n' +
-      '┃ ' + p + 'gpt\n' +
-      '┃ ' + p + 'gemini\n' +
+      '┃   » ask, chat, gpt, gemini\n' +
       '┃ ' + p + 'describe\n' +
-      '┃ ' + p + 'analyze\n' +
-      '┃ ' + p + 'vision\n' +
-      '┃ ' + p + 'see\n' +
-      '┃ ' + p + 'caption\n' +
+      '┃   » analyze, vision, see, caption\n' +
       '┃ ' + p + 'improve\n' +
       '┃ ' + p + 'summarize\n' +
       '┃ ' + p + 'grammar\n' +
@@ -318,101 +252,68 @@ module.exports = {
       '┃ ' + p + 'diet\n' +
       '┃ ' + p + 'deepseek\n' +
       '┗━━━━━━━━━━━━━━━━━━━▣\n\n' +
+
       '┏━━━━━━━━━━━━━━━━━━━▣\n' +
       '┃ 🛠️ *UTILITY*\n' +
       '┃ ' + p + 'movie\n' +
-      '┃ ' + p + 'film\n' +
-      '┃ ' + p + 'series\n' +
-      '┃ ' + p + 'imdb\n' +
-      '┃ ' + p + 'show\n' +
+      '┃   » film, series, imdb, show\n' +
       '┃ ' + p + 'currency\n' +
-      '┃ ' + p + 'convert\n' +
-      '┃ ' + p + 'exchange\n' +
-      '┃ ' + p + 'fx\n' +
-      '┃ ' + p + 'rate\n' +
+      '┃   » convert, exchange, fx, rate\n' +
       '┃ ' + p + 'news\n' +
-      '┃ ' + p + 'headline\n' +
-      '┃ ' + p + 'headlines\n' +
-      '┃ ' + p + 'trending\n' +
+      '┃   » headline, headlines, trending\n' +
       '┃ ' + p + 'bible\n' +
-      '┃ ' + p + 'verse\n' +
-      '┃ ' + p + 'bibleverse\n' +
-      '┃ ' + p + 'scripture\n' +
+      '┃   » verse, bibleverse, scripture\n' +
       '┃ ' + p + 'quran\n' +
-      '┃ ' + p + 'ayah\n' +
-      '┃ ' + p + 'surah\n' +
-      '┃ ' + p + 'islamic\n' +
+      '┃   » ayah, surah, islamic\n' +
       '┃ ' + p + 'age\n' +
-      '┃ ' + p + 'birthday\n' +
-      '┃ ' + p + 'howold\n' +
-      '┃ ' + p + 'dob\n' +
+      '┃   » birthday, howold, dob\n' +
       '┃ ' + p + 'bmi\n' +
-      '┃ ' + p + 'bodyweight\n' +
-      '┃ ' + p + 'weightcheck\n' +
+      '┃   » bodyweight, weightcheck\n' +
       '┃ ' + p + 'tempmail\n' +
       '┗━━━━━━━━━━━━━━━━━━━▣\n\n' +
+
       '┏━━━━━━━━━━━━━━━━━━━▣\n' +
       '┃ 🎲 *FUN & GAMES*\n' +
       '┃ ' + p + 'dice\n' +
-      '┃ ' + p + 'roll\n' +
-      '┃ ' + p + 'rolldice\n' +
-      '┃ ' + p + 'd6\n' +
+      '┃   » roll, rolldice, d6\n' +
       '┃ ' + p + 'toss\n' +
-      '┃ ' + p + 'cointoss\n' +
-      '┃ ' + p + 'coinflip2\n' +
+      '┃   » cointoss, coinflip2\n' +
       '┃ ' + p + '8ball\n' +
       '┃ ' + p + 'joke\n' +
-      '┃ ' + p + 'funny\n' +
-      '┃ ' + p + 'lol\n' +
-      '┃ ' + p + 'haha\n' +
+      '┃   » funny, lol, haha\n' +
       '┃ ' + p + 'roast\n' +
-      '┃ ' + p + 'burn\n' +
-      '┃ ' + p + 'savage\n' +
-      '┃ ' + p + 'diss\n' +
-      '┃ ' + p + 'insult\n' +
+      '┃   » burn, savage, diss, insult\n' +
       '┃ ' + p + 'compliment\n' +
       '┃ ' + p + 'rizz\n' +
       '┃ ' + p + 'truth\n' +
-      '┃ ' + p + 'truthquestion\n' +
+      '┃   » truthquestion, truthtime\n' +
       '┃ ' + p + 'dare\n' +
       '┃ ' + p + 'trivia\n' +
-      '┃ ' + p + 'quiz2\n' +
-      '┃ ' + p + 'qna\n' +
-      '┃ ' + p + 'triviatime\n' +
+      '┃   » quiz2, qna, triviatime\n' +
       '┃ ' + p + 'ship\n' +
       '┃ ' + p + 'hack\n' +
       '┃ ' + p + 'fortune\n' +
       '┃ ' + p + 'riddle\n' +
-      '┃ ' + p + 'puzzle\n' +
-      '┃ ' + p + 'brainteaser\n' +
-      '┃ ' + p + 'guess\n' +
+      '┃   » puzzle, brainteaser, guess\n' +
       '┃ ' + p + 'wordgame\n' +
-      '┃ ' + p + 'wg\n' +
+      '┃   » wg\n' +
       '┃ ' + p + 'meme\n' +
       '┃ ' + p + 'fact\n' +
-      '┃ ' + p + 'facts\n' +
-      '┃ ' + p + 'randomfact\n' +
-      '┃ ' + p + 'funfact\n' +
+      '┃   » facts, randomfact, funfact\n' +
       '┃ ' + p + 'quote\n' +
-      '┃ ' + p + 'quotes\n' +
-      '┃ ' + p + 'inspire\n' +
-      '┃ ' + p + 'motivation\n' +
+      '┃   » quotes, inspire, motivation\n' +
       '┃ ' + p + 'howgay\n' +
       '┃ ' + p + 'howrich\n' +
-      '┃ ' + p + 'rich\n' +
-      '┃ ' + p + 'wealth\n' +
-      '┃ ' + p + 'networth\n' +
+      '┃   » rich, wealth, networth\n' +
       '┃ ' + p + 'howsmart\n' +
-      '┃ ' + p + 'iq\n' +
-      '┃ ' + p + 'smart\n' +
-      '┃ ' + p + 'genius\n' +
-      '┃ ' + p + 'brain\n' +
+      '┃   » iq, smart, genius, brain\n' +
       '┃ ' + p + 'rps\n' +
-      '┃ ' + p + 'rockpaperscissors\n' +
+      '┃   » rockpaperscissors\n' +
       '┃ ' + p + 'fight\n' +
       '┃ ' + p + 'wyr\n' +
-      '┃ ' + p + 'wouldyourather\n' +
+      '┃   » wouldyourather\n' +
       '┗━━━━━━━━━━━━━━━━━━━▣\n\n' +
+
       '┏━━━━━━━━━━━━━━━━━━━▣\n' +
       '┃ 🎨 *AI IMAGE GENERATION*\n' +
       '┃ ' + p + 'imagine\n' +
@@ -421,91 +322,85 @@ module.exports = {
       '┃ ' + p + 'anime2\n' +
       '┃ ' + p + 'art\n' +
       '┃ ' + p + 'logo\n' +
+      '┃ ' + p + 'wallpaper2\n' +
       '┃ ' + p + 'cartoon\n' +
       '┃ ' + p + 'realistic\n' +
       '┃ ' + p + 'fantasy\n' +
       '┃ ' + p + 'nature\n' +
       '┃ ' + p + 'space\n' +
       '┃ ' + p + 'abstract\n' +
+      '┃ ' + p + 'architecture\n' +
+      '┃ ' + p + 'food2\n' +
+      '┃ ' + p + 'animal2\n' +
+      '┃ ' + p + 'drawing\n' +
+      '┃ ' + p + 'painting\n' +
+      '┃ ' + p + 'sketch\n' +
+      '┃ ' + p + '3d\n' +
       '┃ ' + p + 'neon\n' +
       '┃ ' + p + 'vintage\n' +
       '┃ ' + p + 'minimalist\n' +
       '┃ ' + p + 'landscape\n' +
       '┃ ' + p + 'city\n' +
-      '┃ ' + p + '3d\n' +
+      '┃ ' + p + 'prompt\n' +
       '┃ ' + p + 'gold\n' +
       '┗━━━━━━━━━━━━━━━━━━━▣\n\n' +
+
+      '┏━━━━━━━━━━━━━━━━━━━▣\n' +
+      '┃ 🖼️ *MEDIA TOOLS*\n' +
+      '┃ ' + p + 'toimg\n' +
+      '┃ ' + p + 'removebg\n' +
+      '┃ ' + p + 'screenshot\n' +
+      '┃ ' + p + 'tomp3\n' +
+      '┗━━━━━━━━━━━━━━━━━━━▣\n\n' +
+
       '┏━━━━━━━━━━━━━━━━━━━▣\n' +
       '┃ 🌟 *ASTRA-X AI*\n' +
-      '┃ ' + p + 'noorai\n' +
-      '┃ ' + p + 'nai\n' +
-      '┃ ' + p + 'nask\n' +
-      '┃ ' + p + 'noorask\n' +
-      '┃ ' + p + 'noorbot\n' +
-      '┃ ' + p + 'noorsearch\n' +
-      '┃ ' + p + 'nsearch\n' +
-      '┃ ' + p + 'nweb\n' +
-      '┃ ' + p + 'websearch\n' +
-      '┃ ' + p + 'noorexplain\n' +
-      '┃ ' + p + 'nexplain\n' +
-      '┃ ' + p + 'ninfo\n' +
-      '┃ ' + p + 'nwiki\n' +
-      '┃ ' + p + 'noorstory\n' +
-      '┃ ' + p + 'nstory\n' +
-      '┃ ' + p + 'ntale\n' +
-      '┃ ' + p + 'noormath\n' +
-      '┃ ' + p + 'nmath\n' +
-      '┃ ' + p + 'nsolve\n' +
-      '┃ ' + p + 'ncalc\n' +
-      '┃ ' + p + 'noorphoto\n' +
-      '┃ ' + p + 'nphoto\n' +
-      '┃ ' + p + 'nimage\n' +
-      '┃ ' + p + 'npic\n' +
-      '┃ ' + p + 'noordownload\n' +
-      '┃ ' + p + 'ndl\n' +
-      '┃ ' + p + 'ndown\n' +
-      '┃ ' + p + 'nget\n' +
-      '┃ ' + p + 'noortranslate\n' +
-      '┃ ' + p + 'ntranslate\n' +
-      '┃ ' + p + 'ntrans\n' +
-      '┃ ' + p + 'noorquiz\n' +
-      '┃ ' + p + 'nquiz\n' +
-      '┃ ' + p + 'nq\n' +
-      '┃ ' + p + 'noortrivia\n' +
-      '┃ ' + p + 'noornews\n' +
-      '┃ ' + p + 'nnews\n' +
-      '┃ ' + p + 'nheadlines\n' +
+      '┃ ' + p + 'noorai — ask AI anything\n' +
+      '┃   » nai, nask, noorask, noorbot\n' +
+      '┃ ' + p + 'noorsearch — web search\n' +
+      '┃   » nsearch, nweb, websearch\n' +
+      '┃ ' + p + 'noorexplain — explain any topic\n' +
+      '┃   » nexplain, ninfo, nwiki\n' +
+      '┃ ' + p + 'noorstory — generate a story\n' +
+      '┃   » nstory, ntale, noorwrite\n' +
+      '┃ ' + p + 'noormath — solve math\n' +
+      '┃   » nmath, nsolve, ncalc\n' +
+      '┃ ' + p + 'noorphoto — AI image\n' +
+      '┃   » nphoto, nimage, npic\n' +
+      '┃ ' + p + 'noordownload — smart dl\n' +
+      '┃   » ndl, ndown, nget\n' +
+      '┃ ' + p + 'noortranslate — translate\n' +
+      '┃   » ntranslate, ntrans\n' +
+      '┃ ' + p + 'noorquiz — AI quiz\n' +
+      '┃   » nquiz, nq, noortrivia\n' +
+      '┃ ' + p + 'noornews — latest headlines\n' +
+      '┃   » nnews, nheadlines\n' +
+      '┃ 💡 _All powered by free services_\n' +
       '┗━━━━━━━━━━━━━━━━━━━▣\n\n' +
+
       '┏━━━━━━━━━━━━━━━━━━━▣\n' +
       '┃ 📦 *APK DOWNLOAD*\n' +
-      '┃ ' + p + 'apk\n' +
-      '┃ ' + p + 'app\n' +
-      '┃ ' + p + 'apkdown\n' +
-      '┃ ' + p + 'getapk\n' +
-      '┃ ' + p + 'apksearch\n' +
-      '┃ ' + p + 'findapk\n' +
-      '┃ ' + p + 'appfind\n' +
-      '┃ ' + p + 'apkinfo\n' +
-      '┃ ' + p + 'appinfo\n' +
-      '┃ ' + p + 'apkdetails\n' +
-      '┃ ' + p + 'apklink\n' +
-      '┃ ' + p + 'apkurl\n' +
-      '┃ ' + p + 'applink\n' +
-      '┃ ' + p + 'apkfree\n' +
-      '┃ ' + p + 'fdroid\n' +
-      '┃ ' + p + 'opensource\n' +
-      '┃ ' + p + 'apkmod\n' +
-      '┃ ' + p + 'modapk\n' +
-      '┃ ' + p + 'apkcheck\n' +
-      '┃ ' + p + 'apksafe\n' +
-      '┃ ' + p + 'apkscan\n' +
-      '┃ ' + p + 'apkupdate\n' +
-      '┃ ' + p + 'appupdate\n' +
-      '┃ ' + p + 'latestapk\n' +
-      '┃ ' + p + 'apktop\n' +
-      '┃ ' + p + 'topapps\n' +
-      '┃ ' + p + 'topgames\n' +
+      '┃ ' + p + 'apk — download APK\n' +
+      '┃   » app, apkdown, getapk\n' +
+      '┃ ' + p + 'apksearch — search app info\n' +
+      '┃   » findapk, appfind, apkfind\n' +
+      '┃ ' + p + 'apkinfo — full app details\n' +
+      '┃   » appinfo, apkdetails, playinfo\n' +
+      '┃ ' + p + 'apklink — 5 download links\n' +
+      '┃   » apkurl, applink, getlink\n' +
+      '┃ ' + p + 'apkfree — open-source apps\n' +
+      '┃   » fdroid, opensource, freeapp\n' +
+      '┃ ' + p + 'apkmod — modded APK sources\n' +
+      '┃   » modapk, apkpremium, modapp\n' +
+      '┃ ' + p + 'apkcheck — safety scan\n' +
+      '┃   » appcheck, apksafe, apkscan\n' +
+      '┃ ' + p + 'apkupdate — latest version\n' +
+      '┃   » appupdate, latestapk\n' +
+      '┃ ' + p + 'apktop — top trending apps\n' +
+      '┃   » topapps, topgames\n' +
+      '┃ 💡 _All free, no API key needed_\n' +
       '┗━━━━━━━━━━━━━━━━━━━▣\n\n' +
+
       '┏━━━━━━━━━━━━━━━━━━━▣\n' +
       '┃ ⚽ *SPORTS*\n' +
       '┃ ' + p + 'livescores\n' +
@@ -517,9 +412,18 @@ module.exports = {
       '┃ ' + p + 'ligue1table\n' +
       '┃ ' + p + 'topscorers\n' +
       '┗━━━━━━━━━━━━━━━━━━━▣\n\n' +
+
+      '┏━━━━━━━━━━━━━━━━━━━▣\n' +
+      '┃ 📊 *BOT STATS*\n' +
+      '┃ ' + p + 'botinfo\n' +
+      '┃   » bot, botstatus, sysinfo\n' +
+      '┃ ' + p + 'ram\n' +
+      '┗━━━━━━━━━━━━━━━━━━━▣\n\n' +
+
       '🌐 *Channel:* https://whatsapp.com/channel/0029Vb8BaxaBFLgMYofBAC3I\n\n' +
       '〔 ✧ *ᴀsᴛʀᴀ-x ᴛᴇᴄʜ v6.6.6* ✧ 〕\n' +
-      '_© 2026 ASTRA-X • Always Online 🌍_';
+      '_© 2026 ASTRA-X • Always Online 🌍_\n' +
+      '_Developed by Xtream Noor ❤️ for you!_';
 
     try {
       if (LOGO && fs.existsSync(LOGO)) {
