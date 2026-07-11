@@ -7,7 +7,7 @@
 
   [![Version](https://img.shields.io/badge/Version-6.6.6-gold?style=for-the-badge)](https://redesigned-octo-spoon-pc5m.onrender.com)
   [![WhatsApp](https://img.shields.io/badge/WhatsApp-Bot-25D366?style=for-the-badge&logo=whatsapp)](https://redesigned-octo-spoon-pc5m.onrender.com)
-  [![Telegram](https://img.shields.io/badge/Telegram-Bot-2CA5E0?style=for-the-badge&logo=telegram)](https://t.me/astraxspacebot)
+  [![Telegram](https://img.shields.io/badge/Telegram-Bot-2CA5E0?style=for-the-badge&logo=telegram)](https://t.me/Astraxwabot)
   [![Channel](https://img.shields.io/badge/WA%20Channel-Follow-25D366?style=for-the-badge&logo=whatsapp)](https://whatsapp.com/channel/0029Vb8BaxaBFLgMYofBAC3I)
   [![GitHub](https://img.shields.io/badge/GitHub-Star-yellow?style=for-the-badge&logo=github)](https://github.com/xtream33/Astral-X)
 
@@ -22,7 +22,7 @@
   <a href="https://redesigned-octo-spoon-pc5m.onrender.com">
     <img src="https://img.shields.io/badge/🌐%20Pairing%20Site-Open-blue?style=for-the-badge" alt="Pairing Site"/>
   </a>
-  <a href="https://t.me/astraxspacebot">
+  <a href="https://t.me/Astraxwabot">
     <img src="https://img.shields.io/badge/🤖%20Telegram%20Bot-Chat-2CA5E0?style=for-the-badge&logo=telegram" alt="Telegram Bot"/>
   </a>
   <a href="https://t.me/+K4F7YgGvjRQyZmZk">
@@ -64,7 +64,7 @@
 | 👨‍💻 **Developer** | Xtream Noor |
 | 📱 **WhatsApp** | +256747304196 |
 | 🔗 **Telegram** | [@xtreammoder](http://t.me/xtreammoder) |
-| 🤖 **Telegram Bot** | [@astraxspacebot](https://t.me/astraxspacebot) |
+| 🤖 **Telegram Bot** | [@Astraxwabot](https://t.me/Astraxwabot) |
 | 📢 **WA Channel** | [ASTRA-X HOME](https://whatsapp.com/channel/0029Vb8BaxaBFLgMYofBAC3I) |
 | 📢 **TG Channel** | [ASTRA X HOME](https://t.me/+K4F7YgGvjRQyZmZk) |
 
