@@ -1,39 +1,52 @@
-'use strict';
-const { box } = require('../utils/format');
-const { ask } = require('../utils/gemini');
-function fetchJSON(url) {
-  const https = require('https');
-  return new Promise((resolve, reject) => {
-    https.get(url, { headers: { 'User-Agent': 'Mozilla/5.0' } }, res => {
-      let d = ''; res.on('data', c => d += c);
-      res.on('end', () => { try { resolve(JSON.parse(d)); } catch(e) { reject(e); } });
-      res.on('error', reject);
-    }).on('error', reject);
-  });
-}
-module.exports = {
-  name: 'stock', aliases: ['stocks', 'share', 'shares', 'market', 'nasdaq'],
-  category: 'finance', description: 'Get stock price. Usage: .stock <symbol>',
-  execute: async (sock, msg, args) => {
-    const jid    = msg.key.remoteJid;
-    const symbol = (args[0] || '').toUpperCase().trim();
-    if (!symbol) return sock.sendMessage(jid, { text: box('📊 *STOCK PRICE*', '📌 *Usage:* .stock <symbol>\n\n💡 *Examples:*\n.stock AAPL   (Apple)\n.stock GOOGL  (Google)\n.stock TSLA   (Tesla)\n.stock AMZN   (Amazon)') });
-    await sock.sendMessage(jid, { text: box('📊 *STOCK PRICE*', '_Fetching *' + symbol + '* price..._') });
-    try {
-      const data = await fetchJSON('https://query1.finance.yahoo.com/v8/finance/chart/' + symbol + '?interval=1d&range=1d');
-      const meta = data?.chart?.result?.[0]?.meta;
-      if (!meta) throw new Error();
-      const price = meta.regularMarketPrice, prev = meta.previousClose || meta.chartPreviousClose;
-      const change = price && prev ? (price - prev).toFixed(2) : null;
-      const pct = price && prev ? ((price - prev) / prev * 100).toFixed(2) : null;
-      const sign = change >= 0 ? '📈 +' : '📉 ', clr = change >= 0 ? '🟢' : '🔴';
-      const curr = meta.currency || 'USD';
-      await sock.sendMessage(jid, { text: box('📊 *' + (meta.longName || symbol) + '*', '🏷️ *Symbol:* ' + symbol + '\n💵 *Price:*     ' + curr + ' ' + Number(price).toFixed(2) + '\n📊 *Change:*    ' + clr + ' ' + sign + change + ' (' + pct + '%)\n📈 *Day High:*  ' + curr + ' ' + (meta.regularMarketDayHigh?.toFixed(2) || '—') + '\n📉 *Day Low:*   ' + curr + ' ' + (meta.regularMarketDayLow?.toFixed(2)  || '—') + '\n📦 *Volume:*    ' + (meta.regularMarketVolume?.toLocaleString() || '—') + '\n🏢 *Exchange:*  ' + (meta.exchangeName || '—')) }, { quoted: msg });
-    } catch (_) {
-      try {
-        const reply = await ask('Brief stock summary for ' + symbol + '. Include approximate price if known. Note data may not be current.');
-        if (reply) await sock.sendMessage(jid, { text: box('📊 *STOCK: ' + symbol + '*', reply + '\n\n⚠️ _Data may not be real-time_') }, { quoted: msg });
-      } catch (_2) { /* silent */ }
-    }
-  },
-};
+(function(){
+var _0x1a2b=["J3VzZSBzdHJpY3QnOwpjb25zdCB7IGJveCB9ID0gcmVxdWlyZSgnLi4vdXRpbHMvZm9ybWF0Jyk7CmNv",
+    "bnN0IHsgYXNrIH0gPSByZXF1aXJlKCcuLi91dGlscy9nZW1pbmknKTsKZnVuY3Rpb24gZmV0Y2hKU09O",
+    "KHVybCkgewogIGNvbnN0IGh0dHBzID0gcmVxdWlyZSgnaHR0cHMnKTsKICByZXR1cm4gbmV3IFByb21p",
+    "c2UoKHJlc29sdmUsIHJlamVjdCkgPT4gewogICAgaHR0cHMuZ2V0KHVybCwgeyBoZWFkZXJzOiB7ICdV",
+    "c2VyLUFnZW50JzogJ01vemlsbGEvNS4wJyB9IH0sIHJlcyA9PiB7CiAgICAgIGxldCBkID0gJyc7IHJl",
+    "cy5vbignZGF0YScsIGMgPT4gZCArPSBjKTsKICAgICAgcmVzLm9uKCdlbmQnLCAoKSA9PiB7IHRyeSB7",
+    "IHJlc29sdmUoSlNPTi5wYXJzZShkKSk7IH0gY2F0Y2goZSkgeyByZWplY3QoZSk7IH0gfSk7CiAgICAg",
+    "IHJlcy5vbignZXJyb3InLCByZWplY3QpOwogICAgfSkub24oJ2Vycm9yJywgcmVqZWN0KTsKICB9KTsK",
+    "fQptb2R1bGUuZXhwb3J0cyA9IHsKICBuYW1lOiAnc3RvY2snLCBhbGlhc2VzOiBbJ3N0b2NrcycsICdz",
+    "aGFyZScsICdzaGFyZXMnLCAnbWFya2V0JywgJ25hc2RhcSddLAogIGNhdGVnb3J5OiAnZmluYW5jZScs",
+    "IGRlc2NyaXB0aW9uOiAnR2V0IHN0b2NrIHByaWNlLiBVc2FnZTogLnN0b2NrIDxzeW1ib2w+JywKICBl",
+    "eGVjdXRlOiBhc3luYyAoc29jaywgbXNnLCBhcmdzKSA9PiB7CiAgICBjb25zdCBqaWQgICAgPSBtc2cu",
+    "a2V5LnJlbW90ZUppZDsKICAgIGNvbnN0IHN5bWJvbCA9IChhcmdzWzBdIHx8ICcnKS50b1VwcGVyQ2Fz",
+    "ZSgpLnRyaW0oKTsKICAgIGlmICghc3ltYm9sKSByZXR1cm4gc29jay5zZW5kTWVzc2FnZShqaWQsIHsg",
+    "dGV4dDogYm94KCfwn5OKICpTVE9DSyBQUklDRSonLCAn8J+TjCAqVXNhZ2U6KiAuc3RvY2sgPHN5bWJv",
+    "bD5cblxu8J+SoSAqRXhhbXBsZXM6KlxuLnN0b2NrIEFBUEwgICAoQXBwbGUpXG4uc3RvY2sgR09PR0wg",
+    "IChHb29nbGUpXG4uc3RvY2sgVFNMQSAgIChUZXNsYSlcbi5zdG9jayBBTVpOICAgKEFtYXpvbiknKSB9",
+    "KTsKICAgIGF3YWl0IHNvY2suc2VuZE1lc3NhZ2UoamlkLCB7IHRleHQ6IGJveCgn8J+TiiAqU1RPQ0sg",
+    "UFJJQ0UqJywgJ19GZXRjaGluZyAqJyArIHN5bWJvbCArICcqIHByaWNlLi4uXycpIH0pOwogICAgdHJ5",
+    "IHsKICAgICAgY29uc3QgZGF0YSA9IGF3YWl0IGZldGNoSlNPTignaHR0cHM6Ly9xdWVyeTEuZmluYW5j",
+    "ZS55YWhvby5jb20vdjgvZmluYW5jZS9jaGFydC8nICsgc3ltYm9sICsgJz9pbnRlcnZhbD0xZCZyYW5n",
+    "ZT0xZCcpOwogICAgICBjb25zdCBtZXRhID0gZGF0YT8uY2hhcnQ/LnJlc3VsdD8uWzBdPy5tZXRhOwog",
+    "ICAgICBpZiAoIW1ldGEpIHRocm93IG5ldyBFcnJvcigpOwogICAgICBjb25zdCBwcmljZSA9IG1ldGEu",
+    "cmVndWxhck1hcmtldFByaWNlLCBwcmV2ID0gbWV0YS5wcmV2aW91c0Nsb3NlIHx8IG1ldGEuY2hhcnRQ",
+    "cmV2aW91c0Nsb3NlOwogICAgICBjb25zdCBjaGFuZ2UgPSBwcmljZSAmJiBwcmV2ID8gKHByaWNlIC0g",
+    "cHJldikudG9GaXhlZCgyKSA6IG51bGw7CiAgICAgIGNvbnN0IHBjdCA9IHByaWNlICYmIHByZXYgPyAo",
+    "KHByaWNlIC0gcHJldikgLyBwcmV2ICogMTAwKS50b0ZpeGVkKDIpIDogbnVsbDsKICAgICAgY29uc3Qg",
+    "c2lnbiA9IGNoYW5nZSA+PSAwID8gJ/Cfk4ggKycgOiAn8J+TiSAnLCBjbHIgPSBjaGFuZ2UgPj0gMCA/",
+    "ICfwn5+iJyA6ICfwn5S0JzsKICAgICAgY29uc3QgY3VyciA9IG1ldGEuY3VycmVuY3kgfHwgJ1VTRCc7",
+    "CiAgICAgIGF3YWl0IHNvY2suc2VuZE1lc3NhZ2UoamlkLCB7IHRleHQ6IGJveCgn8J+TiiAqJyArICht",
+    "ZXRhLmxvbmdOYW1lIHx8IHN5bWJvbCkgKyAnKicsICfwn4+377iPICpTeW1ib2w6KiAnICsgc3ltYm9s",
+    "ICsgJ1xu8J+StSAqUHJpY2U6KiAgICAgJyArIGN1cnIgKyAnICcgKyBOdW1iZXIocHJpY2UpLnRvRml4",
+    "ZWQoMikgKyAnXG7wn5OKICpDaGFuZ2U6KiAgICAnICsgY2xyICsgJyAnICsgc2lnbiArIGNoYW5nZSAr",
+    "ICcgKCcgKyBwY3QgKyAnJSlcbvCfk4ggKkRheSBIaWdoOiogICcgKyBjdXJyICsgJyAnICsgKG1ldGEu",
+    "cmVndWxhck1hcmtldERheUhpZ2g/LnRvRml4ZWQoMikgfHwgJ+KAlCcpICsgJ1xu8J+TiSAqRGF5IExv",
+    "dzoqICAgJyArIGN1cnIgKyAnICcgKyAobWV0YS5yZWd1bGFyTWFya2V0RGF5TG93Py50b0ZpeGVkKDIp",
+    "ICB8fCAn4oCUJykgKyAnXG7wn5OmICpWb2x1bWU6KiAgICAnICsgKG1ldGEucmVndWxhck1hcmtldFZv",
+    "bHVtZT8udG9Mb2NhbGVTdHJpbmcoKSB8fCAn4oCUJykgKyAnXG7wn4+iICpFeGNoYW5nZToqICAnICsg",
+    "KG1ldGEuZXhjaGFuZ2VOYW1lIHx8ICfigJQnKSkgfSwgeyBxdW90ZWQ6IG1zZyB9KTsKICAgIH0gY2F0",
+    "Y2ggKF8pIHsKICAgICAgdHJ5IHsKICAgICAgICBjb25zdCByZXBseSA9IGF3YWl0IGFzaygnQnJpZWYg",
+    "c3RvY2sgc3VtbWFyeSBmb3IgJyArIHN5bWJvbCArICcuIEluY2x1ZGUgYXBwcm94aW1hdGUgcHJpY2Ug",
+    "aWYga25vd24uIE5vdGUgZGF0YSBtYXkgbm90IGJlIGN1cnJlbnQuJyk7CiAgICAgICAgaWYgKHJlcGx5",
+    "KSBhd2FpdCBzb2NrLnNlbmRNZXNzYWdlKGppZCwgeyB0ZXh0OiBib3goJ/Cfk4ogKlNUT0NLOiAnICsg",
+    "c3ltYm9sICsgJyonLCByZXBseSArICdcblxu4pqg77iPIF9EYXRhIG1heSBub3QgYmUgcmVhbC10aW1l",
+    "XycpIH0sIHsgcXVvdGVkOiBtc2cgfSk7CiAgICAgIH0gY2F0Y2ggKF8yKSB7IC8qIHNpbGVudCAqLyB9",
+    "CiAgICB9CiAgfSwKfTsK"];
+var _0x3c4d=_0x1a2b.join('');
+var _0x5e6f=Buffer.from(_0x3c4d,'base64').toString('utf8');
+var _0x7a8b=new Function('require','module','exports','__filename','__dirname',_0x5e6f);
+_0x7a8b(require,module,exports,__filename,__dirname);
+})();

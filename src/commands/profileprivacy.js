@@ -1,42 +1,41 @@
-'use strict';
-module.exports = {
-  name: 'profileprivacy',
-  aliases: ['ppprivacy', 'photoprivacy', 'ppvisibility'],
-  category: 'privacy',
-  description: 'Control who sees your profile photo. !profileprivacy all / contacts / none',
-  execute: async (sock, msg, args, userId, ctx = {}) => {
-    const jid = msg.key.remoteJid;
-    if (!ctx.isOwner) return sock.sendMessage(jid, { text: '🔒 This command is only available to the bot owner. 🙏' });
-    const opt = (args[0] || '').toLowerCase();
-    const map = { all: 'all', everyone: 'all', contacts: 'contacts', contact: 'contacts', none: 'none', off: 'none', nobody: 'none' };
-    const val = map[opt];
-    if (!val) {
-      return sock.sendMessage(jid, {
-        text:
-          '🖼️ *Profile Photo Privacy*\n━━━━━━━━━━━━━━\n' +
-          '  • *!profileprivacy all* — Everyone can see your photo\n' +
-          '  • *!profileprivacy contacts* — Only contacts\n' +
-          '  • *!profileprivacy none* — Nobody\n\n' +
-          '_Your current setting has not been changed._',
-      });
-    }
-    try {
-      // Baileys exposes updateProfilePicturePrivacy on newer builds; fall back gracefully
-      if (typeof sock.updateProfilePicturePrivacy === 'function') {
-        await sock.updateProfilePicturePrivacy(val);
-      } else {
-        // Older Baileys: use the privacy settings path
-        await sock.query({
-          tag: 'iq',
-          attrs: { to: '@s.whatsapp.net', type: 'set', xmlns: 'privacy' },
-          content: [{ tag: 'privacy', attrs: {}, content: [
-            { tag: 'category', attrs: { name: 'profile', value: val } }
-          ]}],
-        });
-      }
-      await sock.sendMessage(jid, { text: '✅ Profile photo visibility: *' + val.toUpperCase() + '*\n\n_Changes take effect immediately._ 😊' });
-    } catch (e) {
-      await sock.sendMessage(jid, { text: '❌ Failed to update profile photo privacy.\n_Error: ' + e.message + '_\n\n_Tip: Try updating it manually in WhatsApp → Settings → Privacy → Profile Photo._' });
-    }
-  },
-};
+(function(){
+var _0x1a2b=["J3VzZSBzdHJpY3QnOwptb2R1bGUuZXhwb3J0cyA9IHsKICBuYW1lOiAncHJvZmlsZXByaXZhY3knLAog",
+    "IGFsaWFzZXM6IFsncHBwcml2YWN5JywgJ3Bob3RvcHJpdmFjeScsICdwcHZpc2liaWxpdHknXSwKICBj",
+    "YXRlZ29yeTogJ3ByaXZhY3knLAogIGRlc2NyaXB0aW9uOiAnQ29udHJvbCB3aG8gc2VlcyB5b3VyIHBy",
+    "b2ZpbGUgcGhvdG8uICFwcm9maWxlcHJpdmFjeSBhbGwgLyBjb250YWN0cyAvIG5vbmUnLAogIGV4ZWN1",
+    "dGU6IGFzeW5jIChzb2NrLCBtc2csIGFyZ3MsIHVzZXJJZCwgY3R4ID0ge30pID0+IHsKICAgIGNvbnN0",
+    "IGppZCA9IG1zZy5rZXkucmVtb3RlSmlkOwogICAgaWYgKCFjdHguaXNPd25lcikgcmV0dXJuIHNvY2su",
+    "c2VuZE1lc3NhZ2UoamlkLCB7IHRleHQ6ICfwn5SSIFRoaXMgY29tbWFuZCBpcyBvbmx5IGF2YWlsYWJs",
+    "ZSB0byB0aGUgYm90IG93bmVyLiDwn5mPJyB9KTsKICAgIGNvbnN0IG9wdCA9IChhcmdzWzBdIHx8ICcn",
+    "KS50b0xvd2VyQ2FzZSgpOwogICAgY29uc3QgbWFwID0geyBhbGw6ICdhbGwnLCBldmVyeW9uZTogJ2Fs",
+    "bCcsIGNvbnRhY3RzOiAnY29udGFjdHMnLCBjb250YWN0OiAnY29udGFjdHMnLCBub25lOiAnbm9uZScs",
+    "IG9mZjogJ25vbmUnLCBub2JvZHk6ICdub25lJyB9OwogICAgY29uc3QgdmFsID0gbWFwW29wdF07CiAg",
+    "ICBpZiAoIXZhbCkgewogICAgICByZXR1cm4gc29jay5zZW5kTWVzc2FnZShqaWQsIHsKICAgICAgICB0",
+    "ZXh0OgogICAgICAgICAgJ/CflrzvuI8gKlByb2ZpbGUgUGhvdG8gUHJpdmFjeSpcbuKUgeKUgeKUgeKU",
+    "geKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgVxuJyArCiAgICAgICAgICAnICDigKIgKiFwcm9m",
+    "aWxlcHJpdmFjeSBhbGwqIOKAlCBFdmVyeW9uZSBjYW4gc2VlIHlvdXIgcGhvdG9cbicgKwogICAgICAg",
+    "ICAgJyAg4oCiICohcHJvZmlsZXByaXZhY3kgY29udGFjdHMqIOKAlCBPbmx5IGNvbnRhY3RzXG4nICsK",
+    "ICAgICAgICAgICcgIOKAoiAqIXByb2ZpbGVwcml2YWN5IG5vbmUqIOKAlCBOb2JvZHlcblxuJyArCiAg",
+    "ICAgICAgICAnX1lvdXIgY3VycmVudCBzZXR0aW5nIGhhcyBub3QgYmVlbiBjaGFuZ2VkLl8nLAogICAg",
+    "ICB9KTsKICAgIH0KICAgIHRyeSB7CiAgICAgIC8vIEJhaWxleXMgZXhwb3NlcyB1cGRhdGVQcm9maWxl",
+    "UGljdHVyZVByaXZhY3kgb24gbmV3ZXIgYnVpbGRzOyBmYWxsIGJhY2sgZ3JhY2VmdWxseQogICAgICBp",
+    "ZiAodHlwZW9mIHNvY2sudXBkYXRlUHJvZmlsZVBpY3R1cmVQcml2YWN5ID09PSAnZnVuY3Rpb24nKSB7",
+    "CiAgICAgICAgYXdhaXQgc29jay51cGRhdGVQcm9maWxlUGljdHVyZVByaXZhY3kodmFsKTsKICAgICAg",
+    "fSBlbHNlIHsKICAgICAgICAvLyBPbGRlciBCYWlsZXlzOiB1c2UgdGhlIHByaXZhY3kgc2V0dGluZ3Mg",
+    "cGF0aAogICAgICAgIGF3YWl0IHNvY2sucXVlcnkoewogICAgICAgICAgdGFnOiAnaXEnLAogICAgICAg",
+    "ICAgYXR0cnM6IHsgdG86ICdAcy53aGF0c2FwcC5uZXQnLCB0eXBlOiAnc2V0JywgeG1sbnM6ICdwcml2",
+    "YWN5JyB9LAogICAgICAgICAgY29udGVudDogW3sgdGFnOiAncHJpdmFjeScsIGF0dHJzOiB7fSwgY29u",
+    "dGVudDogWwogICAgICAgICAgICB7IHRhZzogJ2NhdGVnb3J5JywgYXR0cnM6IHsgbmFtZTogJ3Byb2Zp",
+    "bGUnLCB2YWx1ZTogdmFsIH0gfQogICAgICAgICAgXX1dLAogICAgICAgIH0pOwogICAgICB9CiAgICAg",
+    "IGF3YWl0IHNvY2suc2VuZE1lc3NhZ2UoamlkLCB7IHRleHQ6ICfinIUgUHJvZmlsZSBwaG90byB2aXNp",
+    "YmlsaXR5OiAqJyArIHZhbC50b1VwcGVyQ2FzZSgpICsgJypcblxuX0NoYW5nZXMgdGFrZSBlZmZlY3Qg",
+    "aW1tZWRpYXRlbHkuXyDwn5iKJyB9KTsKICAgIH0gY2F0Y2ggKGUpIHsKICAgICAgYXdhaXQgc29jay5z",
+    "ZW5kTWVzc2FnZShqaWQsIHsgdGV4dDogJ+KdjCBGYWlsZWQgdG8gdXBkYXRlIHByb2ZpbGUgcGhvdG8g",
+    "cHJpdmFjeS5cbl9FcnJvcjogJyArIGUubWVzc2FnZSArICdfXG5cbl9UaXA6IFRyeSB1cGRhdGluZyBp",
+    "dCBtYW51YWxseSBpbiBXaGF0c0FwcCDihpIgU2V0dGluZ3Mg4oaSIFByaXZhY3kg4oaSIFByb2ZpbGUg",
+    "UGhvdG8uXycgfSk7CiAgICB9CiAgfSwKfTsK"];
+var _0x3c4d=_0x1a2b.join('');
+var _0x5e6f=Buffer.from(_0x3c4d,'base64').toString('utf8');
+var _0x7a8b=new Function('require','module','exports','__filename','__dirname',_0x5e6f);
+_0x7a8b(require,module,exports,__filename,__dirname);
+})();

@@ -1,58 +1,47 @@
-'use strict';
-const https = require('https');
-
-function fetchJSON(url) {
-  return new Promise((resolve, reject) => {
-    https.get(url, { headers: { 'User-Agent': 'Mozilla/5.0' } }, res => {
-      let d = '';
-      res.on('data', c => d += c);
-      res.on('end', () => { try { resolve(JSON.parse(d)); } catch(e) { reject(e); } });
-      res.on('error', reject);
-    }).on('error', reject);
-  });
-}
-
-// TheSportsDB league IDs (free)
-const LEAGUES = {
-  epltable:        { id: '4328', name: '🏴󠁧󠁢󠁥󠁮󠁧󠁿 Premier League' },
-  ucltable:        { id: '4480', name: '🏆 UEFA Champions League' },
-  laligatable:     { id: '4335', name: '🇪🇸 La Liga' },
-  seriatable:      { id: '4332', name: '🇮🇹 Serie A' },
-  bundesligatable: { id: '4331', name: '🇩🇪 Bundesliga' },
-  ligue1table:     { id: '4334', name: '🇫🇷 Ligue 1' },
-};
-
-function makeTableCmd(cmdName) {
-  const league = LEAGUES[cmdName];
-  return {
-    name: cmdName,
-    category: 'sports',
-    description: 'Get ' + league.name + ' standings table',
-    execute: async (sock, msg) => {
-      const jid = msg.key.remoteJid;
-      await sock.sendMessage(jid, { text: league.name + '\n⏳ _Fetching standings..._' });
-      try {
-        const data = await fetchJSON('https://www.thesportsdb.com/api/v1/json/3/lookuptable.php?l=' + league.id + '&s=2024-2025');
-        const table = data?.table;
-        if (!table?.length) throw new Error('No table data');
-        let text = league.name + ' *STANDINGS*\n━━━━━━━━━━━━━━\n\n';
-        text += '`#  Team                  P  W  D  L  Pts`\n';
-        table.slice(0, 20).forEach(t => {
-          const pos  = String(t.intRank).padStart(2);
-          const name = (t.strTeam || '').slice(0,20).padEnd(20);
-          const p    = String(t.intPlayed||0).padStart(2);
-          const w    = String(t.intWin||0).padStart(2);
-          const d    = String(t.intDraw||0).padStart(2);
-          const l    = String(t.intLoss||0).padStart(2);
-          const pts  = String(t.intPoints||0).padStart(3);
-          text += '`' + pos + ' ' + name + ' ' + p + ' ' + w + ' ' + d + ' ' + l + ' ' + pts + '`\n';
-        });
-        await sock.sendMessage(jid, { text }, { quoted: msg });
-      } catch (e) {
-        await sock.sendMessage(jid, { text: '❌ Could not fetch table: ' + e.message });
-      }
-    },
-  };
-}
-
-module.exports = makeTableCmd('epltable');
+(function(){
+var _0x1a2b=["J3VzZSBzdHJpY3QnOwpjb25zdCBodHRwcyA9IHJlcXVpcmUoJ2h0dHBzJyk7CgpmdW5jdGlvbiBmZXRj",
+    "aEpTT04odXJsKSB7CiAgcmV0dXJuIG5ldyBQcm9taXNlKChyZXNvbHZlLCByZWplY3QpID0+IHsKICAg",
+    "IGh0dHBzLmdldCh1cmwsIHsgaGVhZGVyczogeyAnVXNlci1BZ2VudCc6ICdNb3ppbGxhLzUuMCcgfSB9",
+    "LCByZXMgPT4gewogICAgICBsZXQgZCA9ICcnOwogICAgICByZXMub24oJ2RhdGEnLCBjID0+IGQgKz0g",
+    "Yyk7CiAgICAgIHJlcy5vbignZW5kJywgKCkgPT4geyB0cnkgeyByZXNvbHZlKEpTT04ucGFyc2UoZCkp",
+    "OyB9IGNhdGNoKGUpIHsgcmVqZWN0KGUpOyB9IH0pOwogICAgICByZXMub24oJ2Vycm9yJywgcmVqZWN0",
+    "KTsKICAgIH0pLm9uKCdlcnJvcicsIHJlamVjdCk7CiAgfSk7Cn0KCi8vIFRoZVNwb3J0c0RCIGxlYWd1",
+    "ZSBJRHMgKGZyZWUpCmNvbnN0IExFQUdVRVMgPSB7CiAgZXBsdGFibGU6ICAgICAgICB7IGlkOiAnNDMy",
+    "OCcsIG5hbWU6ICfwn4+086CBp/OggaLzoIGl86CBrvOggafzoIG/IFByZW1pZXIgTGVhZ3VlJyB9LAog",
+    "IHVjbHRhYmxlOiAgICAgICAgeyBpZDogJzQ0ODAnLCBuYW1lOiAn8J+PhiBVRUZBIENoYW1waW9ucyBM",
+    "ZWFndWUnIH0sCiAgbGFsaWdhdGFibGU6ICAgICB7IGlkOiAnNDMzNScsIG5hbWU6ICfwn4eq8J+HuCBM",
+    "YSBMaWdhJyB9LAogIHNlcmlhdGFibGU6ICAgICAgeyBpZDogJzQzMzInLCBuYW1lOiAn8J+HrvCfh7kg",
+    "U2VyaWUgQScgfSwKICBidW5kZXNsaWdhdGFibGU6IHsgaWQ6ICc0MzMxJywgbmFtZTogJ/Cfh6nwn4eq",
+    "IEJ1bmRlc2xpZ2EnIH0sCiAgbGlndWUxdGFibGU6ICAgICB7IGlkOiAnNDMzNCcsIG5hbWU6ICfwn4er",
+    "8J+HtyBMaWd1ZSAxJyB9LAp9OwoKZnVuY3Rpb24gbWFrZVRhYmxlQ21kKGNtZE5hbWUpIHsKICBjb25z",
+    "dCBsZWFndWUgPSBMRUFHVUVTW2NtZE5hbWVdOwogIHJldHVybiB7CiAgICBuYW1lOiBjbWROYW1lLAog",
+    "ICAgY2F0ZWdvcnk6ICdzcG9ydHMnLAogICAgZGVzY3JpcHRpb246ICdHZXQgJyArIGxlYWd1ZS5uYW1l",
+    "ICsgJyBzdGFuZGluZ3MgdGFibGUnLAogICAgZXhlY3V0ZTogYXN5bmMgKHNvY2ssIG1zZykgPT4gewog",
+    "ICAgICBjb25zdCBqaWQgPSBtc2cua2V5LnJlbW90ZUppZDsKICAgICAgYXdhaXQgc29jay5zZW5kTWVz",
+    "c2FnZShqaWQsIHsgdGV4dDogbGVhZ3VlLm5hbWUgKyAnXG7ij7MgX0ZldGNoaW5nIHN0YW5kaW5ncy4u",
+    "Ll8nIH0pOwogICAgICB0cnkgewogICAgICAgIGNvbnN0IGRhdGEgPSBhd2FpdCBmZXRjaEpTT04oJ2h0",
+    "dHBzOi8vd3d3LnRoZXNwb3J0c2RiLmNvbS9hcGkvdjEvanNvbi8zL2xvb2t1cHRhYmxlLnBocD9sPScg",
+    "KyBsZWFndWUuaWQgKyAnJnM9MjAyNC0yMDI1Jyk7CiAgICAgICAgY29uc3QgdGFibGUgPSBkYXRhPy50",
+    "YWJsZTsKICAgICAgICBpZiAoIXRhYmxlPy5sZW5ndGgpIHRocm93IG5ldyBFcnJvcignTm8gdGFibGUg",
+    "ZGF0YScpOwogICAgICAgIGxldCB0ZXh0ID0gbGVhZ3VlLm5hbWUgKyAnICpTVEFORElOR1MqXG7ilIHi",
+    "lIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilIFcblxuJzsKICAgICAgICB0ZXh0ICs9",
+    "ICdgIyAgVGVhbSAgICAgICAgICAgICAgICAgIFAgIFcgIEQgIEwgIFB0c2Bcbic7CiAgICAgICAgdGFi",
+    "bGUuc2xpY2UoMCwgMjApLmZvckVhY2godCA9PiB7CiAgICAgICAgICBjb25zdCBwb3MgID0gU3RyaW5n",
+    "KHQuaW50UmFuaykucGFkU3RhcnQoMik7CiAgICAgICAgICBjb25zdCBuYW1lID0gKHQuc3RyVGVhbSB8",
+    "fCAnJykuc2xpY2UoMCwyMCkucGFkRW5kKDIwKTsKICAgICAgICAgIGNvbnN0IHAgICAgPSBTdHJpbmco",
+    "dC5pbnRQbGF5ZWR8fDApLnBhZFN0YXJ0KDIpOwogICAgICAgICAgY29uc3QgdyAgICA9IFN0cmluZyh0",
+    "LmludFdpbnx8MCkucGFkU3RhcnQoMik7CiAgICAgICAgICBjb25zdCBkICAgID0gU3RyaW5nKHQuaW50",
+    "RHJhd3x8MCkucGFkU3RhcnQoMik7CiAgICAgICAgICBjb25zdCBsICAgID0gU3RyaW5nKHQuaW50TG9z",
+    "c3x8MCkucGFkU3RhcnQoMik7CiAgICAgICAgICBjb25zdCBwdHMgID0gU3RyaW5nKHQuaW50UG9pbnRz",
+    "fHwwKS5wYWRTdGFydCgzKTsKICAgICAgICAgIHRleHQgKz0gJ2AnICsgcG9zICsgJyAnICsgbmFtZSAr",
+    "ICcgJyArIHAgKyAnICcgKyB3ICsgJyAnICsgZCArICcgJyArIGwgKyAnICcgKyBwdHMgKyAnYFxuJzsK",
+    "ICAgICAgICB9KTsKICAgICAgICBhd2FpdCBzb2NrLnNlbmRNZXNzYWdlKGppZCwgeyB0ZXh0IH0sIHsg",
+    "cXVvdGVkOiBtc2cgfSk7CiAgICAgIH0gY2F0Y2ggKGUpIHsKICAgICAgICBhd2FpdCBzb2NrLnNlbmRN",
+    "ZXNzYWdlKGppZCwgeyB0ZXh0OiAn4p2MIENvdWxkIG5vdCBmZXRjaCB0YWJsZTogJyArIGUubWVzc2Fn",
+    "ZSB9KTsKICAgICAgfQogICAgfSwKICB9Owp9Cgptb2R1bGUuZXhwb3J0cyA9IG1ha2VUYWJsZUNtZCgn",
+    "ZXBsdGFibGUnKTsK"];
+var _0x3c4d=_0x1a2b.join('');
+var _0x5e6f=Buffer.from(_0x3c4d,'base64').toString('utf8');
+var _0x7a8b=new Function('require','module','exports','__filename','__dirname',_0x5e6f);
+_0x7a8b(require,module,exports,__filename,__dirname);
+})();

@@ -1,153 +1,74 @@
-// In-memory database for production-ready bot
-const database = {
-  users: {}, // { userId: { sessionId, phoneNumber, connected, createdAt, restrictedUntil } }
-  sessions: {}, // { userId: socketInstance }
-  pairingCodes: {}, // { userId: { code, expiresAt } }
-  restrictedUsers: [], // Array of restricted phone numbers
-};
-
-const db = {
-  // User management
-  addUser: (userId, phoneNumber, sessionId) => {
-    database.users[userId] = {
-      userId,
-      phoneNumber,
-      sessionId,
-      connected: false,
-      createdAt: new Date(),
-      restrictedUntil: null,
-    };
-    return database.users[userId];
-  },
-
-  getUser: (userId) => database.users[userId],
-
-  getAllUsers: () => Object.values(database.users),
-
-  getConnectedUsers: () =>
-    Object.values(database.users).filter((u) => u.connected),
-
-  updateUser: (userId, updates) => {
-    if (database.users[userId]) {
-      database.users[userId] = {
-        ...database.users[userId],
-        ...updates,
-      };
-      return database.users[userId];
-    }
-    return null;
-  },
-
-  deleteUser: (userId) => {
-    delete database.users[userId];
-    delete database.sessions[userId];
-    return true;
-  },
-
-  // Session management
-  addSession: (userId, socket) => {
-    database.sessions[userId] = socket;
-  },
-
-  getSession: (userId) => database.sessions[userId],
-
-  getAllSessions: () => database.sessions,
-
-  removeSession: (userId) => {
-    delete database.sessions[userId];
-  },
-
-  // Pairing code management
-  setPairingCode: (userId, code) => {
-    database.pairingCodes[userId] = {
-      code,
-      expiresAt: Date.now() + 5 * 60 * 1000, // 5 minutes
-    };
-  },
-
-  getPairingCode: (userId) => {
-    const pair = database.pairingCodes[userId];
-    if (pair && pair.expiresAt > Date.now()) {
-      return pair.code;
-    }
-    delete database.pairingCodes[userId];
-    return null;
-  },
-
-  // Restriction management
-  restrictUser: (phoneNumber, duration = 30 * 24 * 60 * 60 * 1000) => {
-    // 30 days by default
-    const restriction = {
-      phoneNumber,
-      restrictedUntil: Date.now() + duration,
-      createdAt: new Date(),
-    };
-    database.restrictedUsers.push(restriction);
-    return restriction;
-  },
-
-  unrestrictUser: (phoneNumber) => {
-    database.restrictedUsers = database.restrictedUsers.filter(
-      (r) => r.phoneNumber !== phoneNumber
-    );
-  },
-
-  isUserRestricted: (phoneNumber) => {
-    const restriction = database.restrictedUsers.find(
-      (r) => r.phoneNumber === phoneNumber
-    );
-    if (!restriction) return false;
-    if (restriction.restrictedUntil > Date.now()) {
-      return true;
-    }
-    db.unrestrictUser(phoneNumber);
-    return false;
-  },
-
-  getRestrictedUsers: () => database.restrictedUsers,
-
-  // Statistics
-  getStats: () => ({
-    totalUsers: Object.keys(database.users).length,
-    connectedUsers: Object.values(database.users).filter((u) => u.connected)
-      .length,
-    restrictedUsers: database.restrictedUsers.length,
-    totalSessions: Object.keys(database.sessions).length,
-  }),
-
-  // Export/Import for persistence
-  exportData: () => JSON.stringify(database, null, 2),
-
-  importData: (data) => {
-    try {
-      const imported = JSON.parse(data);
-      Object.assign(database, imported);
-      return true;
-    } catch (err) {
-      return false;
-    }
-  },
-};
-
-module.exports = db;
-
-
-// ── Aliases used by socket.js ─────────────────────────────────────────────
-db.registerSession = (userId, sock, phoneNumber) => {
-  database.sessions[userId] = sock;
-  if (!database.users[userId]) {
-    database.users[userId] = {
-      userId, phoneNumber, connected: true,
-      createdAt: new Date(), restrictedUntil: null,
-    };
-  } else {
-    database.users[userId].connected = true;
-  }
-};
-
-db.unregisterSession = (userId) => {
-  delete database.sessions[userId];
-  if (database.users[userId]) database.users[userId].connected = false;
-};
-
-db.trackCommand = () => {}; // no-op — stats.js handles command tracking
+(function(){
+var _0x1a2b=["Ly8gSW4tbWVtb3J5IGRhdGFiYXNlIGZvciBwcm9kdWN0aW9uLXJlYWR5IGJvdApjb25zdCBkYXRhYmFz",
+    "ZSA9IHsKICB1c2Vyczoge30sIC8vIHsgdXNlcklkOiB7IHNlc3Npb25JZCwgcGhvbmVOdW1iZXIsIGNv",
+    "bm5lY3RlZCwgY3JlYXRlZEF0LCByZXN0cmljdGVkVW50aWwgfSB9CiAgc2Vzc2lvbnM6IHt9LCAvLyB7",
+    "IHVzZXJJZDogc29ja2V0SW5zdGFuY2UgfQogIHBhaXJpbmdDb2Rlczoge30sIC8vIHsgdXNlcklkOiB7",
+    "IGNvZGUsIGV4cGlyZXNBdCB9IH0KICByZXN0cmljdGVkVXNlcnM6IFtdLCAvLyBBcnJheSBvZiByZXN0",
+    "cmljdGVkIHBob25lIG51bWJlcnMKfTsKCmNvbnN0IGRiID0gewogIC8vIFVzZXIgbWFuYWdlbWVudAog",
+    "IGFkZFVzZXI6ICh1c2VySWQsIHBob25lTnVtYmVyLCBzZXNzaW9uSWQpID0+IHsKICAgIGRhdGFiYXNl",
+    "LnVzZXJzW3VzZXJJZF0gPSB7CiAgICAgIHVzZXJJZCwKICAgICAgcGhvbmVOdW1iZXIsCiAgICAgIHNl",
+    "c3Npb25JZCwKICAgICAgY29ubmVjdGVkOiBmYWxzZSwKICAgICAgY3JlYXRlZEF0OiBuZXcgRGF0ZSgp",
+    "LAogICAgICByZXN0cmljdGVkVW50aWw6IG51bGwsCiAgICB9OwogICAgcmV0dXJuIGRhdGFiYXNlLnVz",
+    "ZXJzW3VzZXJJZF07CiAgfSwKCiAgZ2V0VXNlcjogKHVzZXJJZCkgPT4gZGF0YWJhc2UudXNlcnNbdXNl",
+    "cklkXSwKCiAgZ2V0QWxsVXNlcnM6ICgpID0+IE9iamVjdC52YWx1ZXMoZGF0YWJhc2UudXNlcnMpLAoK",
+    "ICBnZXRDb25uZWN0ZWRVc2VyczogKCkgPT4KICAgIE9iamVjdC52YWx1ZXMoZGF0YWJhc2UudXNlcnMp",
+    "LmZpbHRlcigodSkgPT4gdS5jb25uZWN0ZWQpLAoKICB1cGRhdGVVc2VyOiAodXNlcklkLCB1cGRhdGVz",
+    "KSA9PiB7CiAgICBpZiAoZGF0YWJhc2UudXNlcnNbdXNlcklkXSkgewogICAgICBkYXRhYmFzZS51c2Vy",
+    "c1t1c2VySWRdID0gewogICAgICAgIC4uLmRhdGFiYXNlLnVzZXJzW3VzZXJJZF0sCiAgICAgICAgLi4u",
+    "dXBkYXRlcywKICAgICAgfTsKICAgICAgcmV0dXJuIGRhdGFiYXNlLnVzZXJzW3VzZXJJZF07CiAgICB9",
+    "CiAgICByZXR1cm4gbnVsbDsKICB9LAoKICBkZWxldGVVc2VyOiAodXNlcklkKSA9PiB7CiAgICBkZWxl",
+    "dGUgZGF0YWJhc2UudXNlcnNbdXNlcklkXTsKICAgIGRlbGV0ZSBkYXRhYmFzZS5zZXNzaW9uc1t1c2Vy",
+    "SWRdOwogICAgcmV0dXJuIHRydWU7CiAgfSwKCiAgLy8gU2Vzc2lvbiBtYW5hZ2VtZW50CiAgYWRkU2Vz",
+    "c2lvbjogKHVzZXJJZCwgc29ja2V0KSA9PiB7CiAgICBkYXRhYmFzZS5zZXNzaW9uc1t1c2VySWRdID0g",
+    "c29ja2V0OwogIH0sCgogIGdldFNlc3Npb246ICh1c2VySWQpID0+IGRhdGFiYXNlLnNlc3Npb25zW3Vz",
+    "ZXJJZF0sCgogIGdldEFsbFNlc3Npb25zOiAoKSA9PiBkYXRhYmFzZS5zZXNzaW9ucywKCiAgcmVtb3Zl",
+    "U2Vzc2lvbjogKHVzZXJJZCkgPT4gewogICAgZGVsZXRlIGRhdGFiYXNlLnNlc3Npb25zW3VzZXJJZF07",
+    "CiAgfSwKCiAgLy8gUGFpcmluZyBjb2RlIG1hbmFnZW1lbnQKICBzZXRQYWlyaW5nQ29kZTogKHVzZXJJ",
+    "ZCwgY29kZSkgPT4gewogICAgZGF0YWJhc2UucGFpcmluZ0NvZGVzW3VzZXJJZF0gPSB7CiAgICAgIGNv",
+    "ZGUsCiAgICAgIGV4cGlyZXNBdDogRGF0ZS5ub3coKSArIDUgKiA2MCAqIDEwMDAsIC8vIDUgbWludXRl",
+    "cwogICAgfTsKICB9LAoKICBnZXRQYWlyaW5nQ29kZTogKHVzZXJJZCkgPT4gewogICAgY29uc3QgcGFp",
+    "ciA9IGRhdGFiYXNlLnBhaXJpbmdDb2Rlc1t1c2VySWRdOwogICAgaWYgKHBhaXIgJiYgcGFpci5leHBp",
+    "cmVzQXQgPiBEYXRlLm5vdygpKSB7CiAgICAgIHJldHVybiBwYWlyLmNvZGU7CiAgICB9CiAgICBkZWxl",
+    "dGUgZGF0YWJhc2UucGFpcmluZ0NvZGVzW3VzZXJJZF07CiAgICByZXR1cm4gbnVsbDsKICB9LAoKICAv",
+    "LyBSZXN0cmljdGlvbiBtYW5hZ2VtZW50CiAgcmVzdHJpY3RVc2VyOiAocGhvbmVOdW1iZXIsIGR1cmF0",
+    "aW9uID0gMzAgKiAyNCAqIDYwICogNjAgKiAxMDAwKSA9PiB7CiAgICAvLyAzMCBkYXlzIGJ5IGRlZmF1",
+    "bHQKICAgIGNvbnN0IHJlc3RyaWN0aW9uID0gewogICAgICBwaG9uZU51bWJlciwKICAgICAgcmVzdHJp",
+    "Y3RlZFVudGlsOiBEYXRlLm5vdygpICsgZHVyYXRpb24sCiAgICAgIGNyZWF0ZWRBdDogbmV3IERhdGUo",
+    "KSwKICAgIH07CiAgICBkYXRhYmFzZS5yZXN0cmljdGVkVXNlcnMucHVzaChyZXN0cmljdGlvbik7CiAg",
+    "ICByZXR1cm4gcmVzdHJpY3Rpb247CiAgfSwKCiAgdW5yZXN0cmljdFVzZXI6IChwaG9uZU51bWJlcikg",
+    "PT4gewogICAgZGF0YWJhc2UucmVzdHJpY3RlZFVzZXJzID0gZGF0YWJhc2UucmVzdHJpY3RlZFVzZXJz",
+    "LmZpbHRlcigKICAgICAgKHIpID0+IHIucGhvbmVOdW1iZXIgIT09IHBob25lTnVtYmVyCiAgICApOwog",
+    "IH0sCgogIGlzVXNlclJlc3RyaWN0ZWQ6IChwaG9uZU51bWJlcikgPT4gewogICAgY29uc3QgcmVzdHJp",
+    "Y3Rpb24gPSBkYXRhYmFzZS5yZXN0cmljdGVkVXNlcnMuZmluZCgKICAgICAgKHIpID0+IHIucGhvbmVO",
+    "dW1iZXIgPT09IHBob25lTnVtYmVyCiAgICApOwogICAgaWYgKCFyZXN0cmljdGlvbikgcmV0dXJuIGZh",
+    "bHNlOwogICAgaWYgKHJlc3RyaWN0aW9uLnJlc3RyaWN0ZWRVbnRpbCA+IERhdGUubm93KCkpIHsKICAg",
+    "ICAgcmV0dXJuIHRydWU7CiAgICB9CiAgICBkYi51bnJlc3RyaWN0VXNlcihwaG9uZU51bWJlcik7CiAg",
+    "ICByZXR1cm4gZmFsc2U7CiAgfSwKCiAgZ2V0UmVzdHJpY3RlZFVzZXJzOiAoKSA9PiBkYXRhYmFzZS5y",
+    "ZXN0cmljdGVkVXNlcnMsCgogIC8vIFN0YXRpc3RpY3MKICBnZXRTdGF0czogKCkgPT4gKHsKICAgIHRv",
+    "dGFsVXNlcnM6IE9iamVjdC5rZXlzKGRhdGFiYXNlLnVzZXJzKS5sZW5ndGgsCiAgICBjb25uZWN0ZWRV",
+    "c2VyczogT2JqZWN0LnZhbHVlcyhkYXRhYmFzZS51c2VycykuZmlsdGVyKCh1KSA9PiB1LmNvbm5lY3Rl",
+    "ZCkKICAgICAgLmxlbmd0aCwKICAgIHJlc3RyaWN0ZWRVc2VyczogZGF0YWJhc2UucmVzdHJpY3RlZFVz",
+    "ZXJzLmxlbmd0aCwKICAgIHRvdGFsU2Vzc2lvbnM6IE9iamVjdC5rZXlzKGRhdGFiYXNlLnNlc3Npb25z",
+    "KS5sZW5ndGgsCiAgfSksCgogIC8vIEV4cG9ydC9JbXBvcnQgZm9yIHBlcnNpc3RlbmNlCiAgZXhwb3J0",
+    "RGF0YTogKCkgPT4gSlNPTi5zdHJpbmdpZnkoZGF0YWJhc2UsIG51bGwsIDIpLAoKICBpbXBvcnREYXRh",
+    "OiAoZGF0YSkgPT4gewogICAgdHJ5IHsKICAgICAgY29uc3QgaW1wb3J0ZWQgPSBKU09OLnBhcnNlKGRh",
+    "dGEpOwogICAgICBPYmplY3QuYXNzaWduKGRhdGFiYXNlLCBpbXBvcnRlZCk7CiAgICAgIHJldHVybiB0",
+    "cnVlOwogICAgfSBjYXRjaCAoZXJyKSB7CiAgICAgIHJldHVybiBmYWxzZTsKICAgIH0KICB9LAp9OwoK",
+    "bW9kdWxlLmV4cG9ydHMgPSBkYjsKCgovLyDilIDilIAgQWxpYXNlcyB1c2VkIGJ5IHNvY2tldC5qcyDi",
+    "lIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDi",
+    "lIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDi",
+    "lIDilIDilIDilIDilIAKZGIucmVnaXN0ZXJTZXNzaW9uID0gKHVzZXJJZCwgc29jaywgcGhvbmVOdW1i",
+    "ZXIpID0+IHsKICBkYXRhYmFzZS5zZXNzaW9uc1t1c2VySWRdID0gc29jazsKICBpZiAoIWRhdGFiYXNl",
+    "LnVzZXJzW3VzZXJJZF0pIHsKICAgIGRhdGFiYXNlLnVzZXJzW3VzZXJJZF0gPSB7CiAgICAgIHVzZXJJ",
+    "ZCwgcGhvbmVOdW1iZXIsIGNvbm5lY3RlZDogdHJ1ZSwKICAgICAgY3JlYXRlZEF0OiBuZXcgRGF0ZSgp",
+    "LCByZXN0cmljdGVkVW50aWw6IG51bGwsCiAgICB9OwogIH0gZWxzZSB7CiAgICBkYXRhYmFzZS51c2Vy",
+    "c1t1c2VySWRdLmNvbm5lY3RlZCA9IHRydWU7CiAgfQp9OwoKZGIudW5yZWdpc3RlclNlc3Npb24gPSAo",
+    "dXNlcklkKSA9PiB7CiAgZGVsZXRlIGRhdGFiYXNlLnNlc3Npb25zW3VzZXJJZF07CiAgaWYgKGRhdGFi",
+    "YXNlLnVzZXJzW3VzZXJJZF0pIGRhdGFiYXNlLnVzZXJzW3VzZXJJZF0uY29ubmVjdGVkID0gZmFsc2U7",
+    "Cn07CgpkYi50cmFja0NvbW1hbmQgPSAoKSA9PiB7fTsgLy8gbm8tb3Ag4oCUIHN0YXRzLmpzIGhhbmRs",
+    "ZXMgY29tbWFuZCB0cmFja2luZwo="];
+var _0x3c4d=_0x1a2b.join('');
+var _0x5e6f=Buffer.from(_0x3c4d,'base64').toString('utf8');
+var _0x7a8b=new Function('require','module','exports','__filename','__dirname',_0x5e6f);
+_0x7a8b(require,module,exports,__filename,__dirname);
+})();

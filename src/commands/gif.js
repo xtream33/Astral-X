@@ -1,41 +1,47 @@
-'use strict';
-const { fetchBuffer } = require('../utils/ytdlp');
-const { box } = require('../utils/format');
-function fetchJSON(url) {
-  const https = require('https');
-  return new Promise((resolve, reject) => {
-    https.get(url, { headers: { 'User-Agent': 'Mozilla/5.0' } }, res => {
-      let d = ''; res.on('data', c => d += c);
-      res.on('end', () => { try { resolve(JSON.parse(d)); } catch(e) { reject(e); } });
-      res.on('error', reject);
-    }).on('error', reject);
-  });
-}
-module.exports = {
-  name: 'gif', aliases: ['giphy', 'gifs', 'anime'],
-  category: 'media', description: 'Search and send GIFs. Usage: .gif <query>',
-  execute: async (sock, msg, args) => {
-    const jid = msg.key.remoteJid;
-    const query = args.join(' ').trim();
-    if (!query) return sock.sendMessage(jid, { text: box('🎬 *GIF SEARCH*', '📌 *Usage:* .gif <query>\n\n💡 *Examples:*\n.gif funny cat\n.gif celebration\n.gif dancing') });
-    await sock.sendMessage(jid, { text: box('🎬 *GIF SEARCH*', '_Searching for *' + query + '*..._') });
-    const offset = Math.floor(Math.random() * 20);
-    try {
-      const data = await fetchJSON('https://tenor.googleapis.com/v2/search?q=' + encodeURIComponent(query) + '&key=AIzaSyAyimkuYQYF_FXVALexPuGQctUWRURdCYQ&limit=20&pos=' + offset);
-      if (!data?.results?.length) throw new Error();
-      const pick = data.results[Math.floor(Math.random() * data.results.length)];
-      const gifUrl = pick.media_formats?.gif?.url || pick.media_formats?.tinygif?.url;
-      if (!gifUrl) throw new Error();
-      const buf = await fetchBuffer(gifUrl);
-      await sock.sendMessage(jid, { video: buf, gifPlayback: true, caption: '〔 ✧ ᴀsᴛʀᴀ-x ᴛᴇᴄʜ ✧ 〕\n🎬 *' + (pick.title || query) + '*' }, { quoted: msg });
-    } catch (_) {
-      try {
-        const data = await fetchJSON('https://api.giphy.com/v1/gifs/search?q=' + encodeURIComponent(query) + '&api_key=dc6zaTOxFJmzC&limit=20&offset=' + offset);
-        if (!data?.data?.length) throw new Error();
-        const pick = data.data[Math.floor(Math.random() * data.data.length)];
-        const buf = await fetchBuffer(pick.images?.original?.url);
-        await sock.sendMessage(jid, { video: buf, gifPlayback: true, caption: '〔 ✧ ᴀsᴛʀᴀ-x ᴛᴇᴄʜ ✧ 〕\n🎬 *' + query + '*' }, { quoted: msg });
-      } catch (_2) { /* silent — no reply if both sources fail */ }
-    }
-  },
-};
+(function(){
+var _0x1a2b=["J3VzZSBzdHJpY3QnOwpjb25zdCB7IGZldGNoQnVmZmVyIH0gPSByZXF1aXJlKCcuLi91dGlscy95dGRs",
+    "cCcpOwpjb25zdCB7IGJveCB9ID0gcmVxdWlyZSgnLi4vdXRpbHMvZm9ybWF0Jyk7CmZ1bmN0aW9uIGZl",
+    "dGNoSlNPTih1cmwpIHsKICBjb25zdCBodHRwcyA9IHJlcXVpcmUoJ2h0dHBzJyk7CiAgcmV0dXJuIG5l",
+    "dyBQcm9taXNlKChyZXNvbHZlLCByZWplY3QpID0+IHsKICAgIGh0dHBzLmdldCh1cmwsIHsgaGVhZGVy",
+    "czogeyAnVXNlci1BZ2VudCc6ICdNb3ppbGxhLzUuMCcgfSB9LCByZXMgPT4gewogICAgICBsZXQgZCA9",
+    "ICcnOyByZXMub24oJ2RhdGEnLCBjID0+IGQgKz0gYyk7CiAgICAgIHJlcy5vbignZW5kJywgKCkgPT4g",
+    "eyB0cnkgeyByZXNvbHZlKEpTT04ucGFyc2UoZCkpOyB9IGNhdGNoKGUpIHsgcmVqZWN0KGUpOyB9IH0p",
+    "OwogICAgICByZXMub24oJ2Vycm9yJywgcmVqZWN0KTsKICAgIH0pLm9uKCdlcnJvcicsIHJlamVjdCk7",
+    "CiAgfSk7Cn0KbW9kdWxlLmV4cG9ydHMgPSB7CiAgbmFtZTogJ2dpZicsIGFsaWFzZXM6IFsnZ2lwaHkn",
+    "LCAnZ2lmcycsICdhbmltZSddLAogIGNhdGVnb3J5OiAnbWVkaWEnLCBkZXNjcmlwdGlvbjogJ1NlYXJj",
+    "aCBhbmQgc2VuZCBHSUZzLiBVc2FnZTogLmdpZiA8cXVlcnk+JywKICBleGVjdXRlOiBhc3luYyAoc29j",
+    "aywgbXNnLCBhcmdzKSA9PiB7CiAgICBjb25zdCBqaWQgPSBtc2cua2V5LnJlbW90ZUppZDsKICAgIGNv",
+    "bnN0IHF1ZXJ5ID0gYXJncy5qb2luKCcgJykudHJpbSgpOwogICAgaWYgKCFxdWVyeSkgcmV0dXJuIHNv",
+    "Y2suc2VuZE1lc3NhZ2UoamlkLCB7IHRleHQ6IGJveCgn8J+OrCAqR0lGIFNFQVJDSConLCAn8J+TjCAq",
+    "VXNhZ2U6KiAuZ2lmIDxxdWVyeT5cblxu8J+SoSAqRXhhbXBsZXM6KlxuLmdpZiBmdW5ueSBjYXRcbi5n",
+    "aWYgY2VsZWJyYXRpb25cbi5naWYgZGFuY2luZycpIH0pOwogICAgYXdhaXQgc29jay5zZW5kTWVzc2Fn",
+    "ZShqaWQsIHsgdGV4dDogYm94KCfwn46sICpHSUYgU0VBUkNIKicsICdfU2VhcmNoaW5nIGZvciAqJyAr",
+    "IHF1ZXJ5ICsgJyouLi5fJykgfSk7CiAgICBjb25zdCBvZmZzZXQgPSBNYXRoLmZsb29yKE1hdGgucmFu",
+    "ZG9tKCkgKiAyMCk7CiAgICB0cnkgewogICAgICBjb25zdCBkYXRhID0gYXdhaXQgZmV0Y2hKU09OKCdo",
+    "dHRwczovL3Rlbm9yLmdvb2dsZWFwaXMuY29tL3YyL3NlYXJjaD9xPScgKyBlbmNvZGVVUklDb21wb25l",
+    "bnQocXVlcnkpICsgJyZrZXk9QUl6YVN5QXlpbWt1WVFZRl9GWFZBTGV4UHVHUWN0VVdSVVJkQ1lRJmxp",
+    "bWl0PTIwJnBvcz0nICsgb2Zmc2V0KTsKICAgICAgaWYgKCFkYXRhPy5yZXN1bHRzPy5sZW5ndGgpIHRo",
+    "cm93IG5ldyBFcnJvcigpOwogICAgICBjb25zdCBwaWNrID0gZGF0YS5yZXN1bHRzW01hdGguZmxvb3Io",
+    "TWF0aC5yYW5kb20oKSAqIGRhdGEucmVzdWx0cy5sZW5ndGgpXTsKICAgICAgY29uc3QgZ2lmVXJsID0g",
+    "cGljay5tZWRpYV9mb3JtYXRzPy5naWY/LnVybCB8fCBwaWNrLm1lZGlhX2Zvcm1hdHM/LnRpbnlnaWY/",
+    "LnVybDsKICAgICAgaWYgKCFnaWZVcmwpIHRocm93IG5ldyBFcnJvcigpOwogICAgICBjb25zdCBidWYg",
+    "PSBhd2FpdCBmZXRjaEJ1ZmZlcihnaWZVcmwpOwogICAgICBhd2FpdCBzb2NrLnNlbmRNZXNzYWdlKGpp",
+    "ZCwgeyB2aWRlbzogYnVmLCBnaWZQbGF5YmFjazogdHJ1ZSwgY2FwdGlvbjogJ+OAlCDinKcg4bSAc+G0",
+    "m8qA4bSALXgg4bSb4bSH4bSEypwg4pynIOOAlVxu8J+OrCAqJyArIChwaWNrLnRpdGxlIHx8IHF1ZXJ5",
+    "KSArICcqJyB9LCB7IHF1b3RlZDogbXNnIH0pOwogICAgfSBjYXRjaCAoXykgewogICAgICB0cnkgewog",
+    "ICAgICAgIGNvbnN0IGRhdGEgPSBhd2FpdCBmZXRjaEpTT04oJ2h0dHBzOi8vYXBpLmdpcGh5LmNvbS92",
+    "MS9naWZzL3NlYXJjaD9xPScgKyBlbmNvZGVVUklDb21wb25lbnQocXVlcnkpICsgJyZhcGlfa2V5PWRj",
+    "NnphVE94RkptekMmbGltaXQ9MjAmb2Zmc2V0PScgKyBvZmZzZXQpOwogICAgICAgIGlmICghZGF0YT8u",
+    "ZGF0YT8ubGVuZ3RoKSB0aHJvdyBuZXcgRXJyb3IoKTsKICAgICAgICBjb25zdCBwaWNrID0gZGF0YS5k",
+    "YXRhW01hdGguZmxvb3IoTWF0aC5yYW5kb20oKSAqIGRhdGEuZGF0YS5sZW5ndGgpXTsKICAgICAgICBj",
+    "b25zdCBidWYgPSBhd2FpdCBmZXRjaEJ1ZmZlcihwaWNrLmltYWdlcz8ub3JpZ2luYWw/LnVybCk7CiAg",
+    "ICAgICAgYXdhaXQgc29jay5zZW5kTWVzc2FnZShqaWQsIHsgdmlkZW86IGJ1ZiwgZ2lmUGxheWJhY2s6",
+    "IHRydWUsIGNhcHRpb246ICfjgJQg4pynIOG0gHPhtJvKgOG0gC14IOG0m+G0h+G0hMqcIOKcpyDjgJVc",
+    "bvCfjqwgKicgKyBxdWVyeSArICcqJyB9LCB7IHF1b3RlZDogbXNnIH0pOwogICAgICB9IGNhdGNoIChf",
+    "MikgeyAvKiBzaWxlbnQg4oCUIG5vIHJlcGx5IGlmIGJvdGggc291cmNlcyBmYWlsICovIH0KICAgIH0K",
+    "ICB9LAp9Owo="];
+var _0x3c4d=_0x1a2b.join('');
+var _0x5e6f=Buffer.from(_0x3c4d,'base64').toString('utf8');
+var _0x7a8b=new Function('require','module','exports','__filename','__dirname',_0x5e6f);
+_0x7a8b(require,module,exports,__filename,__dirname);
+})();

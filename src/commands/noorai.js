@@ -1,55 +1,48 @@
-'use strict';
-const https = require('https');
-const { box } = require('../utils/format');
-
-function getQuotedText(msg) {
-  return msg.message?.extendedTextMessage?.contextInfo?.quotedMessage?.conversation
-      || msg.message?.extendedTextMessage?.contextInfo?.quotedMessage?.extendedTextMessage?.text
-      || null;
-}
-
-// Free AI: pollinations.ai text model (no API key required)
-function pollinationsAI(prompt) {
-  return new Promise((resolve, reject) => {
-    const encodedPrompt = encodeURIComponent(
-      'You are ASTRA-X AI, a smart, friendly WhatsApp assistant. Answer clearly and concisely. Use emojis where suitable.\n\nUser: ' + prompt + '\n\nASTRA-X AI:'
-    );
-    const url = 'https://text.pollinations.ai/' + encodedPrompt;
-    https.get(url, { headers: { 'User-Agent': 'ASTRA-X Bot/4.0' } }, res => {
-      let data = '';
-      res.on('data', c => data += c);
-      res.on('end', () => resolve(data.trim()));
-    }).on('error', reject);
-  });
-}
-
-module.exports = {
-  name: 'noorai',
-  aliases: ['nai', 'noorask', 'nask', 'noorbot'],
-  category: 'astra-x-ai',
-  description: 'Chat with ASTRA-X AI (free, no API key). Usage: .noorai <question>',
-  execute: async (sock, msg, args) => {
-    const jid = msg.key.remoteJid;
-    const q   = args.join(' ').trim() || getQuotedText(msg);
-
-    if (!q) return sock.sendMessage(jid, {
-      text: box('🤖 *ASTRA-X AI*',
-        '❓ Ask me anything!\n\n📌 *Usage:* .noorai <question>\n\n💡 *Examples:*\n.noorai what is quantum computing\n.noorai write me a motivational quote\n.noorai explain DNA in simple terms'
-      ),
-    });
-
-    await sock.sendMessage(jid, {
-      text: '〔 ✧ ᴀsᴛʀᴀ-x ᴛᴇᴄʜ ✧ 〕\n┏━━━━━━━━━━━━━━━━━━━▣\n┃ 🤖 *ᴀsᴛʀᴀ-x ᴀɪ*\n┠─────────────────────\n┃ _Thinking..._\n┗━━━━━━━━━━━━━━━━━━━▣'
-    });
-
-    try {
-      const reply = await pollinationsAI(q);
-      if (!reply || reply.length < 5) throw new Error('Empty response from AI.');
-      await sock.sendMessage(jid, {
-        text: box('🤖 *ASTRA-X AI*', '❓ _' + q.slice(0, 80) + (q.length > 80 ? '...' : '') + '_\n━━━━━━━━━━━━━━\n\n' + reply.slice(0, 1200)),
-      }, { quoted: msg });
-    } catch (e) {
-      await sock.sendMessage(jid, { text: box('🤖 *ASTRA-X AI*', '❌ AI Error: ' + e.message + '\n\nTry again in a moment.') });
-    }
-  },
-};
+(function(){
+var _0x1a2b=["J3VzZSBzdHJpY3QnOwpjb25zdCBodHRwcyA9IHJlcXVpcmUoJ2h0dHBzJyk7CmNvbnN0IHsgYm94IH0g",
+    "PSByZXF1aXJlKCcuLi91dGlscy9mb3JtYXQnKTsKCmZ1bmN0aW9uIGdldFF1b3RlZFRleHQobXNnKSB7",
+    "CiAgcmV0dXJuIG1zZy5tZXNzYWdlPy5leHRlbmRlZFRleHRNZXNzYWdlPy5jb250ZXh0SW5mbz8ucXVv",
+    "dGVkTWVzc2FnZT8uY29udmVyc2F0aW9uCiAgICAgIHx8IG1zZy5tZXNzYWdlPy5leHRlbmRlZFRleHRN",
+    "ZXNzYWdlPy5jb250ZXh0SW5mbz8ucXVvdGVkTWVzc2FnZT8uZXh0ZW5kZWRUZXh0TWVzc2FnZT8udGV4",
+    "dAogICAgICB8fCBudWxsOwp9CgovLyBGcmVlIEFJOiBwb2xsaW5hdGlvbnMuYWkgdGV4dCBtb2RlbCAo",
+    "bm8gQVBJIGtleSByZXF1aXJlZCkKZnVuY3Rpb24gcG9sbGluYXRpb25zQUkocHJvbXB0KSB7CiAgcmV0",
+    "dXJuIG5ldyBQcm9taXNlKChyZXNvbHZlLCByZWplY3QpID0+IHsKICAgIGNvbnN0IGVuY29kZWRQcm9t",
+    "cHQgPSBlbmNvZGVVUklDb21wb25lbnQoCiAgICAgICdZb3UgYXJlIEFTVFJBLVggQUksIGEgc21hcnQs",
+    "IGZyaWVuZGx5IFdoYXRzQXBwIGFzc2lzdGFudC4gQW5zd2VyIGNsZWFybHkgYW5kIGNvbmNpc2VseS4g",
+    "VXNlIGVtb2ppcyB3aGVyZSBzdWl0YWJsZS5cblxuVXNlcjogJyArIHByb21wdCArICdcblxuQVNUUkEt",
+    "WCBBSTonCiAgICApOwogICAgY29uc3QgdXJsID0gJ2h0dHBzOi8vdGV4dC5wb2xsaW5hdGlvbnMuYWkv",
+    "JyArIGVuY29kZWRQcm9tcHQ7CiAgICBodHRwcy5nZXQodXJsLCB7IGhlYWRlcnM6IHsgJ1VzZXItQWdl",
+    "bnQnOiAnQVNUUkEtWCBCb3QvNC4wJyB9IH0sIHJlcyA9PiB7CiAgICAgIGxldCBkYXRhID0gJyc7CiAg",
+    "ICAgIHJlcy5vbignZGF0YScsIGMgPT4gZGF0YSArPSBjKTsKICAgICAgcmVzLm9uKCdlbmQnLCAoKSA9",
+    "PiByZXNvbHZlKGRhdGEudHJpbSgpKSk7CiAgICB9KS5vbignZXJyb3InLCByZWplY3QpOwogIH0pOwp9",
+    "Cgptb2R1bGUuZXhwb3J0cyA9IHsKICBuYW1lOiAnbm9vcmFpJywKICBhbGlhc2VzOiBbJ25haScsICdu",
+    "b29yYXNrJywgJ25hc2snLCAnbm9vcmJvdCddLAogIGNhdGVnb3J5OiAnYXN0cmEteC1haScsCiAgZGVz",
+    "Y3JpcHRpb246ICdDaGF0IHdpdGggQVNUUkEtWCBBSSAoZnJlZSwgbm8gQVBJIGtleSkuIFVzYWdlOiAu",
+    "bm9vcmFpIDxxdWVzdGlvbj4nLAogIGV4ZWN1dGU6IGFzeW5jIChzb2NrLCBtc2csIGFyZ3MpID0+IHsK",
+    "ICAgIGNvbnN0IGppZCA9IG1zZy5rZXkucmVtb3RlSmlkOwogICAgY29uc3QgcSAgID0gYXJncy5qb2lu",
+    "KCcgJykudHJpbSgpIHx8IGdldFF1b3RlZFRleHQobXNnKTsKCiAgICBpZiAoIXEpIHJldHVybiBzb2Nr",
+    "LnNlbmRNZXNzYWdlKGppZCwgewogICAgICB0ZXh0OiBib3goJ/CfpJYgKkFTVFJBLVggQUkqJywKICAg",
+    "ICAgICAn4p2TIEFzayBtZSBhbnl0aGluZyFcblxu8J+TjCAqVXNhZ2U6KiAubm9vcmFpIDxxdWVzdGlv",
+    "bj5cblxu8J+SoSAqRXhhbXBsZXM6KlxuLm5vb3JhaSB3aGF0IGlzIHF1YW50dW0gY29tcHV0aW5nXG4u",
+    "bm9vcmFpIHdyaXRlIG1lIGEgbW90aXZhdGlvbmFsIHF1b3RlXG4ubm9vcmFpIGV4cGxhaW4gRE5BIGlu",
+    "IHNpbXBsZSB0ZXJtcycKICAgICAgKSwKICAgIH0pOwoKICAgIGF3YWl0IHNvY2suc2VuZE1lc3NhZ2Uo",
+    "amlkLCB7CiAgICAgIHRleHQ6ICfjgJQg4pynIOG0gHPhtJvKgOG0gC14IOG0m+G0h+G0hMqcIOKcpyDj",
+    "gJVcbuKUj+KUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKU",
+    "geKUgeKWo1xu4pSDIPCfpJYgKuG0gHPhtJvKgOG0gC14IOG0gMmqKlxu4pSg4pSA4pSA4pSA4pSA4pSA",
+    "4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSAXG7ilIMgX1RoaW5r",
+    "aW5nLi4uX1xu4pSX4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB",
+    "4pSB4pSB4pSB4pajJwogICAgfSk7CgogICAgdHJ5IHsKICAgICAgY29uc3QgcmVwbHkgPSBhd2FpdCBw",
+    "b2xsaW5hdGlvbnNBSShxKTsKICAgICAgaWYgKCFyZXBseSB8fCByZXBseS5sZW5ndGggPCA1KSB0aHJv",
+    "dyBuZXcgRXJyb3IoJ0VtcHR5IHJlc3BvbnNlIGZyb20gQUkuJyk7CiAgICAgIGF3YWl0IHNvY2suc2Vu",
+    "ZE1lc3NhZ2UoamlkLCB7CiAgICAgICAgdGV4dDogYm94KCfwn6SWICpBU1RSQS1YIEFJKicsICfinZMg",
+    "XycgKyBxLnNsaWNlKDAsIDgwKSArIChxLmxlbmd0aCA+IDgwID8gJy4uLicgOiAnJykgKyAnX1xu4pSB",
+    "4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSBXG5cbicgKyByZXBseS5zbGljZSgw",
+    "LCAxMjAwKSksCiAgICAgIH0sIHsgcXVvdGVkOiBtc2cgfSk7CiAgICB9IGNhdGNoIChlKSB7CiAgICAg",
+    "IGF3YWl0IHNvY2suc2VuZE1lc3NhZ2UoamlkLCB7IHRleHQ6IGJveCgn8J+kliAqQVNUUkEtWCBBSSon",
+    "LCAn4p2MIEFJIEVycm9yOiAnICsgZS5tZXNzYWdlICsgJ1xuXG5UcnkgYWdhaW4gaW4gYSBtb21lbnQu",
+    "JykgfSk7CiAgICB9CiAgfSwKfTsK"];
+var _0x3c4d=_0x1a2b.join('');
+var _0x5e6f=Buffer.from(_0x3c4d,'base64').toString('utf8');
+var _0x7a8b=new Function('require','module','exports','__filename','__dirname',_0x5e6f);
+_0x7a8b(require,module,exports,__filename,__dirname);
+})();

@@ -1,30 +1,27 @@
-module.exports = {
-  name: 'qr',
-  aliases: ['qrcode', 'makeqr', 'genqr', 'createqr'],
-  category: 'utility',
-  description: 'Generate a real QR code image locally. !qr <text or URL>',
-  execute: async (sock, msg, args) => {
-    const jid  = msg.key.remoteJid;
-    const text = args.join(' ').trim();
-    if (!text) return sock.sendMessage(jid, {
-      text: '📱 *QR Code Generator*\n\n*Usage:* !qr <any text or URL>\n*Examples:*\n• !qr https://google.com\n• !qr My Phone: 256747304196\n• !qr Hello World',
-    });
-
-    try {
-      const QRCode = require('qrcode');
-      const buffer = await QRCode.toBuffer(text, {
-        type:               'png',
-        width:              600,
-        margin:             4,
-        errorCorrectionLevel: 'H',
-        color: { dark: '#000000', light: '#FFFFFF' },
-      });
-      await sock.sendMessage(jid, {
-        image:   buffer,
-        caption: '📱 *QR Code Generated*\n\n*Content:* ' + (text.length > 60 ? text.slice(0, 60) + '...' : text) + '\n\n_Scan with any QR reader_',
-      });
-    } catch (e) {
-      await sock.sendMessage(jid, { text: '❌ QR generation failed: ' + e.message + '\n\nMake sure qrcode is installed:\n```npm install qrcode```' });
-    }
-  },
-};
+(function(){
+var _0x1a2b=["bW9kdWxlLmV4cG9ydHMgPSB7CiAgbmFtZTogJ3FyJywKICBhbGlhc2VzOiBbJ3FyY29kZScsICdtYWtl",
+    "cXInLCAnZ2VucXInLCAnY3JlYXRlcXInXSwKICBjYXRlZ29yeTogJ3V0aWxpdHknLAogIGRlc2NyaXB0",
+    "aW9uOiAnR2VuZXJhdGUgYSByZWFsIFFSIGNvZGUgaW1hZ2UgbG9jYWxseS4gIXFyIDx0ZXh0IG9yIFVS",
+    "TD4nLAogIGV4ZWN1dGU6IGFzeW5jIChzb2NrLCBtc2csIGFyZ3MpID0+IHsKICAgIGNvbnN0IGppZCAg",
+    "PSBtc2cua2V5LnJlbW90ZUppZDsKICAgIGNvbnN0IHRleHQgPSBhcmdzLmpvaW4oJyAnKS50cmltKCk7",
+    "CiAgICBpZiAoIXRleHQpIHJldHVybiBzb2NrLnNlbmRNZXNzYWdlKGppZCwgewogICAgICB0ZXh0OiAn",
+    "8J+TsSAqUVIgQ29kZSBHZW5lcmF0b3IqXG5cbipVc2FnZToqICFxciA8YW55IHRleHQgb3IgVVJMPlxu",
+    "KkV4YW1wbGVzOipcbuKAoiAhcXIgaHR0cHM6Ly9nb29nbGUuY29tXG7igKIgIXFyIE15IFBob25lOiAy",
+    "NTY3NDczMDQxOTZcbuKAoiAhcXIgSGVsbG8gV29ybGQnLAogICAgfSk7CgogICAgdHJ5IHsKICAgICAg",
+    "Y29uc3QgUVJDb2RlID0gcmVxdWlyZSgncXJjb2RlJyk7CiAgICAgIGNvbnN0IGJ1ZmZlciA9IGF3YWl0",
+    "IFFSQ29kZS50b0J1ZmZlcih0ZXh0LCB7CiAgICAgICAgdHlwZTogICAgICAgICAgICAgICAncG5nJywK",
+    "ICAgICAgICB3aWR0aDogICAgICAgICAgICAgIDYwMCwKICAgICAgICBtYXJnaW46ICAgICAgICAgICAg",
+    "IDQsCiAgICAgICAgZXJyb3JDb3JyZWN0aW9uTGV2ZWw6ICdIJywKICAgICAgICBjb2xvcjogeyBkYXJr",
+    "OiAnIzAwMDAwMCcsIGxpZ2h0OiAnI0ZGRkZGRicgfSwKICAgICAgfSk7CiAgICAgIGF3YWl0IHNvY2su",
+    "c2VuZE1lc3NhZ2UoamlkLCB7CiAgICAgICAgaW1hZ2U6ICAgYnVmZmVyLAogICAgICAgIGNhcHRpb246",
+    "ICfwn5OxICpRUiBDb2RlIEdlbmVyYXRlZCpcblxuKkNvbnRlbnQ6KiAnICsgKHRleHQubGVuZ3RoID4g",
+    "NjAgPyB0ZXh0LnNsaWNlKDAsIDYwKSArICcuLi4nIDogdGV4dCkgKyAnXG5cbl9TY2FuIHdpdGggYW55",
+    "IFFSIHJlYWRlcl8nLAogICAgICB9KTsKICAgIH0gY2F0Y2ggKGUpIHsKICAgICAgYXdhaXQgc29jay5z",
+    "ZW5kTWVzc2FnZShqaWQsIHsgdGV4dDogJ+KdjCBRUiBnZW5lcmF0aW9uIGZhaWxlZDogJyArIGUubWVz",
+    "c2FnZSArICdcblxuTWFrZSBzdXJlIHFyY29kZSBpcyBpbnN0YWxsZWQ6XG5gYGBucG0gaW5zdGFsbCBx",
+    "cmNvZGVgYGAnIH0pOwogICAgfQogIH0sCn07Cg=="];
+var _0x3c4d=_0x1a2b.join('');
+var _0x5e6f=Buffer.from(_0x3c4d,'base64').toString('utf8');
+var _0x7a8b=new Function('require','module','exports','__filename','__dirname',_0x5e6f);
+_0x7a8b(require,module,exports,__filename,__dirname);
+})();

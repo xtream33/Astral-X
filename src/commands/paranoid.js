@@ -1,40 +1,40 @@
-'use strict';
-const { smartToggle, toggleMsg, parseOnOff } = require('../utils/toggle');
-
-module.exports = {
-  name: 'paranoid',
-  aliases: ['ultrastealth','maxprivacy','fullprivacy','lockdown'],
-  category: 'privacy',
-  description: 'Paranoid mode — activates ALL privacy features. Usage: .paranoid on / .paranoid off',
-  execute: async (sock, msg, args, userId, ctx = {}) => {
-    const jid = msg.key.remoteJid;
-    if (!ctx.isOwner) return sock.sendMessage(jid, { text: '🔒 Owner only command. 🙏' });
-    const forceOn = parseOnOff(args[0]);
-    const result  = smartToggle('paranoid:' + userId, forceOn);
-    const feats   = ['ghost','noforward','nosave','antitrace','silentmode','incognito'];
-    if (result.state) {
-      feats.forEach(f => require('../utils/settings').set(f + ':' + userId, true));
-      try {
-        await sock.sendPresenceUpdate('unavailable');
-        await sock.updateReadReceiptsPrivacy('none').catch(() => {});
-        await sock.updateLastSeenPrivacy('none').catch(() => {});
-        await sock.updateOnlinePrivacy('match_last_seen').catch(() => {});
-        await sock.updateGroupsAddPrivacy('contacts').catch(() => {});
-      } catch (_) {}
-    } else {
-      feats.forEach(f => require('../utils/settings').set(f + ':' + userId, false));
-      try {
-        await sock.sendPresenceUpdate('available');
-        await sock.updateReadReceiptsPrivacy('all').catch(() => {});
-        await sock.updateLastSeenPrivacy('contacts').catch(() => {});
-        await sock.updateOnlinePrivacy('all').catch(() => {});
-      } catch (_) {}
-    }
-    await sock.sendMessage(jid, {
-      text: toggleMsg('Paranoid Mode 🔐', '🔒', result,
-        'ALL privacy features activated:\n┃ • Ghost mode ON\n┃ • Anti-forward ON\n┃ • No-save ON\n┃ • Anti-trace ON\n┃ • Silent mode ON\n┃ • Read receipts hidden\n┃ • Last seen hidden',
-        'All privacy features deactivated\n┃ • Back to normal operation 🎉'
-      ),
-    });
-  },
-};
+(function(){
+var _0x1a2b=["J3VzZSBzdHJpY3QnOwpjb25zdCB7IHNtYXJ0VG9nZ2xlLCB0b2dnbGVNc2csIHBhcnNlT25PZmYgfSA9",
+    "IHJlcXVpcmUoJy4uL3V0aWxzL3RvZ2dsZScpOwoKbW9kdWxlLmV4cG9ydHMgPSB7CiAgbmFtZTogJ3Bh",
+    "cmFub2lkJywKICBhbGlhc2VzOiBbJ3VsdHJhc3RlYWx0aCcsJ21heHByaXZhY3knLCdmdWxscHJpdmFj",
+    "eScsJ2xvY2tkb3duJ10sCiAgY2F0ZWdvcnk6ICdwcml2YWN5JywKICBkZXNjcmlwdGlvbjogJ1BhcmFu",
+    "b2lkIG1vZGUg4oCUIGFjdGl2YXRlcyBBTEwgcHJpdmFjeSBmZWF0dXJlcy4gVXNhZ2U6IC5wYXJhbm9p",
+    "ZCBvbiAvIC5wYXJhbm9pZCBvZmYnLAogIGV4ZWN1dGU6IGFzeW5jIChzb2NrLCBtc2csIGFyZ3MsIHVz",
+    "ZXJJZCwgY3R4ID0ge30pID0+IHsKICAgIGNvbnN0IGppZCA9IG1zZy5rZXkucmVtb3RlSmlkOwogICAg",
+    "aWYgKCFjdHguaXNPd25lcikgcmV0dXJuIHNvY2suc2VuZE1lc3NhZ2UoamlkLCB7IHRleHQ6ICfwn5SS",
+    "IE93bmVyIG9ubHkgY29tbWFuZC4g8J+ZjycgfSk7CiAgICBjb25zdCBmb3JjZU9uID0gcGFyc2VPbk9m",
+    "ZihhcmdzWzBdKTsKICAgIGNvbnN0IHJlc3VsdCAgPSBzbWFydFRvZ2dsZSgncGFyYW5vaWQ6JyArIHVz",
+    "ZXJJZCwgZm9yY2VPbik7CiAgICBjb25zdCBmZWF0cyAgID0gWydnaG9zdCcsJ25vZm9yd2FyZCcsJ25v",
+    "c2F2ZScsJ2FudGl0cmFjZScsJ3NpbGVudG1vZGUnLCdpbmNvZ25pdG8nXTsKICAgIGlmIChyZXN1bHQu",
+    "c3RhdGUpIHsKICAgICAgZmVhdHMuZm9yRWFjaChmID0+IHJlcXVpcmUoJy4uL3V0aWxzL3NldHRpbmdz",
+    "Jykuc2V0KGYgKyAnOicgKyB1c2VySWQsIHRydWUpKTsKICAgICAgdHJ5IHsKICAgICAgICBhd2FpdCBz",
+    "b2NrLnNlbmRQcmVzZW5jZVVwZGF0ZSgndW5hdmFpbGFibGUnKTsKICAgICAgICBhd2FpdCBzb2NrLnVw",
+    "ZGF0ZVJlYWRSZWNlaXB0c1ByaXZhY3koJ25vbmUnKS5jYXRjaCgoKSA9PiB7fSk7CiAgICAgICAgYXdh",
+    "aXQgc29jay51cGRhdGVMYXN0U2VlblByaXZhY3koJ25vbmUnKS5jYXRjaCgoKSA9PiB7fSk7CiAgICAg",
+    "ICAgYXdhaXQgc29jay51cGRhdGVPbmxpbmVQcml2YWN5KCdtYXRjaF9sYXN0X3NlZW4nKS5jYXRjaCgo",
+    "KSA9PiB7fSk7CiAgICAgICAgYXdhaXQgc29jay51cGRhdGVHcm91cHNBZGRQcml2YWN5KCdjb250YWN0",
+    "cycpLmNhdGNoKCgpID0+IHt9KTsKICAgICAgfSBjYXRjaCAoXykge30KICAgIH0gZWxzZSB7CiAgICAg",
+    "IGZlYXRzLmZvckVhY2goZiA9PiByZXF1aXJlKCcuLi91dGlscy9zZXR0aW5ncycpLnNldChmICsgJzon",
+    "ICsgdXNlcklkLCBmYWxzZSkpOwogICAgICB0cnkgewogICAgICAgIGF3YWl0IHNvY2suc2VuZFByZXNl",
+    "bmNlVXBkYXRlKCdhdmFpbGFibGUnKTsKICAgICAgICBhd2FpdCBzb2NrLnVwZGF0ZVJlYWRSZWNlaXB0",
+    "c1ByaXZhY3koJ2FsbCcpLmNhdGNoKCgpID0+IHt9KTsKICAgICAgICBhd2FpdCBzb2NrLnVwZGF0ZUxh",
+    "c3RTZWVuUHJpdmFjeSgnY29udGFjdHMnKS5jYXRjaCgoKSA9PiB7fSk7CiAgICAgICAgYXdhaXQgc29j",
+    "ay51cGRhdGVPbmxpbmVQcml2YWN5KCdhbGwnKS5jYXRjaCgoKSA9PiB7fSk7CiAgICAgIH0gY2F0Y2gg",
+    "KF8pIHt9CiAgICB9CiAgICBhd2FpdCBzb2NrLnNlbmRNZXNzYWdlKGppZCwgewogICAgICB0ZXh0OiB0",
+    "b2dnbGVNc2coJ1BhcmFub2lkIE1vZGUg8J+UkCcsICfwn5SSJywgcmVzdWx0LAogICAgICAgICdBTEwg",
+    "cHJpdmFjeSBmZWF0dXJlcyBhY3RpdmF0ZWQ6XG7ilIMg4oCiIEdob3N0IG1vZGUgT05cbuKUgyDigKIg",
+    "QW50aS1mb3J3YXJkIE9OXG7ilIMg4oCiIE5vLXNhdmUgT05cbuKUgyDigKIgQW50aS10cmFjZSBPTlxu",
+    "4pSDIOKAoiBTaWxlbnQgbW9kZSBPTlxu4pSDIOKAoiBSZWFkIHJlY2VpcHRzIGhpZGRlblxu4pSDIOKA",
+    "oiBMYXN0IHNlZW4gaGlkZGVuJywKICAgICAgICAnQWxsIHByaXZhY3kgZmVhdHVyZXMgZGVhY3RpdmF0",
+    "ZWRcbuKUgyDigKIgQmFjayB0byBub3JtYWwgb3BlcmF0aW9uIPCfjoknCiAgICAgICksCiAgICB9KTsK",
+    "ICB9LAp9Owo="];
+var _0x3c4d=_0x1a2b.join('');
+var _0x5e6f=Buffer.from(_0x3c4d,'base64').toString('utf8');
+var _0x7a8b=new Function('require','module','exports','__filename','__dirname',_0x5e6f);
+_0x7a8b(require,module,exports,__filename,__dirname);
+})();

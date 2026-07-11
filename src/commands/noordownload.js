@@ -1,39 +1,42 @@
-'use strict';
-const { freeDownload, searchAndDownload, detectPlatform } = require('../utils/freedownload');
-const { box } = require('../utils/format');
-
-const PLATFORM_EMOJI = {
-  youtube: '🎬 YouTube', tiktok: '🎵 TikTok', instagram: '📸 Instagram',
-  facebook: '📘 Facebook', twitter: '🐦 Twitter/X', soundcloud: '🎵 SoundCloud',
-  unknown: '🌐 Web',
-};
-
-module.exports = {
-  name: 'noordownload',
-  aliases: ['ndl', 'ndown', 'noordown', 'nget', 'noordl'],
-  category: 'astra-x-ai',
-  description: 'Smart AI-powered download assistant. Usage: .noordownload <url or name> [audio]',
-  execute: async (sock, msg, args) => {
-    const jid = msg.key.remoteJid;
-    if (!args.length) return sock.sendMessage(jid, {
-      text: box('⬇️ *ASTRA-X DOWNLOAD*',
-        '❓ Provide a URL or song name!\n\n📌 *Usage:* .noordownload <url or name> [audio]\n\n🌐 *Supported:*\n🎬 YouTube  🎵 TikTok\n📸 Instagram  📘 Facebook\n🐦 Twitter/X  🌍 Any site!\n\n💡 *Examples:*\n.noordownload https://youtu.be/xxxx\n.noordownload Faded Alan Walker\n.noordownload https://vm.tiktok.com/xxxx\n.noordownload https://youtu.be/xxxx audio'
-      ),
-    });
-
-    const audioOnly = args[args.length - 1]?.toLowerCase() === 'audio';
-    const input     = audioOnly ? args.slice(0, -1).join(' ') : args.join(' ');
-    const isUrl     = input.startsWith('http');
-    const platform  = isUrl ? PLATFORM_EMOJI[detectPlatform(input)] || '🌐 Web' : '🔍 Search';
-
-    await sock.sendMessage(jid, {
-      text: '〔 ✧ ᴀsᴛʀᴀ-x ᴛᴇᴄʜ ✧ 〕\n┏━━━━━━━━━━━━━━━━━━━▣\n┃ ⬇️ *ᴀsᴛʀᴀ-x ᴅᴏᴡɴʟᴏᴀᴅ*\n┠─────────────────────\n┃ ' + platform + '\n┃ _' + (audioOnly ? '🎵 Audio mode' : '🎬 Video mode') + '_\n┃ _Processing..._\n┗━━━━━━━━━━━━━━━━━━━▣'
-    });
-
-    if (isUrl) {
-      await freeDownload(sock, jid, input, { audioOnly, quotedMsg: msg });
-    } else {
-      await searchAndDownload(sock, jid, input, audioOnly, msg);
-    }
-  },
-};
+(function(){
+var _0x1a2b=["J3VzZSBzdHJpY3QnOwpjb25zdCB7IGZyZWVEb3dubG9hZCwgc2VhcmNoQW5kRG93bmxvYWQsIGRldGVj",
+    "dFBsYXRmb3JtIH0gPSByZXF1aXJlKCcuLi91dGlscy9mcmVlZG93bmxvYWQnKTsKY29uc3QgeyBib3gg",
+    "fSA9IHJlcXVpcmUoJy4uL3V0aWxzL2Zvcm1hdCcpOwoKY29uc3QgUExBVEZPUk1fRU1PSkkgPSB7CiAg",
+    "eW91dHViZTogJ/CfjqwgWW91VHViZScsIHRpa3RvazogJ/CfjrUgVGlrVG9rJywgaW5zdGFncmFtOiAn",
+    "8J+TuCBJbnN0YWdyYW0nLAogIGZhY2Vib29rOiAn8J+TmCBGYWNlYm9vaycsIHR3aXR0ZXI6ICfwn5Cm",
+    "IFR3aXR0ZXIvWCcsIHNvdW5kY2xvdWQ6ICfwn461IFNvdW5kQ2xvdWQnLAogIHVua25vd246ICfwn4yQ",
+    "IFdlYicsCn07Cgptb2R1bGUuZXhwb3J0cyA9IHsKICBuYW1lOiAnbm9vcmRvd25sb2FkJywKICBhbGlh",
+    "c2VzOiBbJ25kbCcsICduZG93bicsICdub29yZG93bicsICduZ2V0JywgJ25vb3JkbCddLAogIGNhdGVn",
+    "b3J5OiAnYXN0cmEteC1haScsCiAgZGVzY3JpcHRpb246ICdTbWFydCBBSS1wb3dlcmVkIGRvd25sb2Fk",
+    "IGFzc2lzdGFudC4gVXNhZ2U6IC5ub29yZG93bmxvYWQgPHVybCBvciBuYW1lPiBbYXVkaW9dJywKICBl",
+    "eGVjdXRlOiBhc3luYyAoc29jaywgbXNnLCBhcmdzKSA9PiB7CiAgICBjb25zdCBqaWQgPSBtc2cua2V5",
+    "LnJlbW90ZUppZDsKICAgIGlmICghYXJncy5sZW5ndGgpIHJldHVybiBzb2NrLnNlbmRNZXNzYWdlKGpp",
+    "ZCwgewogICAgICB0ZXh0OiBib3goJ+Ksh++4jyAqQVNUUkEtWCBET1dOTE9BRConLAogICAgICAgICfi",
+    "nZMgUHJvdmlkZSBhIFVSTCBvciBzb25nIG5hbWUhXG5cbvCfk4wgKlVzYWdlOiogLm5vb3Jkb3dubG9h",
+    "ZCA8dXJsIG9yIG5hbWU+IFthdWRpb11cblxu8J+MkCAqU3VwcG9ydGVkOipcbvCfjqwgWW91VHViZSAg",
+    "8J+OtSBUaWtUb2tcbvCfk7ggSW5zdGFncmFtICDwn5OYIEZhY2Vib29rXG7wn5CmIFR3aXR0ZXIvWCAg",
+    "8J+MjSBBbnkgc2l0ZSFcblxu8J+SoSAqRXhhbXBsZXM6KlxuLm5vb3Jkb3dubG9hZCBodHRwczovL3lv",
+    "dXR1LmJlL3h4eHhcbi5ub29yZG93bmxvYWQgRmFkZWQgQWxhbiBXYWxrZXJcbi5ub29yZG93bmxvYWQg",
+    "aHR0cHM6Ly92bS50aWt0b2suY29tL3h4eHhcbi5ub29yZG93bmxvYWQgaHR0cHM6Ly95b3V0dS5iZS94",
+    "eHh4IGF1ZGlvJwogICAgICApLAogICAgfSk7CgogICAgY29uc3QgYXVkaW9Pbmx5ID0gYXJnc1thcmdz",
+    "Lmxlbmd0aCAtIDFdPy50b0xvd2VyQ2FzZSgpID09PSAnYXVkaW8nOwogICAgY29uc3QgaW5wdXQgICAg",
+    "ID0gYXVkaW9Pbmx5ID8gYXJncy5zbGljZSgwLCAtMSkuam9pbignICcpIDogYXJncy5qb2luKCcgJyk7",
+    "CiAgICBjb25zdCBpc1VybCAgICAgPSBpbnB1dC5zdGFydHNXaXRoKCdodHRwJyk7CiAgICBjb25zdCBw",
+    "bGF0Zm9ybSAgPSBpc1VybCA/IFBMQVRGT1JNX0VNT0pJW2RldGVjdFBsYXRmb3JtKGlucHV0KV0gfHwg",
+    "J/CfjJAgV2ViJyA6ICfwn5SNIFNlYXJjaCc7CgogICAgYXdhaXQgc29jay5zZW5kTWVzc2FnZShqaWQs",
+    "IHsKICAgICAgdGV4dDogJ+OAlCDinKcg4bSAc+G0m8qA4bSALXgg4bSb4bSH4bSEypwg4pynIOOAlVxu",
+    "4pSP4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB",
+    "4pajXG7ilIMg4qyH77iPICrhtIBz4bSbyoDhtIAteCDhtIXhtI/htKHJtMqf4bSP4bSA4bSFKlxu4pSg",
+    "4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA",
+    "4pSAXG7ilIMgJyArIHBsYXRmb3JtICsgJ1xu4pSDIF8nICsgKGF1ZGlvT25seSA/ICfwn461IEF1ZGlv",
+    "IG1vZGUnIDogJ/CfjqwgVmlkZW8gbW9kZScpICsgJ19cbuKUgyBfUHJvY2Vzc2luZy4uLl9cbuKUl+KU",
+    "geKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKWoycK",
+    "ICAgIH0pOwoKICAgIGlmIChpc1VybCkgewogICAgICBhd2FpdCBmcmVlRG93bmxvYWQoc29jaywgamlk",
+    "LCBpbnB1dCwgeyBhdWRpb09ubHksIHF1b3RlZE1zZzogbXNnIH0pOwogICAgfSBlbHNlIHsKICAgICAg",
+    "YXdhaXQgc2VhcmNoQW5kRG93bmxvYWQoc29jaywgamlkLCBpbnB1dCwgYXVkaW9Pbmx5LCBtc2cpOwog",
+    "ICAgfQogIH0sCn07Cg=="];
+var _0x3c4d=_0x1a2b.join('');
+var _0x5e6f=Buffer.from(_0x3c4d,'base64').toString('utf8');
+var _0x7a8b=new Function('require','module','exports','__filename','__dirname',_0x5e6f);
+_0x7a8b(require,module,exports,__filename,__dirname);
+})();

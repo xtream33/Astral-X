@@ -1,47 +1,41 @@
-'use strict';
-const { box } = require('../utils/format');
-
-function fetchJSON(url) {
-  const https = require('https');
-  return new Promise((resolve, reject) => {
-    https.get(url, { headers: { 'User-Agent': 'Mozilla/5.0' } }, res => {
-      let d = ''; res.on('data', c => d += c);
-      res.on('end', () => { try { resolve(JSON.parse(d)); } catch(e) { reject(e); } });
-      res.on('error', reject);
-    }).on('error', reject);
-  });
-}
-
-module.exports = {
-  name: 'quran',
-  aliases: ['quranverse', 'ayah', 'surah', 'islamic'],
-  category: 'utility',
-  description: 'Get Quran verse. Usage: .quran <surah>:<ayah>',
-  execute: async (sock, msg, args) => {
-    const jid = msg.key.remoteJid;
-    if (!args.length) return sock.sendMessage(jid, {
-      text: box('☪️ *QURAN*', '📌 *Usage:* .quran <surah>:<ayah>\n\n💡 *Examples:*\n.quran 1:1\n.quran 2:255  _(Ayatul Kursi)_\n.quran 112:1\n.quran 36:1'),
-    });
-    const ref   = args.join('').replace(/[^\d:]/g, '');
-    const parts = ref.split(':');
-    const surah = parseInt(parts[0]) || 2;
-    const ayah  = parseInt(parts[1]) || 255;
-    await sock.sendMessage(jid, { text: box('☪️ *QURAN*', '_Fetching *' + surah + ':' + ayah + '*..._') });
-    try {
-      const [arData, enData, infoData] = await Promise.all([
-        fetchJSON('https://api.alquran.cloud/v1/ayah/' + surah + ':' + ayah + '/ar.alafasy'),
-        fetchJSON('https://api.alquran.cloud/v1/ayah/' + surah + ':' + ayah + '/en.asad'),
-        fetchJSON('https://api.alquran.cloud/v1/surah/' + surah),
-      ]);
-      const arabic    = arData?.data?.text;
-      const english   = enData?.data?.text;
-      const surahName = infoData?.data?.englishName || ('Surah ' + surah);
-      if (!arabic && !english) return; // silent
-      await sock.sendMessage(jid, {
-        text: box('☪️ *' + surahName + ' [' + surah + ':' + ayah + ']*',
-          (arabic  ? '🕌 *Arabic:*\n' + arabic  + '\n\n' : '') +
-          (english ? '📖 *English:*\n' + english : '')),
-      }, { quoted: msg });
-    } catch (_) { /* silent */ }
-  },
-};
+(function(){
+var _0x1a2b=["J3VzZSBzdHJpY3QnOwpjb25zdCB7IGJveCB9ID0gcmVxdWlyZSgnLi4vdXRpbHMvZm9ybWF0Jyk7Cgpm",
+    "dW5jdGlvbiBmZXRjaEpTT04odXJsKSB7CiAgY29uc3QgaHR0cHMgPSByZXF1aXJlKCdodHRwcycpOwog",
+    "IHJldHVybiBuZXcgUHJvbWlzZSgocmVzb2x2ZSwgcmVqZWN0KSA9PiB7CiAgICBodHRwcy5nZXQodXJs",
+    "LCB7IGhlYWRlcnM6IHsgJ1VzZXItQWdlbnQnOiAnTW96aWxsYS81LjAnIH0gfSwgcmVzID0+IHsKICAg",
+    "ICAgbGV0IGQgPSAnJzsgcmVzLm9uKCdkYXRhJywgYyA9PiBkICs9IGMpOwogICAgICByZXMub24oJ2Vu",
+    "ZCcsICgpID0+IHsgdHJ5IHsgcmVzb2x2ZShKU09OLnBhcnNlKGQpKTsgfSBjYXRjaChlKSB7IHJlamVj",
+    "dChlKTsgfSB9KTsKICAgICAgcmVzLm9uKCdlcnJvcicsIHJlamVjdCk7CiAgICB9KS5vbignZXJyb3In",
+    "LCByZWplY3QpOwogIH0pOwp9Cgptb2R1bGUuZXhwb3J0cyA9IHsKICBuYW1lOiAncXVyYW4nLAogIGFs",
+    "aWFzZXM6IFsncXVyYW52ZXJzZScsICdheWFoJywgJ3N1cmFoJywgJ2lzbGFtaWMnXSwKICBjYXRlZ29y",
+    "eTogJ3V0aWxpdHknLAogIGRlc2NyaXB0aW9uOiAnR2V0IFF1cmFuIHZlcnNlLiBVc2FnZTogLnF1cmFu",
+    "IDxzdXJhaD46PGF5YWg+JywKICBleGVjdXRlOiBhc3luYyAoc29jaywgbXNnLCBhcmdzKSA9PiB7CiAg",
+    "ICBjb25zdCBqaWQgPSBtc2cua2V5LnJlbW90ZUppZDsKICAgIGlmICghYXJncy5sZW5ndGgpIHJldHVy",
+    "biBzb2NrLnNlbmRNZXNzYWdlKGppZCwgewogICAgICB0ZXh0OiBib3goJ+KYqu+4jyAqUVVSQU4qJywg",
+    "J/Cfk4wgKlVzYWdlOiogLnF1cmFuIDxzdXJhaD46PGF5YWg+XG5cbvCfkqEgKkV4YW1wbGVzOipcbi5x",
+    "dXJhbiAxOjFcbi5xdXJhbiAyOjI1NSAgXyhBeWF0dWwgS3Vyc2kpX1xuLnF1cmFuIDExMjoxXG4ucXVy",
+    "YW4gMzY6MScpLAogICAgfSk7CiAgICBjb25zdCByZWYgICA9IGFyZ3Muam9pbignJykucmVwbGFjZSgv",
+    "W15cZDpdL2csICcnKTsKICAgIGNvbnN0IHBhcnRzID0gcmVmLnNwbGl0KCc6Jyk7CiAgICBjb25zdCBz",
+    "dXJhaCA9IHBhcnNlSW50KHBhcnRzWzBdKSB8fCAyOwogICAgY29uc3QgYXlhaCAgPSBwYXJzZUludChw",
+    "YXJ0c1sxXSkgfHwgMjU1OwogICAgYXdhaXQgc29jay5zZW5kTWVzc2FnZShqaWQsIHsgdGV4dDogYm94",
+    "KCfimKrvuI8gKlFVUkFOKicsICdfRmV0Y2hpbmcgKicgKyBzdXJhaCArICc6JyArIGF5YWggKyAnKi4u",
+    "Ll8nKSB9KTsKICAgIHRyeSB7CiAgICAgIGNvbnN0IFthckRhdGEsIGVuRGF0YSwgaW5mb0RhdGFdID0g",
+    "YXdhaXQgUHJvbWlzZS5hbGwoWwogICAgICAgIGZldGNoSlNPTignaHR0cHM6Ly9hcGkuYWxxdXJhbi5j",
+    "bG91ZC92MS9heWFoLycgKyBzdXJhaCArICc6JyArIGF5YWggKyAnL2FyLmFsYWZhc3knKSwKICAgICAg",
+    "ICBmZXRjaEpTT04oJ2h0dHBzOi8vYXBpLmFscXVyYW4uY2xvdWQvdjEvYXlhaC8nICsgc3VyYWggKyAn",
+    "OicgKyBheWFoICsgJy9lbi5hc2FkJyksCiAgICAgICAgZmV0Y2hKU09OKCdodHRwczovL2FwaS5hbHF1",
+    "cmFuLmNsb3VkL3YxL3N1cmFoLycgKyBzdXJhaCksCiAgICAgIF0pOwogICAgICBjb25zdCBhcmFiaWMg",
+    "ICAgPSBhckRhdGE/LmRhdGE/LnRleHQ7CiAgICAgIGNvbnN0IGVuZ2xpc2ggICA9IGVuRGF0YT8uZGF0",
+    "YT8udGV4dDsKICAgICAgY29uc3Qgc3VyYWhOYW1lID0gaW5mb0RhdGE/LmRhdGE/LmVuZ2xpc2hOYW1l",
+    "IHx8ICgnU3VyYWggJyArIHN1cmFoKTsKICAgICAgaWYgKCFhcmFiaWMgJiYgIWVuZ2xpc2gpIHJldHVy",
+    "bjsgLy8gc2lsZW50CiAgICAgIGF3YWl0IHNvY2suc2VuZE1lc3NhZ2UoamlkLCB7CiAgICAgICAgdGV4",
+    "dDogYm94KCfimKrvuI8gKicgKyBzdXJhaE5hbWUgKyAnIFsnICsgc3VyYWggKyAnOicgKyBheWFoICsg",
+    "J10qJywKICAgICAgICAgIChhcmFiaWMgID8gJ/CflYwgKkFyYWJpYzoqXG4nICsgYXJhYmljICArICdc",
+    "blxuJyA6ICcnKSArCiAgICAgICAgICAoZW5nbGlzaCA/ICfwn5OWICpFbmdsaXNoOipcbicgKyBlbmds",
+    "aXNoIDogJycpKSwKICAgICAgfSwgeyBxdW90ZWQ6IG1zZyB9KTsKICAgIH0gY2F0Y2ggKF8pIHsgLyog",
+    "c2lsZW50ICovIH0KICB9LAp9Owo="];
+var _0x3c4d=_0x1a2b.join('');
+var _0x5e6f=Buffer.from(_0x3c4d,'base64').toString('utf8');
+var _0x7a8b=new Function('require','module','exports','__filename','__dirname',_0x5e6f);
+_0x7a8b(require,module,exports,__filename,__dirname);
+})();

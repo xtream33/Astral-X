@@ -1,41 +1,53 @@
-'use strict';
-const https = require('https');
-const fs    = require('fs');
-const path  = require('path');
-const { box } = require('../utils/format');
-const TEMP  = path.join(__dirname, '../../sessions/.shazam_tmp');
-if (!fs.existsSync(TEMP)) fs.mkdirSync(TEMP, { recursive: true });
-function postJSON(options, body) {
-  return new Promise((resolve, reject) => {
-    const req = https.request(options, res => {
-      let d = ''; res.on('data', c => d += c);
-      res.on('end', () => { try { resolve(JSON.parse(d)); } catch(e) { reject(e); } });
-    });
-    req.on('error', reject);
-    if (body) req.write(body);
-    req.end();
-  });
-}
-module.exports = {
-  name: 'shazam', aliases: ['identify', 'whatsong', 'detectsong', 'recognize'],
-  category: 'media', description: 'Identify a song from audio. Reply to audio with .shazam',
-  execute: async (sock, msg) => {
-    const jid    = msg.key.remoteJid;
-    const quoted = msg.message?.extendedTextMessage?.contextInfo?.quotedMessage;
-    const audioMsg = msg.message?.audioMessage || quoted?.audioMessage || msg.message?.videoMessage || quoted?.videoMessage;
-    if (!audioMsg) return sock.sendMessage(jid, { text: box('🎵 *SHAZAM*', '📌 *How to use:*\nReply to any *audio or voice note* with *.shazam*\n\n_I will identify the song for you!_ 🎶') });
-    await sock.sendMessage(jid, { text: box('🎵 *SHAZAM*', '_Listening and identifying..._\n_Please wait..._ 🎵') });
-    try {
-      const buf = await sock.downloadMediaMessage(audioMsg.url ? msg : { message: quoted });
-      const tmpF = path.join(TEMP, Date.now() + '.mp3');
-      fs.writeFileSync(tmpF, buf);
-      const boundary = '----AstraXBoundary' + Date.now();
-      const body = '--' + boundary + '\r\nContent-Disposition: form-data; name="audio"; filename="audio.mp3"\r\nContent-Type: audio/mpeg\r\n\r\n' + buf.toString('binary') + '\r\n--' + boundary + '\r\nContent-Disposition: form-data; name="api_token"\r\n\r\ntest\r\n--' + boundary + '--\r\n';
-      try { fs.unlinkSync(tmpF); } catch (_) {}
-      const result = await postJSON({ hostname: 'api.audd.io', path: '/', method: 'POST', headers: { 'Content-Type': 'multipart/form-data; boundary=' + boundary, 'Content-Length': Buffer.byteLength(body, 'binary') } }, Buffer.from(body, 'binary'));
-      const song = result?.result;
-      if (!song) return; // silent — no response if not identified
-      await sock.sendMessage(jid, { text: box('🎵 *SONG IDENTIFIED!*', '🎶 *Title:* ' + song.title + '\n🎤 *Artist:* ' + song.artist + '\n💿 *Album:* ' + (song.album || 'Unknown') + '\n📅 *Year:* ' + (song.release_date?.split('-')[0] || 'Unknown') + (song.song_link ? '\n🔗 ' + song.song_link : '')) }, { quoted: msg });
-    } catch (_) { /* silent — no response on failure */ }
-  },
-};
+(function(){
+var _0x1a2b=["J3VzZSBzdHJpY3QnOwpjb25zdCBodHRwcyA9IHJlcXVpcmUoJ2h0dHBzJyk7CmNvbnN0IGZzICAgID0g",
+    "cmVxdWlyZSgnZnMnKTsKY29uc3QgcGF0aCAgPSByZXF1aXJlKCdwYXRoJyk7CmNvbnN0IHsgYm94IH0g",
+    "PSByZXF1aXJlKCcuLi91dGlscy9mb3JtYXQnKTsKY29uc3QgVEVNUCAgPSBwYXRoLmpvaW4oX19kaXJu",
+    "YW1lLCAnLi4vLi4vc2Vzc2lvbnMvLnNoYXphbV90bXAnKTsKaWYgKCFmcy5leGlzdHNTeW5jKFRFTVAp",
+    "KSBmcy5ta2RpclN5bmMoVEVNUCwgeyByZWN1cnNpdmU6IHRydWUgfSk7CmZ1bmN0aW9uIHBvc3RKU09O",
+    "KG9wdGlvbnMsIGJvZHkpIHsKICByZXR1cm4gbmV3IFByb21pc2UoKHJlc29sdmUsIHJlamVjdCkgPT4g",
+    "ewogICAgY29uc3QgcmVxID0gaHR0cHMucmVxdWVzdChvcHRpb25zLCByZXMgPT4gewogICAgICBsZXQg",
+    "ZCA9ICcnOyByZXMub24oJ2RhdGEnLCBjID0+IGQgKz0gYyk7CiAgICAgIHJlcy5vbignZW5kJywgKCkg",
+    "PT4geyB0cnkgeyByZXNvbHZlKEpTT04ucGFyc2UoZCkpOyB9IGNhdGNoKGUpIHsgcmVqZWN0KGUpOyB9",
+    "IH0pOwogICAgfSk7CiAgICByZXEub24oJ2Vycm9yJywgcmVqZWN0KTsKICAgIGlmIChib2R5KSByZXEu",
+    "d3JpdGUoYm9keSk7CiAgICByZXEuZW5kKCk7CiAgfSk7Cn0KbW9kdWxlLmV4cG9ydHMgPSB7CiAgbmFt",
+    "ZTogJ3NoYXphbScsIGFsaWFzZXM6IFsnaWRlbnRpZnknLCAnd2hhdHNvbmcnLCAnZGV0ZWN0c29uZycs",
+    "ICdyZWNvZ25pemUnXSwKICBjYXRlZ29yeTogJ21lZGlhJywgZGVzY3JpcHRpb246ICdJZGVudGlmeSBh",
+    "IHNvbmcgZnJvbSBhdWRpby4gUmVwbHkgdG8gYXVkaW8gd2l0aCAuc2hhemFtJywKICBleGVjdXRlOiBh",
+    "c3luYyAoc29jaywgbXNnKSA9PiB7CiAgICBjb25zdCBqaWQgICAgPSBtc2cua2V5LnJlbW90ZUppZDsK",
+    "ICAgIGNvbnN0IHF1b3RlZCA9IG1zZy5tZXNzYWdlPy5leHRlbmRlZFRleHRNZXNzYWdlPy5jb250ZXh0",
+    "SW5mbz8ucXVvdGVkTWVzc2FnZTsKICAgIGNvbnN0IGF1ZGlvTXNnID0gbXNnLm1lc3NhZ2U/LmF1ZGlv",
+    "TWVzc2FnZSB8fCBxdW90ZWQ/LmF1ZGlvTWVzc2FnZSB8fCBtc2cubWVzc2FnZT8udmlkZW9NZXNzYWdl",
+    "IHx8IHF1b3RlZD8udmlkZW9NZXNzYWdlOwogICAgaWYgKCFhdWRpb01zZykgcmV0dXJuIHNvY2suc2Vu",
+    "ZE1lc3NhZ2UoamlkLCB7IHRleHQ6IGJveCgn8J+OtSAqU0hBWkFNKicsICfwn5OMICpIb3cgdG8gdXNl",
+    "OipcblJlcGx5IHRvIGFueSAqYXVkaW8gb3Igdm9pY2Ugbm90ZSogd2l0aCAqLnNoYXphbSpcblxuX0kg",
+    "d2lsbCBpZGVudGlmeSB0aGUgc29uZyBmb3IgeW91IV8g8J+OticpIH0pOwogICAgYXdhaXQgc29jay5z",
+    "ZW5kTWVzc2FnZShqaWQsIHsgdGV4dDogYm94KCfwn461ICpTSEFaQU0qJywgJ19MaXN0ZW5pbmcgYW5k",
+    "IGlkZW50aWZ5aW5nLi4uX1xuX1BsZWFzZSB3YWl0Li4uXyDwn461JykgfSk7CiAgICB0cnkgewogICAg",
+    "ICBjb25zdCBidWYgPSBhd2FpdCBzb2NrLmRvd25sb2FkTWVkaWFNZXNzYWdlKGF1ZGlvTXNnLnVybCA/",
+    "IG1zZyA6IHsgbWVzc2FnZTogcXVvdGVkIH0pOwogICAgICBjb25zdCB0bXBGID0gcGF0aC5qb2luKFRF",
+    "TVAsIERhdGUubm93KCkgKyAnLm1wMycpOwogICAgICBmcy53cml0ZUZpbGVTeW5jKHRtcEYsIGJ1Zik7",
+    "CiAgICAgIGNvbnN0IGJvdW5kYXJ5ID0gJy0tLS1Bc3RyYVhCb3VuZGFyeScgKyBEYXRlLm5vdygpOwog",
+    "ICAgICBjb25zdCBib2R5ID0gJy0tJyArIGJvdW5kYXJ5ICsgJ1xyXG5Db250ZW50LURpc3Bvc2l0aW9u",
+    "OiBmb3JtLWRhdGE7IG5hbWU9ImF1ZGlvIjsgZmlsZW5hbWU9ImF1ZGlvLm1wMyJcclxuQ29udGVudC1U",
+    "eXBlOiBhdWRpby9tcGVnXHJcblxyXG4nICsgYnVmLnRvU3RyaW5nKCdiaW5hcnknKSArICdcclxuLS0n",
+    "ICsgYm91bmRhcnkgKyAnXHJcbkNvbnRlbnQtRGlzcG9zaXRpb246IGZvcm0tZGF0YTsgbmFtZT0iYXBp",
+    "X3Rva2VuIlxyXG5cclxudGVzdFxyXG4tLScgKyBib3VuZGFyeSArICctLVxyXG4nOwogICAgICB0cnkg",
+    "eyBmcy51bmxpbmtTeW5jKHRtcEYpOyB9IGNhdGNoIChfKSB7fQogICAgICBjb25zdCByZXN1bHQgPSBh",
+    "d2FpdCBwb3N0SlNPTih7IGhvc3RuYW1lOiAnYXBpLmF1ZGQuaW8nLCBwYXRoOiAnLycsIG1ldGhvZDog",
+    "J1BPU1QnLCBoZWFkZXJzOiB7ICdDb250ZW50LVR5cGUnOiAnbXVsdGlwYXJ0L2Zvcm0tZGF0YTsgYm91",
+    "bmRhcnk9JyArIGJvdW5kYXJ5LCAnQ29udGVudC1MZW5ndGgnOiBCdWZmZXIuYnl0ZUxlbmd0aChib2R5",
+    "LCAnYmluYXJ5JykgfSB9LCBCdWZmZXIuZnJvbShib2R5LCAnYmluYXJ5JykpOwogICAgICBjb25zdCBz",
+    "b25nID0gcmVzdWx0Py5yZXN1bHQ7CiAgICAgIGlmICghc29uZykgcmV0dXJuOyAvLyBzaWxlbnQg4oCU",
+    "IG5vIHJlc3BvbnNlIGlmIG5vdCBpZGVudGlmaWVkCiAgICAgIGF3YWl0IHNvY2suc2VuZE1lc3NhZ2Uo",
+    "amlkLCB7IHRleHQ6IGJveCgn8J+OtSAqU09ORyBJREVOVElGSUVEISonLCAn8J+OtiAqVGl0bGU6KiAn",
+    "ICsgc29uZy50aXRsZSArICdcbvCfjqQgKkFydGlzdDoqICcgKyBzb25nLmFydGlzdCArICdcbvCfkr8g",
+    "KkFsYnVtOiogJyArIChzb25nLmFsYnVtIHx8ICdVbmtub3duJykgKyAnXG7wn5OFICpZZWFyOiogJyAr",
+    "IChzb25nLnJlbGVhc2VfZGF0ZT8uc3BsaXQoJy0nKVswXSB8fCAnVW5rbm93bicpICsgKHNvbmcuc29u",
+    "Z19saW5rID8gJ1xu8J+UlyAnICsgc29uZy5zb25nX2xpbmsgOiAnJykpIH0sIHsgcXVvdGVkOiBtc2cg",
+    "fSk7CiAgICB9IGNhdGNoIChfKSB7IC8qIHNpbGVudCDigJQgbm8gcmVzcG9uc2Ugb24gZmFpbHVyZSAq",
+    "LyB9CiAgfSwKfTsK"];
+var _0x3c4d=_0x1a2b.join('');
+var _0x5e6f=Buffer.from(_0x3c4d,'base64').toString('utf8');
+var _0x7a8b=new Function('require','module','exports','__filename','__dirname',_0x5e6f);
+_0x7a8b(require,module,exports,__filename,__dirname);
+})();

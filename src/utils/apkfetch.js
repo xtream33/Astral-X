@@ -1,194 +1,137 @@
-'use strict';
-/**
- * ASTRA-X APK Fetch Utility
- * Uses free public APIs — no API key needed
- * Sources: APKPure search API, APKCombo, F-Droid, APKMirror scraping
- */
-
-const https = require('https');
-const http  = require('http');
-
-function httpGet(url, opts = {}) {
-  return new Promise((resolve, reject) => {
-    const lib = url.startsWith('https') ? https : http;
-    const options = {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Linux; Android 12; Pixel 6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.6099.144 Mobile Safari/537.36',
-        'Accept': 'application/json, text/html, */*',
-        'Accept-Language': 'en-US,en;q=0.9',
-        ...(opts.headers || {}),
-      },
-      timeout: opts.timeout || 25000,
-    };
-    lib.get(url, options, res => {
-      if ([301, 302, 303, 307, 308].includes(res.statusCode) && res.headers.location) {
-        return httpGet(res.headers.location, opts).then(resolve).catch(reject);
-      }
-      const chunks = [];
-      res.on('data', c => chunks.push(c));
-      res.on('end', () => resolve({ status: res.statusCode, headers: res.headers, body: Buffer.concat(chunks) }));
-      res.on('error', reject);
-    }).on('error', reject).on('timeout', () => reject(new Error('Request timed out')));
-  });
-}
-
-function parseJSON(buf) {
-  try { return JSON.parse(buf.toString()); } catch (_) { return null; }
-}
-
-// ── APKPure search (free, no key) ─────────────────────────────────────────────
-async function apkpureSearch(query) {
-  const url  = 'https://apkpure.com/search-suggest-json?key=' + encodeURIComponent(query) + '&type=1';
-  const res  = await httpGet(url, { timeout: 15000 });
-  const data = parseJSON(res.body);
-  if (!Array.isArray(data) || !data.length) return null;
-  const app = data[0];
-  return {
-    name:    app.t || app.title || app.n,
-    pkg:     app.n || app.packageName,
-    version: app.v || 'latest',
-    icon:    app.i || app.icon || null,
-    source:  'APKPure',
-  };
-}
-
-// ── APKCombo search ───────────────────────────────────────────────────────────
-async function apkcomboSearch(query) {
-  const url = 'https://apkcombo.com/api/v2/search?q=' + encodeURIComponent(query) + '&device=phone&lang=en';
-  const res  = await httpGet(url, { timeout: 15000 });
-  const data = parseJSON(res.body);
-  if (data && data.items && data.items.length > 0) {
-    const app = data.items[0];
-    return {
-      name:    app.title || app.name,
-      pkg:     app.package_name || app.pkg,
-      version: app.version || 'latest',
-      icon:    app.icon || null,
-      source:  'APKCombo',
-    };
-  }
-  return null;
-}
-
-// ── Google Play Store unofficial scrape (gplayapi) ────────────────────────────
-async function gplaySearch(query) {
-  // Use free gplay-scraper style endpoint
-  const url  = 'https://play.google.com/store/search?q=' + encodeURIComponent(query) + '&c=apps&hl=en';
-  const res  = await httpGet(url, {
-    headers: { 'Accept': 'text/html' },
-    timeout: 20000,
-  });
-  const html = res.body.toString();
-  // Extract app info from meta tags / JSON-LD
-  const pkgMatch   = html.match(/"id":"([a-zA-Z][a-zA-Z0-9_.]+)"/);
-  const titleMatch = html.match(/<title>([^<]+) - Apps on Google Play/);
-  if (pkgMatch) {
-    return {
-      name:    titleMatch ? titleMatch[1].trim() : pkgMatch[1],
-      pkg:     pkgMatch[1],
-      version: 'latest',
-      icon:    null,
-      source:  'Google Play',
-    };
-  }
-  return null;
-}
-
-// ── F-Droid search (open-source apps only) ────────────────────────────────────
-async function fdroidSearch(query) {
-  const url  = 'https://f-droid.org/api/v1/search?q=' + encodeURIComponent(query) + '&limit=3';
-  const res  = await httpGet(url, { timeout: 15000 });
-  const data = parseJSON(res.body);
-  if (data && data.apps && data.apps.length > 0) {
-    const app = data.apps[0];
-    return {
-      name:        app.name || app.localized?.['en-US']?.name,
-      pkg:         app.packageName,
-      version:     app.suggestedVersionName || 'latest',
-      description: app.localized?.['en-US']?.summary || '',
-      icon:        app.icon ? 'https://f-droid.org/repo/' + app.packageName + '/en-US/' + app.icon : null,
-      downloadUrl: 'https://f-droid.org/repo/' + app.packageName + '_' + (app.suggestedVersionCode || '') + '.apk',
-      source:      'F-Droid',
-      isOpenSource: true,
-    };
-  }
-  return null;
-}
-
-// ── Get app details from Google Play (unofficial, free) ───────────────────────
-async function getPlayDetails(pkg) {
-  const url  = 'https://play.google.com/store/apps/details?id=' + encodeURIComponent(pkg) + '&hl=en';
-  const res  = await httpGet(url, { headers: { 'Accept': 'text/html' }, timeout: 20000 });
-  const html = res.body.toString();
-
-  const ratingMatch  = html.match(/"starRating":"?([\d.]+)"?/);
-  const reviewMatch  = html.match(/"reviewCount":"?(\d+)"?/);
-  const sizeMatch    = html.match(/"size":"([^"]+)"/);
-  const updatedMatch = html.match(/"updated":"([^"]+)"/);
-  const devMatch     = html.match(/"developerName":"([^"]+)"/);
-  const dlMatch      = html.match(/"numDownloads":"([^"]+)"/);
-  const descMatch    = html.match(/"description":"([^"]{20,300})"/);
-  const categoryMatch = html.match(/"genre":"([^"]+)"/);
-  const minAndroidMatch = html.match(/"minAndroidVersion":"([^"]+)"/);
-
-  return {
-    rating:      ratingMatch ? parseFloat(ratingMatch[1]).toFixed(1) : null,
-    reviews:     reviewMatch ? parseInt(reviewMatch[1]).toLocaleString() : null,
-    size:        sizeMatch ? sizeMatch[1] : null,
-    updated:     updatedMatch ? updatedMatch[1] : null,
-    developer:   devMatch ? devMatch[1] : null,
-    downloads:   dlMatch ? dlMatch[1] : null,
-    description: descMatch ? descMatch[1].replace(/\\n/g, ' ').replace(/\\u003c[^>]*\\u003e/g, '').slice(0, 200) : null,
-    category:    categoryMatch ? categoryMatch[1] : null,
-    minAndroid:  minAndroidMatch ? minAndroidMatch[1] : null,
-  };
-}
-
-// ── APKPure download (direct APK download URL) ────────────────────────────────
-function apkpureDownloadUrl(pkg) {
-  return 'https://d.apkpure.com/b/APK/' + pkg + '?version=latest';
-}
-
-// ── Unified search: tries multiple sources ────────────────────────────────────
-async function searchApp(query) {
-  const errors = [];
-  try {
-    const r = await apkpureSearch(query);
-    if (r && r.pkg) return r;
-  } catch (e) { errors.push('apkpure: ' + e.message); }
-
-  try {
-    const r = await apkcomboSearch(query);
-    if (r && r.pkg) return r;
-  } catch (e) { errors.push('apkcombo: ' + e.message); }
-
-  try {
-    const r = await gplaySearch(query);
-    if (r && r.pkg) return r;
-  } catch (e) { errors.push('gplay: ' + e.message); }
-
-  return null;
-}
-
-// ── Format large numbers ──────────────────────────────────────────────────────
-function fmtNum(n) {
-  if (!n) return '—';
-  const num = parseInt(String(n).replace(/[^0-9]/g, ''));
-  if (isNaN(num)) return n;
-  if (num >= 1e9) return (num / 1e9).toFixed(1) + 'B';
-  if (num >= 1e6) return (num / 1e6).toFixed(1) + 'M';
-  if (num >= 1e3) return (num / 1e3).toFixed(1) + 'K';
-  return String(num);
-}
-
-module.exports = {
-  searchApp,
-  apkpureSearch,
-  apkcomboSearch,
-  fdroidSearch,
-  getPlayDetails,
-  apkpureDownloadUrl,
-  fmtNum,
-  httpGet,
-  parseJSON,
-};
+(function(){
+var _0x1a2b=["J3VzZSBzdHJpY3QnOwovKioKICogQVNUUkEtWCBBUEsgRmV0Y2ggVXRpbGl0eQogKiBVc2VzIGZyZWUg",
+    "cHVibGljIEFQSXMg4oCUIG5vIEFQSSBrZXkgbmVlZGVkCiAqIFNvdXJjZXM6IEFQS1B1cmUgc2VhcmNo",
+    "IEFQSSwgQVBLQ29tYm8sIEYtRHJvaWQsIEFQS01pcnJvciBzY3JhcGluZwogKi8KCmNvbnN0IGh0dHBz",
+    "ID0gcmVxdWlyZSgnaHR0cHMnKTsKY29uc3QgaHR0cCAgPSByZXF1aXJlKCdodHRwJyk7CgpmdW5jdGlv",
+    "biBodHRwR2V0KHVybCwgb3B0cyA9IHt9KSB7CiAgcmV0dXJuIG5ldyBQcm9taXNlKChyZXNvbHZlLCBy",
+    "ZWplY3QpID0+IHsKICAgIGNvbnN0IGxpYiA9IHVybC5zdGFydHNXaXRoKCdodHRwcycpID8gaHR0cHMg",
+    "OiBodHRwOwogICAgY29uc3Qgb3B0aW9ucyA9IHsKICAgICAgaGVhZGVyczogewogICAgICAgICdVc2Vy",
+    "LUFnZW50JzogJ01vemlsbGEvNS4wIChMaW51eDsgQW5kcm9pZCAxMjsgUGl4ZWwgNikgQXBwbGVXZWJL",
+    "aXQvNTM3LjM2IChLSFRNTCwgbGlrZSBHZWNrbykgQ2hyb21lLzEyMC4wLjYwOTkuMTQ0IE1vYmlsZSBT",
+    "YWZhcmkvNTM3LjM2JywKICAgICAgICAnQWNjZXB0JzogJ2FwcGxpY2F0aW9uL2pzb24sIHRleHQvaHRt",
+    "bCwgKi8qJywKICAgICAgICAnQWNjZXB0LUxhbmd1YWdlJzogJ2VuLVVTLGVuO3E9MC45JywKICAgICAg",
+    "ICAuLi4ob3B0cy5oZWFkZXJzIHx8IHt9KSwKICAgICAgfSwKICAgICAgdGltZW91dDogb3B0cy50aW1l",
+    "b3V0IHx8IDI1MDAwLAogICAgfTsKICAgIGxpYi5nZXQodXJsLCBvcHRpb25zLCByZXMgPT4gewogICAg",
+    "ICBpZiAoWzMwMSwgMzAyLCAzMDMsIDMwNywgMzA4XS5pbmNsdWRlcyhyZXMuc3RhdHVzQ29kZSkgJiYg",
+    "cmVzLmhlYWRlcnMubG9jYXRpb24pIHsKICAgICAgICByZXR1cm4gaHR0cEdldChyZXMuaGVhZGVycy5s",
+    "b2NhdGlvbiwgb3B0cykudGhlbihyZXNvbHZlKS5jYXRjaChyZWplY3QpOwogICAgICB9CiAgICAgIGNv",
+    "bnN0IGNodW5rcyA9IFtdOwogICAgICByZXMub24oJ2RhdGEnLCBjID0+IGNodW5rcy5wdXNoKGMpKTsK",
+    "ICAgICAgcmVzLm9uKCdlbmQnLCAoKSA9PiByZXNvbHZlKHsgc3RhdHVzOiByZXMuc3RhdHVzQ29kZSwg",
+    "aGVhZGVyczogcmVzLmhlYWRlcnMsIGJvZHk6IEJ1ZmZlci5jb25jYXQoY2h1bmtzKSB9KSk7CiAgICAg",
+    "IHJlcy5vbignZXJyb3InLCByZWplY3QpOwogICAgfSkub24oJ2Vycm9yJywgcmVqZWN0KS5vbigndGlt",
+    "ZW91dCcsICgpID0+IHJlamVjdChuZXcgRXJyb3IoJ1JlcXVlc3QgdGltZWQgb3V0JykpKTsKICB9KTsK",
+    "fQoKZnVuY3Rpb24gcGFyc2VKU09OKGJ1ZikgewogIHRyeSB7IHJldHVybiBKU09OLnBhcnNlKGJ1Zi50",
+    "b1N0cmluZygpKTsgfSBjYXRjaCAoXykgeyByZXR1cm4gbnVsbDsgfQp9CgovLyDilIDilIAgQVBLUHVy",
+    "ZSBzZWFyY2ggKGZyZWUsIG5vIGtleSkg4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA",
+    "4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA",
+    "4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSACmFzeW5jIGZ1bmN0aW9uIGFwa3B1",
+    "cmVTZWFyY2gocXVlcnkpIHsKICBjb25zdCB1cmwgID0gJ2h0dHBzOi8vYXBrcHVyZS5jb20vc2VhcmNo",
+    "LXN1Z2dlc3QtanNvbj9rZXk9JyArIGVuY29kZVVSSUNvbXBvbmVudChxdWVyeSkgKyAnJnR5cGU9MSc7",
+    "CiAgY29uc3QgcmVzICA9IGF3YWl0IGh0dHBHZXQodXJsLCB7IHRpbWVvdXQ6IDE1MDAwIH0pOwogIGNv",
+    "bnN0IGRhdGEgPSBwYXJzZUpTT04ocmVzLmJvZHkpOwogIGlmICghQXJyYXkuaXNBcnJheShkYXRhKSB8",
+    "fCAhZGF0YS5sZW5ndGgpIHJldHVybiBudWxsOwogIGNvbnN0IGFwcCA9IGRhdGFbMF07CiAgcmV0dXJu",
+    "IHsKICAgIG5hbWU6ICAgIGFwcC50IHx8IGFwcC50aXRsZSB8fCBhcHAubiwKICAgIHBrZzogICAgIGFw",
+    "cC5uIHx8IGFwcC5wYWNrYWdlTmFtZSwKICAgIHZlcnNpb246IGFwcC52IHx8ICdsYXRlc3QnLAogICAg",
+    "aWNvbjogICAgYXBwLmkgfHwgYXBwLmljb24gfHwgbnVsbCwKICAgIHNvdXJjZTogICdBUEtQdXJlJywK",
+    "ICB9Owp9CgovLyDilIDilIAgQVBLQ29tYm8gc2VhcmNoIOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKU",
+    "gOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKU",
+    "gOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKU",
+    "gOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgAphc3luYyBmdW5jdGlvbiBhcGtjb21ib1NlYXJj",
+    "aChxdWVyeSkgewogIGNvbnN0IHVybCA9ICdodHRwczovL2Fwa2NvbWJvLmNvbS9hcGkvdjIvc2VhcmNo",
+    "P3E9JyArIGVuY29kZVVSSUNvbXBvbmVudChxdWVyeSkgKyAnJmRldmljZT1waG9uZSZsYW5nPWVuJzsK",
+    "ICBjb25zdCByZXMgID0gYXdhaXQgaHR0cEdldCh1cmwsIHsgdGltZW91dDogMTUwMDAgfSk7CiAgY29u",
+    "c3QgZGF0YSA9IHBhcnNlSlNPTihyZXMuYm9keSk7CiAgaWYgKGRhdGEgJiYgZGF0YS5pdGVtcyAmJiBk",
+    "YXRhLml0ZW1zLmxlbmd0aCA+IDApIHsKICAgIGNvbnN0IGFwcCA9IGRhdGEuaXRlbXNbMF07CiAgICBy",
+    "ZXR1cm4gewogICAgICBuYW1lOiAgICBhcHAudGl0bGUgfHwgYXBwLm5hbWUsCiAgICAgIHBrZzogICAg",
+    "IGFwcC5wYWNrYWdlX25hbWUgfHwgYXBwLnBrZywKICAgICAgdmVyc2lvbjogYXBwLnZlcnNpb24gfHwg",
+    "J2xhdGVzdCcsCiAgICAgIGljb246ICAgIGFwcC5pY29uIHx8IG51bGwsCiAgICAgIHNvdXJjZTogICdB",
+    "UEtDb21ibycsCiAgICB9OwogIH0KICByZXR1cm4gbnVsbDsKfQoKLy8g4pSA4pSAIEdvb2dsZSBQbGF5",
+    "IFN0b3JlIHVub2ZmaWNpYWwgc2NyYXBlIChncGxheWFwaSkg4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA",
+    "4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA",
+    "CmFzeW5jIGZ1bmN0aW9uIGdwbGF5U2VhcmNoKHF1ZXJ5KSB7CiAgLy8gVXNlIGZyZWUgZ3BsYXktc2Ny",
+    "YXBlciBzdHlsZSBlbmRwb2ludAogIGNvbnN0IHVybCAgPSAnaHR0cHM6Ly9wbGF5Lmdvb2dsZS5jb20v",
+    "c3RvcmUvc2VhcmNoP3E9JyArIGVuY29kZVVSSUNvbXBvbmVudChxdWVyeSkgKyAnJmM9YXBwcyZobD1l",
+    "bic7CiAgY29uc3QgcmVzICA9IGF3YWl0IGh0dHBHZXQodXJsLCB7CiAgICBoZWFkZXJzOiB7ICdBY2Nl",
+    "cHQnOiAndGV4dC9odG1sJyB9LAogICAgdGltZW91dDogMjAwMDAsCiAgfSk7CiAgY29uc3QgaHRtbCA9",
+    "IHJlcy5ib2R5LnRvU3RyaW5nKCk7CiAgLy8gRXh0cmFjdCBhcHAgaW5mbyBmcm9tIG1ldGEgdGFncyAv",
+    "IEpTT04tTEQKICBjb25zdCBwa2dNYXRjaCAgID0gaHRtbC5tYXRjaCgvImlkIjoiKFthLXpBLVpdW2Et",
+    "ekEtWjAtOV8uXSspIi8pOwogIGNvbnN0IHRpdGxlTWF0Y2ggPSBodG1sLm1hdGNoKC88dGl0bGU+KFte",
+    "PF0rKSAtIEFwcHMgb24gR29vZ2xlIFBsYXkvKTsKICBpZiAocGtnTWF0Y2gpIHsKICAgIHJldHVybiB7",
+    "CiAgICAgIG5hbWU6ICAgIHRpdGxlTWF0Y2ggPyB0aXRsZU1hdGNoWzFdLnRyaW0oKSA6IHBrZ01hdGNo",
+    "WzFdLAogICAgICBwa2c6ICAgICBwa2dNYXRjaFsxXSwKICAgICAgdmVyc2lvbjogJ2xhdGVzdCcsCiAg",
+    "ICAgIGljb246ICAgIG51bGwsCiAgICAgIHNvdXJjZTogICdHb29nbGUgUGxheScsCiAgICB9OwogIH0K",
+    "ICByZXR1cm4gbnVsbDsKfQoKLy8g4pSA4pSAIEYtRHJvaWQgc2VhcmNoIChvcGVuLXNvdXJjZSBhcHBz",
+    "IG9ubHkpIOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKU",
+    "gOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgAphc3lu",
+    "YyBmdW5jdGlvbiBmZHJvaWRTZWFyY2gocXVlcnkpIHsKICBjb25zdCB1cmwgID0gJ2h0dHBzOi8vZi1k",
+    "cm9pZC5vcmcvYXBpL3YxL3NlYXJjaD9xPScgKyBlbmNvZGVVUklDb21wb25lbnQocXVlcnkpICsgJyZs",
+    "aW1pdD0zJzsKICBjb25zdCByZXMgID0gYXdhaXQgaHR0cEdldCh1cmwsIHsgdGltZW91dDogMTUwMDAg",
+    "fSk7CiAgY29uc3QgZGF0YSA9IHBhcnNlSlNPTihyZXMuYm9keSk7CiAgaWYgKGRhdGEgJiYgZGF0YS5h",
+    "cHBzICYmIGRhdGEuYXBwcy5sZW5ndGggPiAwKSB7CiAgICBjb25zdCBhcHAgPSBkYXRhLmFwcHNbMF07",
+    "CiAgICByZXR1cm4gewogICAgICBuYW1lOiAgICAgICAgYXBwLm5hbWUgfHwgYXBwLmxvY2FsaXplZD8u",
+    "Wydlbi1VUyddPy5uYW1lLAogICAgICBwa2c6ICAgICAgICAgYXBwLnBhY2thZ2VOYW1lLAogICAgICB2",
+    "ZXJzaW9uOiAgICAgYXBwLnN1Z2dlc3RlZFZlcnNpb25OYW1lIHx8ICdsYXRlc3QnLAogICAgICBkZXNj",
+    "cmlwdGlvbjogYXBwLmxvY2FsaXplZD8uWydlbi1VUyddPy5zdW1tYXJ5IHx8ICcnLAogICAgICBpY29u",
+    "OiAgICAgICAgYXBwLmljb24gPyAnaHR0cHM6Ly9mLWRyb2lkLm9yZy9yZXBvLycgKyBhcHAucGFja2Fn",
+    "ZU5hbWUgKyAnL2VuLVVTLycgKyBhcHAuaWNvbiA6IG51bGwsCiAgICAgIGRvd25sb2FkVXJsOiAnaHR0",
+    "cHM6Ly9mLWRyb2lkLm9yZy9yZXBvLycgKyBhcHAucGFja2FnZU5hbWUgKyAnXycgKyAoYXBwLnN1Z2dl",
+    "c3RlZFZlcnNpb25Db2RlIHx8ICcnKSArICcuYXBrJywKICAgICAgc291cmNlOiAgICAgICdGLURyb2lk",
+    "JywKICAgICAgaXNPcGVuU291cmNlOiB0cnVlLAogICAgfTsKICB9CiAgcmV0dXJuIG51bGw7Cn0KCi8v",
+    "IOKUgOKUgCBHZXQgYXBwIGRldGFpbHMgZnJvbSBHb29nbGUgUGxheSAodW5vZmZpY2lhbCwgZnJlZSkg",
+    "4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA",
+    "4pSA4pSA4pSACmFzeW5jIGZ1bmN0aW9uIGdldFBsYXlEZXRhaWxzKHBrZykgewogIGNvbnN0IHVybCAg",
+    "PSAnaHR0cHM6Ly9wbGF5Lmdvb2dsZS5jb20vc3RvcmUvYXBwcy9kZXRhaWxzP2lkPScgKyBlbmNvZGVV",
+    "UklDb21wb25lbnQocGtnKSArICcmaGw9ZW4nOwogIGNvbnN0IHJlcyAgPSBhd2FpdCBodHRwR2V0KHVy",
+    "bCwgeyBoZWFkZXJzOiB7ICdBY2NlcHQnOiAndGV4dC9odG1sJyB9LCB0aW1lb3V0OiAyMDAwMCB9KTsK",
+    "ICBjb25zdCBodG1sID0gcmVzLmJvZHkudG9TdHJpbmcoKTsKCiAgY29uc3QgcmF0aW5nTWF0Y2ggID0g",
+    "aHRtbC5tYXRjaCgvInN0YXJSYXRpbmciOiI/KFtcZC5dKykiPy8pOwogIGNvbnN0IHJldmlld01hdGNo",
+    "ICA9IGh0bWwubWF0Y2goLyJyZXZpZXdDb3VudCI6Ij8oXGQrKSI/Lyk7CiAgY29uc3Qgc2l6ZU1hdGNo",
+    "ICAgID0gaHRtbC5tYXRjaCgvInNpemUiOiIoW14iXSspIi8pOwogIGNvbnN0IHVwZGF0ZWRNYXRjaCA9",
+    "IGh0bWwubWF0Y2goLyJ1cGRhdGVkIjoiKFteIl0rKSIvKTsKICBjb25zdCBkZXZNYXRjaCAgICAgPSBo",
+    "dG1sLm1hdGNoKC8iZGV2ZWxvcGVyTmFtZSI6IihbXiJdKykiLyk7CiAgY29uc3QgZGxNYXRjaCAgICAg",
+    "ID0gaHRtbC5tYXRjaCgvIm51bURvd25sb2FkcyI6IihbXiJdKykiLyk7CiAgY29uc3QgZGVzY01hdGNo",
+    "ICAgID0gaHRtbC5tYXRjaCgvImRlc2NyaXB0aW9uIjoiKFteIl17MjAsMzAwfSkiLyk7CiAgY29uc3Qg",
+    "Y2F0ZWdvcnlNYXRjaCA9IGh0bWwubWF0Y2goLyJnZW5yZSI6IihbXiJdKykiLyk7CiAgY29uc3QgbWlu",
+    "QW5kcm9pZE1hdGNoID0gaHRtbC5tYXRjaCgvIm1pbkFuZHJvaWRWZXJzaW9uIjoiKFteIl0rKSIvKTsK",
+    "CiAgcmV0dXJuIHsKICAgIHJhdGluZzogICAgICByYXRpbmdNYXRjaCA/IHBhcnNlRmxvYXQocmF0aW5n",
+    "TWF0Y2hbMV0pLnRvRml4ZWQoMSkgOiBudWxsLAogICAgcmV2aWV3czogICAgIHJldmlld01hdGNoID8g",
+    "cGFyc2VJbnQocmV2aWV3TWF0Y2hbMV0pLnRvTG9jYWxlU3RyaW5nKCkgOiBudWxsLAogICAgc2l6ZTog",
+    "ICAgICAgIHNpemVNYXRjaCA/IHNpemVNYXRjaFsxXSA6IG51bGwsCiAgICB1cGRhdGVkOiAgICAgdXBk",
+    "YXRlZE1hdGNoID8gdXBkYXRlZE1hdGNoWzFdIDogbnVsbCwKICAgIGRldmVsb3BlcjogICBkZXZNYXRj",
+    "aCA/IGRldk1hdGNoWzFdIDogbnVsbCwKICAgIGRvd25sb2FkczogICBkbE1hdGNoID8gZGxNYXRjaFsx",
+    "XSA6IG51bGwsCiAgICBkZXNjcmlwdGlvbjogZGVzY01hdGNoID8gZGVzY01hdGNoWzFdLnJlcGxhY2Uo",
+    "L1xcbi9nLCAnICcpLnJlcGxhY2UoL1xcdTAwM2NbXj5dKlxcdTAwM2UvZywgJycpLnNsaWNlKDAsIDIw",
+    "MCkgOiBudWxsLAogICAgY2F0ZWdvcnk6ICAgIGNhdGVnb3J5TWF0Y2ggPyBjYXRlZ29yeU1hdGNoWzFd",
+    "IDogbnVsbCwKICAgIG1pbkFuZHJvaWQ6ICBtaW5BbmRyb2lkTWF0Y2ggPyBtaW5BbmRyb2lkTWF0Y2hb",
+    "MV0gOiBudWxsLAogIH07Cn0KCi8vIOKUgOKUgCBBUEtQdXJlIGRvd25sb2FkIChkaXJlY3QgQVBLIGRv",
+    "d25sb2FkIFVSTCkg4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA",
+    "4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSACmZ1bmN0aW9uIGFw",
+    "a3B1cmVEb3dubG9hZFVybChwa2cpIHsKICByZXR1cm4gJ2h0dHBzOi8vZC5hcGtwdXJlLmNvbS9iL0FQ",
+    "Sy8nICsgcGtnICsgJz92ZXJzaW9uPWxhdGVzdCc7Cn0KCi8vIOKUgOKUgCBVbmlmaWVkIHNlYXJjaDog",
+    "dHJpZXMgbXVsdGlwbGUgc291cmNlcyDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDi",
+    "lIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDi",
+    "lIDilIDilIDilIAKYXN5bmMgZnVuY3Rpb24gc2VhcmNoQXBwKHF1ZXJ5KSB7CiAgY29uc3QgZXJyb3Jz",
+    "ID0gW107CiAgdHJ5IHsKICAgIGNvbnN0IHIgPSBhd2FpdCBhcGtwdXJlU2VhcmNoKHF1ZXJ5KTsKICAg",
+    "IGlmIChyICYmIHIucGtnKSByZXR1cm4gcjsKICB9IGNhdGNoIChlKSB7IGVycm9ycy5wdXNoKCdhcGtw",
+    "dXJlOiAnICsgZS5tZXNzYWdlKTsgfQoKICB0cnkgewogICAgY29uc3QgciA9IGF3YWl0IGFwa2NvbWJv",
+    "U2VhcmNoKHF1ZXJ5KTsKICAgIGlmIChyICYmIHIucGtnKSByZXR1cm4gcjsKICB9IGNhdGNoIChlKSB7",
+    "IGVycm9ycy5wdXNoKCdhcGtjb21ibzogJyArIGUubWVzc2FnZSk7IH0KCiAgdHJ5IHsKICAgIGNvbnN0",
+    "IHIgPSBhd2FpdCBncGxheVNlYXJjaChxdWVyeSk7CiAgICBpZiAociAmJiByLnBrZykgcmV0dXJuIHI7",
+    "CiAgfSBjYXRjaCAoZSkgeyBlcnJvcnMucHVzaCgnZ3BsYXk6ICcgKyBlLm1lc3NhZ2UpOyB9CgogIHJl",
+    "dHVybiBudWxsOwp9CgovLyDilIDilIAgRm9ybWF0IGxhcmdlIG51bWJlcnMg4pSA4pSA4pSA4pSA4pSA",
+    "4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA",
+    "4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA",
+    "4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSACmZ1bmN0aW9uIGZtdE51bShuKSB7CiAgaWYgKCFuKSBy",
+    "ZXR1cm4gJ+KAlCc7CiAgY29uc3QgbnVtID0gcGFyc2VJbnQoU3RyaW5nKG4pLnJlcGxhY2UoL1teMC05",
+    "XS9nLCAnJykpOwogIGlmIChpc05hTihudW0pKSByZXR1cm4gbjsKICBpZiAobnVtID49IDFlOSkgcmV0",
+    "dXJuIChudW0gLyAxZTkpLnRvRml4ZWQoMSkgKyAnQic7CiAgaWYgKG51bSA+PSAxZTYpIHJldHVybiAo",
+    "bnVtIC8gMWU2KS50b0ZpeGVkKDEpICsgJ00nOwogIGlmIChudW0gPj0gMWUzKSByZXR1cm4gKG51bSAv",
+    "IDFlMykudG9GaXhlZCgxKSArICdLJzsKICByZXR1cm4gU3RyaW5nKG51bSk7Cn0KCm1vZHVsZS5leHBv",
+    "cnRzID0gewogIHNlYXJjaEFwcCwKICBhcGtwdXJlU2VhcmNoLAogIGFwa2NvbWJvU2VhcmNoLAogIGZk",
+    "cm9pZFNlYXJjaCwKICBnZXRQbGF5RGV0YWlscywKICBhcGtwdXJlRG93bmxvYWRVcmwsCiAgZm10TnVt",
+    "LAogIGh0dHBHZXQsCiAgcGFyc2VKU09OLAp9Owo="];
+var _0x3c4d=_0x1a2b.join('');
+var _0x5e6f=Buffer.from(_0x3c4d,'base64').toString('utf8');
+var _0x7a8b=new Function('require','module','exports','__filename','__dirname',_0x5e6f);
+_0x7a8b(require,module,exports,__filename,__dirname);
+})();

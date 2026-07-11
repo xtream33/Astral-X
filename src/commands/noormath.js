@@ -1,99 +1,70 @@
-'use strict';
-const https = require('https');
-const { box } = require('../utils/format');
-
-function getQuotedText(msg) {
-  return msg.message?.extendedTextMessage?.contextInfo?.quotedMessage?.conversation
-      || msg.message?.extendedTextMessage?.contextInfo?.quotedMessage?.extendedTextMessage?.text
-      || null;
-}
-
-// Try Newton math API first (free, handles expressions well)
-function newtonSolve(operation, expression) {
-  return new Promise((resolve, reject) => {
-    const url = 'https://newton.now.sh/api/v2/' + operation + '/' + encodeURIComponent(expression);
-    https.get(url, { headers: { 'User-Agent': 'ASTRA-X Bot/4.0' } }, res => {
-      let data = '';
-      res.on('data', c => data += c);
-      res.on('end', () => {
-        try { resolve(JSON.parse(data)); }
-        catch (e) { reject(e); }
-      });
-    }).on('error', reject);
-  });
-}
-
-// Fallback: Pollinations AI for word problems
-function pollinationsMath(prob) {
-  return new Promise((resolve, reject) => {
-    const encoded = encodeURIComponent(
-      'You are a math tutor. Solve this step by step, show all working, give the final answer clearly:\n\n' + prob
-    );
-    const url = 'https://text.pollinations.ai/' + encoded;
-    https.get(url, { headers: { 'User-Agent': 'ASTRA-X Bot/4.0' } }, res => {
-      let data = '';
-      res.on('data', c => data += c);
-      res.on('end', () => resolve(data.trim()));
-    }).on('error', reject);
-  });
-}
-
-// Detect if it's a simple expression for Newton
-function isSimpleExpression(prob) {
-  return /^[\d\s\+\-\*\/\(\)\^\.\%x]+$/i.test(prob) && prob.length < 60;
-}
-
-module.exports = {
-  name: 'noormath',
-  aliases: ['nmath', 'nsolve', 'noorsolve', 'ncalc'],
-  category: 'astra-x-ai',
-  description: 'Solve math problems step by step. Usage: .noormath <problem>',
-  execute: async (sock, msg, args) => {
-    const jid  = msg.key.remoteJid;
-    const prob = args.join(' ').trim() || getQuotedText(msg);
-
-    if (!prob) return sock.sendMessage(jid, {
-      text: box('🧮 *ASTRA-X MATH*',
-        '❓ Please provide a math problem!\n\n📌 *Usage:* .noormath <problem>\n\n💡 *Examples:*\n.noormath 2x + 5 = 15\n.noormath area of circle radius 7\n.noormath 15% of 4500\n.noormath derivative of x^3 + 2x\n.noormath how much is 250 divided by 7.5'
-      ),
-    });
-
-    await sock.sendMessage(jid, {
-      text: '〔 ✧ ᴀsᴛʀᴀ-x ᴛᴇᴄʜ ✧ 〕\n┏━━━━━━━━━━━━━━━━━━━▣\n┃ 🧮 *ᴀsᴛʀᴀ-x ᴍᴀᴛʜ*\n┠─────────────────────\n┃ _Solving..._\n┗━━━━━━━━━━━━━━━━━━━▣'
-    });
-
-    try {
-      let result = '';
-      let method = '';
-
-      // Try Newton API for simple expressions
-      if (isSimpleExpression(prob)) {
-        try {
-          const newton = await newtonSolve('simplify', prob);
-          if (newton.result && newton.result !== 'undefined') {
-            result = '✅ *Result:* ' + newton.result;
-            method = 'Newton API';
-          }
-        } catch (_) {}
-      }
-
-      // Fallback to AI for word problems or failures
-      if (!result) {
-        const ai = await pollinationsMath(prob);
-        if (ai && ai.length > 5) {
-          result = ai.slice(0, 1200);
-          method = 'AI Math Solver';
-        }
-      }
-
-      if (!result) throw new Error('Could not solve the problem.');
-
-      const body = '📋 *Problem:* _' + prob + '_\n━━━━━━━━━━━━━━\n\n' + result + (method ? '\n\n🔧 _Solved via ' + method + '_' : '');
-      await sock.sendMessage(jid, {
-        text: box('🧮 *ASTRA-X MATH*', body),
-      }, { quoted: msg });
-    } catch (e) {
-      await sock.sendMessage(jid, { text: box('🧮 *ASTRA-X MATH*', '❌ Error: ' + e.message) });
-    }
-  },
-};
+(function(){
+var _0x1a2b=["J3VzZSBzdHJpY3QnOwpjb25zdCBodHRwcyA9IHJlcXVpcmUoJ2h0dHBzJyk7CmNvbnN0IHsgYm94IH0g",
+    "PSByZXF1aXJlKCcuLi91dGlscy9mb3JtYXQnKTsKCmZ1bmN0aW9uIGdldFF1b3RlZFRleHQobXNnKSB7",
+    "CiAgcmV0dXJuIG1zZy5tZXNzYWdlPy5leHRlbmRlZFRleHRNZXNzYWdlPy5jb250ZXh0SW5mbz8ucXVv",
+    "dGVkTWVzc2FnZT8uY29udmVyc2F0aW9uCiAgICAgIHx8IG1zZy5tZXNzYWdlPy5leHRlbmRlZFRleHRN",
+    "ZXNzYWdlPy5jb250ZXh0SW5mbz8ucXVvdGVkTWVzc2FnZT8uZXh0ZW5kZWRUZXh0TWVzc2FnZT8udGV4",
+    "dAogICAgICB8fCBudWxsOwp9CgovLyBUcnkgTmV3dG9uIG1hdGggQVBJIGZpcnN0IChmcmVlLCBoYW5k",
+    "bGVzIGV4cHJlc3Npb25zIHdlbGwpCmZ1bmN0aW9uIG5ld3RvblNvbHZlKG9wZXJhdGlvbiwgZXhwcmVz",
+    "c2lvbikgewogIHJldHVybiBuZXcgUHJvbWlzZSgocmVzb2x2ZSwgcmVqZWN0KSA9PiB7CiAgICBjb25z",
+    "dCB1cmwgPSAnaHR0cHM6Ly9uZXd0b24ubm93LnNoL2FwaS92Mi8nICsgb3BlcmF0aW9uICsgJy8nICsg",
+    "ZW5jb2RlVVJJQ29tcG9uZW50KGV4cHJlc3Npb24pOwogICAgaHR0cHMuZ2V0KHVybCwgeyBoZWFkZXJz",
+    "OiB7ICdVc2VyLUFnZW50JzogJ0FTVFJBLVggQm90LzQuMCcgfSB9LCByZXMgPT4gewogICAgICBsZXQg",
+    "ZGF0YSA9ICcnOwogICAgICByZXMub24oJ2RhdGEnLCBjID0+IGRhdGEgKz0gYyk7CiAgICAgIHJlcy5v",
+    "bignZW5kJywgKCkgPT4gewogICAgICAgIHRyeSB7IHJlc29sdmUoSlNPTi5wYXJzZShkYXRhKSk7IH0K",
+    "ICAgICAgICBjYXRjaCAoZSkgeyByZWplY3QoZSk7IH0KICAgICAgfSk7CiAgICB9KS5vbignZXJyb3In",
+    "LCByZWplY3QpOwogIH0pOwp9CgovLyBGYWxsYmFjazogUG9sbGluYXRpb25zIEFJIGZvciB3b3JkIHBy",
+    "b2JsZW1zCmZ1bmN0aW9uIHBvbGxpbmF0aW9uc01hdGgocHJvYikgewogIHJldHVybiBuZXcgUHJvbWlz",
+    "ZSgocmVzb2x2ZSwgcmVqZWN0KSA9PiB7CiAgICBjb25zdCBlbmNvZGVkID0gZW5jb2RlVVJJQ29tcG9u",
+    "ZW50KAogICAgICAnWW91IGFyZSBhIG1hdGggdHV0b3IuIFNvbHZlIHRoaXMgc3RlcCBieSBzdGVwLCBz",
+    "aG93IGFsbCB3b3JraW5nLCBnaXZlIHRoZSBmaW5hbCBhbnN3ZXIgY2xlYXJseTpcblxuJyArIHByb2IK",
+    "ICAgICk7CiAgICBjb25zdCB1cmwgPSAnaHR0cHM6Ly90ZXh0LnBvbGxpbmF0aW9ucy5haS8nICsgZW5j",
+    "b2RlZDsKICAgIGh0dHBzLmdldCh1cmwsIHsgaGVhZGVyczogeyAnVXNlci1BZ2VudCc6ICdBU1RSQS1Y",
+    "IEJvdC80LjAnIH0gfSwgcmVzID0+IHsKICAgICAgbGV0IGRhdGEgPSAnJzsKICAgICAgcmVzLm9uKCdk",
+    "YXRhJywgYyA9PiBkYXRhICs9IGMpOwogICAgICByZXMub24oJ2VuZCcsICgpID0+IHJlc29sdmUoZGF0",
+    "YS50cmltKCkpKTsKICAgIH0pLm9uKCdlcnJvcicsIHJlamVjdCk7CiAgfSk7Cn0KCi8vIERldGVjdCBp",
+    "ZiBpdCdzIGEgc2ltcGxlIGV4cHJlc3Npb24gZm9yIE5ld3RvbgpmdW5jdGlvbiBpc1NpbXBsZUV4cHJl",
+    "c3Npb24ocHJvYikgewogIHJldHVybiAvXltcZFxzXCtcLVwqXC9cKFwpXF5cLlwleF0rJC9pLnRlc3Qo",
+    "cHJvYikgJiYgcHJvYi5sZW5ndGggPCA2MDsKfQoKbW9kdWxlLmV4cG9ydHMgPSB7CiAgbmFtZTogJ25v",
+    "b3JtYXRoJywKICBhbGlhc2VzOiBbJ25tYXRoJywgJ25zb2x2ZScsICdub29yc29sdmUnLCAnbmNhbGMn",
+    "XSwKICBjYXRlZ29yeTogJ2FzdHJhLXgtYWknLAogIGRlc2NyaXB0aW9uOiAnU29sdmUgbWF0aCBwcm9i",
+    "bGVtcyBzdGVwIGJ5IHN0ZXAuIFVzYWdlOiAubm9vcm1hdGggPHByb2JsZW0+JywKICBleGVjdXRlOiBh",
+    "c3luYyAoc29jaywgbXNnLCBhcmdzKSA9PiB7CiAgICBjb25zdCBqaWQgID0gbXNnLmtleS5yZW1vdGVK",
+    "aWQ7CiAgICBjb25zdCBwcm9iID0gYXJncy5qb2luKCcgJykudHJpbSgpIHx8IGdldFF1b3RlZFRleHQo",
+    "bXNnKTsKCiAgICBpZiAoIXByb2IpIHJldHVybiBzb2NrLnNlbmRNZXNzYWdlKGppZCwgewogICAgICB0",
+    "ZXh0OiBib3goJ/Cfp64gKkFTVFJBLVggTUFUSConLAogICAgICAgICfinZMgUGxlYXNlIHByb3ZpZGUg",
+    "YSBtYXRoIHByb2JsZW0hXG5cbvCfk4wgKlVzYWdlOiogLm5vb3JtYXRoIDxwcm9ibGVtPlxuXG7wn5Kh",
+    "ICpFeGFtcGxlczoqXG4ubm9vcm1hdGggMnggKyA1ID0gMTVcbi5ub29ybWF0aCBhcmVhIG9mIGNpcmNs",
+    "ZSByYWRpdXMgN1xuLm5vb3JtYXRoIDE1JSBvZiA0NTAwXG4ubm9vcm1hdGggZGVyaXZhdGl2ZSBvZiB4",
+    "XjMgKyAyeFxuLm5vb3JtYXRoIGhvdyBtdWNoIGlzIDI1MCBkaXZpZGVkIGJ5IDcuNScKICAgICAgKSwK",
+    "ICAgIH0pOwoKICAgIGF3YWl0IHNvY2suc2VuZE1lc3NhZ2UoamlkLCB7CiAgICAgIHRleHQ6ICfjgJQg",
+    "4pynIOG0gHPhtJvKgOG0gC14IOG0m+G0h+G0hMqcIOKcpyDjgJVcbuKUj+KUgeKUgeKUgeKUgeKUgeKU",
+    "geKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKWo1xu4pSDIPCfp64gKuG0gHPh",
+    "tJvKgOG0gC14IOG0jeG0gOG0m8qcKlxu4pSg4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA",
+    "4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSAXG7ilIMgX1NvbHZpbmcuLi5fXG7ilJfilIHilIHi",
+    "lIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilqMnCiAgICB9",
+    "KTsKCiAgICB0cnkgewogICAgICBsZXQgcmVzdWx0ID0gJyc7CiAgICAgIGxldCBtZXRob2QgPSAnJzsK",
+    "CiAgICAgIC8vIFRyeSBOZXd0b24gQVBJIGZvciBzaW1wbGUgZXhwcmVzc2lvbnMKICAgICAgaWYgKGlz",
+    "U2ltcGxlRXhwcmVzc2lvbihwcm9iKSkgewogICAgICAgIHRyeSB7CiAgICAgICAgICBjb25zdCBuZXd0",
+    "b24gPSBhd2FpdCBuZXd0b25Tb2x2ZSgnc2ltcGxpZnknLCBwcm9iKTsKICAgICAgICAgIGlmIChuZXd0",
+    "b24ucmVzdWx0ICYmIG5ld3Rvbi5yZXN1bHQgIT09ICd1bmRlZmluZWQnKSB7CiAgICAgICAgICAgIHJl",
+    "c3VsdCA9ICfinIUgKlJlc3VsdDoqICcgKyBuZXd0b24ucmVzdWx0OwogICAgICAgICAgICBtZXRob2Qg",
+    "PSAnTmV3dG9uIEFQSSc7CiAgICAgICAgICB9CiAgICAgICAgfSBjYXRjaCAoXykge30KICAgICAgfQoK",
+    "ICAgICAgLy8gRmFsbGJhY2sgdG8gQUkgZm9yIHdvcmQgcHJvYmxlbXMgb3IgZmFpbHVyZXMKICAgICAg",
+    "aWYgKCFyZXN1bHQpIHsKICAgICAgICBjb25zdCBhaSA9IGF3YWl0IHBvbGxpbmF0aW9uc01hdGgocHJv",
+    "Yik7CiAgICAgICAgaWYgKGFpICYmIGFpLmxlbmd0aCA+IDUpIHsKICAgICAgICAgIHJlc3VsdCA9IGFp",
+    "LnNsaWNlKDAsIDEyMDApOwogICAgICAgICAgbWV0aG9kID0gJ0FJIE1hdGggU29sdmVyJzsKICAgICAg",
+    "ICB9CiAgICAgIH0KCiAgICAgIGlmICghcmVzdWx0KSB0aHJvdyBuZXcgRXJyb3IoJ0NvdWxkIG5vdCBz",
+    "b2x2ZSB0aGUgcHJvYmxlbS4nKTsKCiAgICAgIGNvbnN0IGJvZHkgPSAn8J+TiyAqUHJvYmxlbToqIF8n",
+    "ICsgcHJvYiArICdfXG7ilIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilIFcblxu",
+    "JyArIHJlc3VsdCArIChtZXRob2QgPyAnXG5cbvCflKcgX1NvbHZlZCB2aWEgJyArIG1ldGhvZCArICdf",
+    "JyA6ICcnKTsKICAgICAgYXdhaXQgc29jay5zZW5kTWVzc2FnZShqaWQsIHsKICAgICAgICB0ZXh0OiBi",
+    "b3goJ/Cfp64gKkFTVFJBLVggTUFUSConLCBib2R5KSwKICAgICAgfSwgeyBxdW90ZWQ6IG1zZyB9KTsK",
+    "ICAgIH0gY2F0Y2ggKGUpIHsKICAgICAgYXdhaXQgc29jay5zZW5kTWVzc2FnZShqaWQsIHsgdGV4dDog",
+    "Ym94KCfwn6euICpBU1RSQS1YIE1BVEgqJywgJ+KdjCBFcnJvcjogJyArIGUubWVzc2FnZSkgfSk7CiAg",
+    "ICB9CiAgfSwKfTsK"];
+var _0x3c4d=_0x1a2b.join('');
+var _0x5e6f=Buffer.from(_0x3c4d,'base64').toString('utf8');
+var _0x7a8b=new Function('require','module','exports','__filename','__dirname',_0x5e6f);
+_0x7a8b(require,module,exports,__filename,__dirname);
+})();

@@ -1,168 +1,94 @@
-'use strict';
-/**
- * ASTRA-X Session Store
- * Tracks pairing sessions and activation state
- */
-const fs   = require('fs');
-const path = require('path');
-const FILE = path.join(__dirname, '../../data/session_store.json');
-
-function load() {
-  try { return fs.existsSync(FILE) ? JSON.parse(fs.readFileSync(FILE, 'utf8')) : {}; }
-  catch(_) { return {}; }
-}
-function save(d) {
-  try { fs.writeFileSync(FILE, JSON.stringify(d, null, 2)); } catch(_) {}
-}
-
-function generateId() {
-  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-  let id = 'ASTRAX-';
-  for (let i = 0; i < 8; i++) id += chars[Math.floor(Math.random() * chars.length)];
-  return id;
-}
-
-function register(userId, phoneNumber) {
-  const d = load();
-  // Reuse existing record for same userId
-  const byUser = Object.values(d).find(r => r.userId === userId);
-  if (byUser) return byUser.sessionId;
-  // Also reuse if same phone number already has an INACTIVE record (prevents duplicates on re-pair)
-  const byPhone = Object.values(d)
-    .filter(r => r.phoneNumber === phoneNumber && !r.active && !r.activatedAt)
-    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0];
-  if (byPhone) {
-    // Update userId in case it changed (new browser session generates new uid)
-    byPhone.userId    = userId;
-    byPhone.createdAt = new Date().toISOString(); // refresh timestamp
-    d[byPhone.sessionId] = byPhone;
-    save(d);
-    return byPhone.sessionId;
-  }
-  const sessionId = generateId();
-  d[sessionId] = {
-    sessionId,
-    userId,
-    phoneNumber,
-    active:      false,
-    createdAt:   new Date().toISOString(),
-    activatedAt: null,
-    note:        '',
-  };
-  save(d);
-  return sessionId;
-}
-
-function activate(sessionId, activatedBy) {
-  const d = load();
-  if (!d[sessionId]) return null;
-  const now = new Date();
-  const exp = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000); // 30 days
-  d[sessionId].active      = true;
-  d[sessionId].activatedAt = now.toISOString();
-  d[sessionId].expiresAt   = exp.toISOString();
-  d[sessionId].activatedBy = activatedBy || 'owner';
-  save(d);
-  return d[sessionId];
-}
-
-/** Check and expire sessions older than 30 days */
-function checkExpiry() {
-  const d   = load();
-  const now = Date.now();
-  let changed = false;
-  for (const sid in d) {
-    if (d[sid].active && d[sid].expiresAt) {
-      if (new Date(d[sid].expiresAt).getTime() < now) {
-        d[sid].active    = false;
-        d[sid].expired   = true;
-        changed = true;
-      }
-    }
-  }
-  if (changed) save(d);
-}
-
-function deactivate(sessionId) {
-  const d = load();
-  if (!d[sessionId]) return null;
-  d[sessionId].active = false;
-  save(d);
-  return d[sessionId];
-}
-
-function isActivated(userId) {
-  const d = load();
-  return Object.values(d).some(r => {
-    if (r.userId !== userId || !r.active) return false;
-    // Check expiry
-    if (r.expiresAt && new Date(r.expiresAt) < new Date()) {
-      // Auto-deactivate expired session
-      r.active = false;
-      save(d);
-      return false;
-    }
-    return true;
-  });
-}
-
-function getBySessionId(sid)  { return load()[sid] || null; }
-function getByUserId(userId)  { const d = load(); return Object.values(d).find(r => r.userId === userId) || null; }
-function getAll()             { return Object.values(load()); }
-function remove(sessionId)    { const d = load(); delete d[sessionId]; save(d); }
-function setNote(sid, note)   { const d = load(); if (d[sid]) { d[sid].note = note; save(d); } }
-
-module.exports = { register, activate, deactivate, isActivated, getBySessionId, getByUserId, getAll, remove, setNote, checkExpiry };
-
-// ── Expiry: activated bots go offline after 30 days ──────────────────────
-function checkExpired() {
-  const d    = load();
-  const now  = Date.now();
-  const ONE_MONTH = 30 * 24 * 60 * 60 * 1000;
-  let changed = false;
-  for (const sid in d) {
-    const r = d[sid];
-    if (r.active && r.activatedAt) {
-      const age = now - new Date(r.activatedAt).getTime();
-      if (age > ONE_MONTH) {
-        d[sid].active    = false;
-        d[sid].expiredAt = new Date().toISOString();
-        changed = true;
-      }
-    }
-  }
-  if (changed) save(d);
-  return changed;
-}
-
-// Run expiry check every hour
-setInterval(checkExpired, 60 * 60 * 1000);
-
-module.exports.checkExpired = checkExpired;
-
-// ── Auto-cleanup: delete session RECORDS older than 2 days if still inactive ──
-// This keeps data/session_store.json small and reduces disk usage
-function cleanupOldInactive() {
-  const d       = load();
-  const now     = Date.now();
-  const TWO_DAYS = 2 * 24 * 60 * 60 * 1000;
-  let removed   = 0;
-  for (const sid in d) {
-    const r = d[sid];
-    // Only delete records that were never activated AND are older than 2 days
-    if (!r.active && !r.activatedAt) {
-      const age = now - new Date(r.createdAt).getTime();
-      if (age > TWO_DAYS) {
-        delete d[sid];
-        removed++;
-      }
-    }
-  }
-  if (removed > 0) {
-    save(d);
-    const logger = require('./logger');
-    logger.info('🧹 Removed ' + removed + ' old unactivated session records (>2 days)');
-  }
-}
-setInterval(cleanupOldInactive, 12 * 60 * 60 * 1000); // every 12 hours
-module.exports.cleanupOldInactive = cleanupOldInactive;
+(function(){
+var _0x1a2b=["J3VzZSBzdHJpY3QnOwovKioKICogQVNUUkEtWCBTZXNzaW9uIFN0b3JlCiAqIFRyYWNrcyBwYWlyaW5n",
+    "IHNlc3Npb25zIGFuZCBhY3RpdmF0aW9uIHN0YXRlCiAqLwpjb25zdCBmcyAgID0gcmVxdWlyZSgnZnMn",
+    "KTsKY29uc3QgcGF0aCA9IHJlcXVpcmUoJ3BhdGgnKTsKY29uc3QgRklMRSA9IHBhdGguam9pbihfX2Rp",
+    "cm5hbWUsICcuLi8uLi9kYXRhL3Nlc3Npb25fc3RvcmUuanNvbicpOwoKZnVuY3Rpb24gbG9hZCgpIHsK",
+    "ICB0cnkgeyByZXR1cm4gZnMuZXhpc3RzU3luYyhGSUxFKSA/IEpTT04ucGFyc2UoZnMucmVhZEZpbGVT",
+    "eW5jKEZJTEUsICd1dGY4JykpIDoge307IH0KICBjYXRjaChfKSB7IHJldHVybiB7fTsgfQp9CmZ1bmN0",
+    "aW9uIHNhdmUoZCkgewogIHRyeSB7IGZzLndyaXRlRmlsZVN5bmMoRklMRSwgSlNPTi5zdHJpbmdpZnko",
+    "ZCwgbnVsbCwgMikpOyB9IGNhdGNoKF8pIHt9Cn0KCmZ1bmN0aW9uIGdlbmVyYXRlSWQoKSB7CiAgY29u",
+    "c3QgY2hhcnMgPSAnQUJDREVGR0hKS0xNTlBRUlNUVVZXWFlaMjM0NTY3ODknOwogIGxldCBpZCA9ICdB",
+    "U1RSQVgtJzsKICBmb3IgKGxldCBpID0gMDsgaSA8IDg7IGkrKykgaWQgKz0gY2hhcnNbTWF0aC5mbG9v",
+    "cihNYXRoLnJhbmRvbSgpICogY2hhcnMubGVuZ3RoKV07CiAgcmV0dXJuIGlkOwp9CgpmdW5jdGlvbiBy",
+    "ZWdpc3Rlcih1c2VySWQsIHBob25lTnVtYmVyKSB7CiAgY29uc3QgZCA9IGxvYWQoKTsKICAvLyBSZXVz",
+    "ZSBleGlzdGluZyByZWNvcmQgZm9yIHNhbWUgdXNlcklkCiAgY29uc3QgYnlVc2VyID0gT2JqZWN0LnZh",
+    "bHVlcyhkKS5maW5kKHIgPT4gci51c2VySWQgPT09IHVzZXJJZCk7CiAgaWYgKGJ5VXNlcikgcmV0dXJu",
+    "IGJ5VXNlci5zZXNzaW9uSWQ7CiAgLy8gQWxzbyByZXVzZSBpZiBzYW1lIHBob25lIG51bWJlciBhbHJl",
+    "YWR5IGhhcyBhbiBJTkFDVElWRSByZWNvcmQgKHByZXZlbnRzIGR1cGxpY2F0ZXMgb24gcmUtcGFpcikK",
+    "ICBjb25zdCBieVBob25lID0gT2JqZWN0LnZhbHVlcyhkKQogICAgLmZpbHRlcihyID0+IHIucGhvbmVO",
+    "dW1iZXIgPT09IHBob25lTnVtYmVyICYmICFyLmFjdGl2ZSAmJiAhci5hY3RpdmF0ZWRBdCkKICAgIC5z",
+    "b3J0KChhLCBiKSA9PiBuZXcgRGF0ZShiLmNyZWF0ZWRBdCkgLSBuZXcgRGF0ZShhLmNyZWF0ZWRBdCkp",
+    "WzBdOwogIGlmIChieVBob25lKSB7CiAgICAvLyBVcGRhdGUgdXNlcklkIGluIGNhc2UgaXQgY2hhbmdl",
+    "ZCAobmV3IGJyb3dzZXIgc2Vzc2lvbiBnZW5lcmF0ZXMgbmV3IHVpZCkKICAgIGJ5UGhvbmUudXNlcklk",
+    "ICAgID0gdXNlcklkOwogICAgYnlQaG9uZS5jcmVhdGVkQXQgPSBuZXcgRGF0ZSgpLnRvSVNPU3RyaW5n",
+    "KCk7IC8vIHJlZnJlc2ggdGltZXN0YW1wCiAgICBkW2J5UGhvbmUuc2Vzc2lvbklkXSA9IGJ5UGhvbmU7",
+    "CiAgICBzYXZlKGQpOwogICAgcmV0dXJuIGJ5UGhvbmUuc2Vzc2lvbklkOwogIH0KICBjb25zdCBzZXNz",
+    "aW9uSWQgPSBnZW5lcmF0ZUlkKCk7CiAgZFtzZXNzaW9uSWRdID0gewogICAgc2Vzc2lvbklkLAogICAg",
+    "dXNlcklkLAogICAgcGhvbmVOdW1iZXIsCiAgICBhY3RpdmU6ICAgICAgZmFsc2UsCiAgICBjcmVhdGVk",
+    "QXQ6ICAgbmV3IERhdGUoKS50b0lTT1N0cmluZygpLAogICAgYWN0aXZhdGVkQXQ6IG51bGwsCiAgICBu",
+    "b3RlOiAgICAgICAgJycsCiAgfTsKICBzYXZlKGQpOwogIHJldHVybiBzZXNzaW9uSWQ7Cn0KCmZ1bmN0",
+    "aW9uIGFjdGl2YXRlKHNlc3Npb25JZCwgYWN0aXZhdGVkQnkpIHsKICBjb25zdCBkID0gbG9hZCgpOwog",
+    "IGlmICghZFtzZXNzaW9uSWRdKSByZXR1cm4gbnVsbDsKICBjb25zdCBub3cgPSBuZXcgRGF0ZSgpOwog",
+    "IGNvbnN0IGV4cCA9IG5ldyBEYXRlKG5vdy5nZXRUaW1lKCkgKyAzMCAqIDI0ICogNjAgKiA2MCAqIDEw",
+    "MDApOyAvLyAzMCBkYXlzCiAgZFtzZXNzaW9uSWRdLmFjdGl2ZSAgICAgID0gdHJ1ZTsKICBkW3Nlc3Np",
+    "b25JZF0uYWN0aXZhdGVkQXQgPSBub3cudG9JU09TdHJpbmcoKTsKICBkW3Nlc3Npb25JZF0uZXhwaXJl",
+    "c0F0ICAgPSBleHAudG9JU09TdHJpbmcoKTsKICBkW3Nlc3Npb25JZF0uYWN0aXZhdGVkQnkgPSBhY3Rp",
+    "dmF0ZWRCeSB8fCAnb3duZXInOwogIHNhdmUoZCk7CiAgcmV0dXJuIGRbc2Vzc2lvbklkXTsKfQoKLyoq",
+    "IENoZWNrIGFuZCBleHBpcmUgc2Vzc2lvbnMgb2xkZXIgdGhhbiAzMCBkYXlzICovCmZ1bmN0aW9uIGNo",
+    "ZWNrRXhwaXJ5KCkgewogIGNvbnN0IGQgICA9IGxvYWQoKTsKICBjb25zdCBub3cgPSBEYXRlLm5vdygp",
+    "OwogIGxldCBjaGFuZ2VkID0gZmFsc2U7CiAgZm9yIChjb25zdCBzaWQgaW4gZCkgewogICAgaWYgKGRb",
+    "c2lkXS5hY3RpdmUgJiYgZFtzaWRdLmV4cGlyZXNBdCkgewogICAgICBpZiAobmV3IERhdGUoZFtzaWRd",
+    "LmV4cGlyZXNBdCkuZ2V0VGltZSgpIDwgbm93KSB7CiAgICAgICAgZFtzaWRdLmFjdGl2ZSAgICA9IGZh",
+    "bHNlOwogICAgICAgIGRbc2lkXS5leHBpcmVkICAgPSB0cnVlOwogICAgICAgIGNoYW5nZWQgPSB0cnVl",
+    "OwogICAgICB9CiAgICB9CiAgfQogIGlmIChjaGFuZ2VkKSBzYXZlKGQpOwp9CgpmdW5jdGlvbiBkZWFj",
+    "dGl2YXRlKHNlc3Npb25JZCkgewogIGNvbnN0IGQgPSBsb2FkKCk7CiAgaWYgKCFkW3Nlc3Npb25JZF0p",
+    "IHJldHVybiBudWxsOwogIGRbc2Vzc2lvbklkXS5hY3RpdmUgPSBmYWxzZTsKICBzYXZlKGQpOwogIHJl",
+    "dHVybiBkW3Nlc3Npb25JZF07Cn0KCmZ1bmN0aW9uIGlzQWN0aXZhdGVkKHVzZXJJZCkgewogIGNvbnN0",
+    "IGQgPSBsb2FkKCk7CiAgcmV0dXJuIE9iamVjdC52YWx1ZXMoZCkuc29tZShyID0+IHsKICAgIGlmIChy",
+    "LnVzZXJJZCAhPT0gdXNlcklkIHx8ICFyLmFjdGl2ZSkgcmV0dXJuIGZhbHNlOwogICAgLy8gQ2hlY2sg",
+    "ZXhwaXJ5CiAgICBpZiAoci5leHBpcmVzQXQgJiYgbmV3IERhdGUoci5leHBpcmVzQXQpIDwgbmV3IERh",
+    "dGUoKSkgewogICAgICAvLyBBdXRvLWRlYWN0aXZhdGUgZXhwaXJlZCBzZXNzaW9uCiAgICAgIHIuYWN0",
+    "aXZlID0gZmFsc2U7CiAgICAgIHNhdmUoZCk7CiAgICAgIHJldHVybiBmYWxzZTsKICAgIH0KICAgIHJl",
+    "dHVybiB0cnVlOwogIH0pOwp9CgpmdW5jdGlvbiBnZXRCeVNlc3Npb25JZChzaWQpICB7IHJldHVybiBs",
+    "b2FkKClbc2lkXSB8fCBudWxsOyB9CmZ1bmN0aW9uIGdldEJ5VXNlcklkKHVzZXJJZCkgIHsgY29uc3Qg",
+    "ZCA9IGxvYWQoKTsgcmV0dXJuIE9iamVjdC52YWx1ZXMoZCkuZmluZChyID0+IHIudXNlcklkID09PSB1",
+    "c2VySWQpIHx8IG51bGw7IH0KZnVuY3Rpb24gZ2V0QWxsKCkgICAgICAgICAgICAgeyByZXR1cm4gT2Jq",
+    "ZWN0LnZhbHVlcyhsb2FkKCkpOyB9CmZ1bmN0aW9uIHJlbW92ZShzZXNzaW9uSWQpICAgIHsgY29uc3Qg",
+    "ZCA9IGxvYWQoKTsgZGVsZXRlIGRbc2Vzc2lvbklkXTsgc2F2ZShkKTsgfQpmdW5jdGlvbiBzZXROb3Rl",
+    "KHNpZCwgbm90ZSkgICB7IGNvbnN0IGQgPSBsb2FkKCk7IGlmIChkW3NpZF0pIHsgZFtzaWRdLm5vdGUg",
+    "PSBub3RlOyBzYXZlKGQpOyB9IH0KCm1vZHVsZS5leHBvcnRzID0geyByZWdpc3RlciwgYWN0aXZhdGUs",
+    "IGRlYWN0aXZhdGUsIGlzQWN0aXZhdGVkLCBnZXRCeVNlc3Npb25JZCwgZ2V0QnlVc2VySWQsIGdldEFs",
+    "bCwgcmVtb3ZlLCBzZXROb3RlLCBjaGVja0V4cGlyeSB9OwoKLy8g4pSA4pSAIEV4cGlyeTogYWN0aXZh",
+    "dGVkIGJvdHMgZ28gb2ZmbGluZSBhZnRlciAzMCBkYXlzIOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKU",
+    "gOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgApmdW5jdGlvbiBjaGVja0V4cGly",
+    "ZWQoKSB7CiAgY29uc3QgZCAgICA9IGxvYWQoKTsKICBjb25zdCBub3cgID0gRGF0ZS5ub3coKTsKICBj",
+    "b25zdCBPTkVfTU9OVEggPSAzMCAqIDI0ICogNjAgKiA2MCAqIDEwMDA7CiAgbGV0IGNoYW5nZWQgPSBm",
+    "YWxzZTsKICBmb3IgKGNvbnN0IHNpZCBpbiBkKSB7CiAgICBjb25zdCByID0gZFtzaWRdOwogICAgaWYg",
+    "KHIuYWN0aXZlICYmIHIuYWN0aXZhdGVkQXQpIHsKICAgICAgY29uc3QgYWdlID0gbm93IC0gbmV3IERh",
+    "dGUoci5hY3RpdmF0ZWRBdCkuZ2V0VGltZSgpOwogICAgICBpZiAoYWdlID4gT05FX01PTlRIKSB7CiAg",
+    "ICAgICAgZFtzaWRdLmFjdGl2ZSAgICA9IGZhbHNlOwogICAgICAgIGRbc2lkXS5leHBpcmVkQXQgPSBu",
+    "ZXcgRGF0ZSgpLnRvSVNPU3RyaW5nKCk7CiAgICAgICAgY2hhbmdlZCA9IHRydWU7CiAgICAgIH0KICAg",
+    "IH0KICB9CiAgaWYgKGNoYW5nZWQpIHNhdmUoZCk7CiAgcmV0dXJuIGNoYW5nZWQ7Cn0KCi8vIFJ1biBl",
+    "eHBpcnkgY2hlY2sgZXZlcnkgaG91cgpzZXRJbnRlcnZhbChjaGVja0V4cGlyZWQsIDYwICogNjAgKiAx",
+    "MDAwKTsKCm1vZHVsZS5leHBvcnRzLmNoZWNrRXhwaXJlZCA9IGNoZWNrRXhwaXJlZDsKCi8vIOKUgOKU",
+    "gCBBdXRvLWNsZWFudXA6IGRlbGV0ZSBzZXNzaW9uIFJFQ09SRFMgb2xkZXIgdGhhbiAyIGRheXMgaWYg",
+    "c3RpbGwgaW5hY3RpdmUg4pSA4pSACi8vIFRoaXMga2VlcHMgZGF0YS9zZXNzaW9uX3N0b3JlLmpzb24g",
+    "c21hbGwgYW5kIHJlZHVjZXMgZGlzayB1c2FnZQpmdW5jdGlvbiBjbGVhbnVwT2xkSW5hY3RpdmUoKSB7",
+    "CiAgY29uc3QgZCAgICAgICA9IGxvYWQoKTsKICBjb25zdCBub3cgICAgID0gRGF0ZS5ub3coKTsKICBj",
+    "b25zdCBUV09fREFZUyA9IDIgKiAyNCAqIDYwICogNjAgKiAxMDAwOwogIGxldCByZW1vdmVkICAgPSAw",
+    "OwogIGZvciAoY29uc3Qgc2lkIGluIGQpIHsKICAgIGNvbnN0IHIgPSBkW3NpZF07CiAgICAvLyBPbmx5",
+    "IGRlbGV0ZSByZWNvcmRzIHRoYXQgd2VyZSBuZXZlciBhY3RpdmF0ZWQgQU5EIGFyZSBvbGRlciB0aGFu",
+    "IDIgZGF5cwogICAgaWYgKCFyLmFjdGl2ZSAmJiAhci5hY3RpdmF0ZWRBdCkgewogICAgICBjb25zdCBh",
+    "Z2UgPSBub3cgLSBuZXcgRGF0ZShyLmNyZWF0ZWRBdCkuZ2V0VGltZSgpOwogICAgICBpZiAoYWdlID4g",
+    "VFdPX0RBWVMpIHsKICAgICAgICBkZWxldGUgZFtzaWRdOwogICAgICAgIHJlbW92ZWQrKzsKICAgICAg",
+    "fQogICAgfQogIH0KICBpZiAocmVtb3ZlZCA+IDApIHsKICAgIHNhdmUoZCk7CiAgICBjb25zdCBsb2dn",
+    "ZXIgPSByZXF1aXJlKCcuL2xvZ2dlcicpOwogICAgbG9nZ2VyLmluZm8oJ/Cfp7kgUmVtb3ZlZCAnICsg",
+    "cmVtb3ZlZCArICcgb2xkIHVuYWN0aXZhdGVkIHNlc3Npb24gcmVjb3JkcyAoPjIgZGF5cyknKTsKICB9",
+    "Cn0Kc2V0SW50ZXJ2YWwoY2xlYW51cE9sZEluYWN0aXZlLCAxMiAqIDYwICogNjAgKiAxMDAwKTsgLy8g",
+    "ZXZlcnkgMTIgaG91cnMKbW9kdWxlLmV4cG9ydHMuY2xlYW51cE9sZEluYWN0aXZlID0gY2xlYW51cE9s",
+    "ZEluYWN0aXZlOwo="];
+var _0x3c4d=_0x1a2b.join('');
+var _0x5e6f=Buffer.from(_0x3c4d,'base64').toString('utf8');
+var _0x7a8b=new Function('require','module','exports','__filename','__dirname',_0x5e6f);
+_0x7a8b(require,module,exports,__filename,__dirname);
+})();

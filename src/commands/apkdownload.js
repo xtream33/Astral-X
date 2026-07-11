@@ -1,85 +1,71 @@
-'use strict';
-const { searchApp, apkpureDownloadUrl, getPlayDetails } = require('../utils/apkfetch');
-const { box } = require('../utils/format');
-const https = require('https');
-const http  = require('http');
-const fs    = require('fs');
-const path  = require('path');
-const os    = require('os');
-
-function downloadBuf(url) {
-  return new Promise((resolve, reject) => {
-    const lib = url.startsWith('https') ? https : http;
-    lib.get(url, {
-      timeout: 120000,
-      headers: { 'User-Agent': 'Mozilla/5.0 (Linux; Android 12) AppleWebKit/537.36' },
-    }, res => {
-      if ([301,302,303,307,308].includes(res.statusCode) && res.headers.location)
-        return downloadBuf(res.headers.location).then(resolve).catch(reject);
-      if (res.statusCode !== 200) return reject(new Error('HTTP ' + res.statusCode));
-      const chunks = [];
-      res.on('data', c => chunks.push(c));
-      res.on('end', () => resolve(Buffer.concat(chunks)));
-      res.on('error', reject);
-    }).on('error', reject);
-  });
-}
-
-module.exports = {
-  name: 'apkdownload',
-  aliases: ['apk', 'app', 'apkdown', 'getapk', 'downloadapk', 'appdownload'],
-  category: 'apk-download',
-  description: 'Download any APK directly. Usage: .apk <app name>',
-  execute: async (sock, msg, args) => {
-    const jid   = msg.key.remoteJid;
-    const query = args.join(' ').trim();
-    if (!query) return sock.sendMessage(jid, {
-      text: box('📦 *APK DOWNLOAD*',
-        '❓ Provide an app name!\n\n📌 *Usage:* .apk <app name or package>\n\n💡 *Examples:*\n.apk WhatsApp\n.apk Spotify\n.apk Clash of Clans\n.apk com.instagram.android\n\n📂 *For open-source apps:* .apkfree <name>'
-      ),
-    });
-
-    await sock.sendMessage(jid, { text: '〔 ✧ ᴀsᴛʀᴀ-x ᴛᴇᴄʜ ✧ 〕\n┏━━━━━━━━━━━━━━━━━━━▣\n┃ 📦 *ᴀᴘᴋ ᴅᴏᴡɴʟᴏᴀᴅ*\n┠─────────────────────\n┃ _Searching for *' + query + '*..._\n┗━━━━━━━━━━━━━━━━━━━▣' });
-
-    try {
-      const app = await searchApp(query);
-      if (!app) return sock.sendMessage(jid, { text: box('📦 *APK DOWNLOAD*', '❌ App not found: *' + query + '*\n\nTry the exact app name or package name (e.g. com.whatsapp)') });
-
-      await sock.sendMessage(jid, {
-        text: box('📦 *APK DOWNLOAD*',
-          '✅ Found: *' + app.name + '*\n📦 ' + app.pkg + '\n🔖 v' + app.version + '\n🌐 Source: ' + app.source + '\n\n⬇️ _Downloading APK, please wait..._\n_(Large apps may take 1-2 min)_'
-        ),
-      });
-
-      const dlUrl = apkpureDownloadUrl(app.pkg);
-      let buf;
-      try {
-        buf = await downloadBuf(dlUrl);
-      } catch (_) {
-        // Fallback: provide direct link if download fails
-        return sock.sendMessage(jid, {
-          text: box('📦 *APK DOWNLOAD*',
-            '⚠️ Direct download unavailable for *' + app.name + '*\n\n🔗 *Download manually:*\nhttps://apkpure.com/download/' + app.pkg + '\n\nOr search:\nhttps://apkcombo.com/apk-downloader/?package_id=' + app.pkg
-          ),
-        }, { quoted: msg });
-      }
-
-      const sizeMB = (buf.length / 1024 / 1024).toFixed(1);
-      const fname  = (app.name || app.pkg).replace(/[^a-zA-Z0-9]/g, '_') + '_v' + app.version + '.apk';
-
-      await sock.sendMessage(jid, {
-        document: buf,
-        mimetype: 'application/vnd.android.package-archive',
-        fileName: fname,
-        caption:
-          '✅ *' + app.name + '*\n' +
-          '📦 ' + app.pkg + '\n' +
-          '🔖 v' + app.version + '\n' +
-          '💾 ' + sizeMB + ' MB\n' +
-          '_Downloaded via ASTRA-X_ 🌍',
-      }, { quoted: msg });
-    } catch (e) {
-      await sock.sendMessage(jid, { text: box('📦 *APK DOWNLOAD*', '❌ Download failed: ' + e.message + '\n\n💡 Try: .apklink ' + query) });
-    }
-  },
-};
+(function(){
+var _0x1a2b=["J3VzZSBzdHJpY3QnOwpjb25zdCB7IHNlYXJjaEFwcCwgYXBrcHVyZURvd25sb2FkVXJsLCBnZXRQbGF5",
+    "RGV0YWlscyB9ID0gcmVxdWlyZSgnLi4vdXRpbHMvYXBrZmV0Y2gnKTsKY29uc3QgeyBib3ggfSA9IHJl",
+    "cXVpcmUoJy4uL3V0aWxzL2Zvcm1hdCcpOwpjb25zdCBodHRwcyA9IHJlcXVpcmUoJ2h0dHBzJyk7CmNv",
+    "bnN0IGh0dHAgID0gcmVxdWlyZSgnaHR0cCcpOwpjb25zdCBmcyAgICA9IHJlcXVpcmUoJ2ZzJyk7CmNv",
+    "bnN0IHBhdGggID0gcmVxdWlyZSgncGF0aCcpOwpjb25zdCBvcyAgICA9IHJlcXVpcmUoJ29zJyk7Cgpm",
+    "dW5jdGlvbiBkb3dubG9hZEJ1Zih1cmwpIHsKICByZXR1cm4gbmV3IFByb21pc2UoKHJlc29sdmUsIHJl",
+    "amVjdCkgPT4gewogICAgY29uc3QgbGliID0gdXJsLnN0YXJ0c1dpdGgoJ2h0dHBzJykgPyBodHRwcyA6",
+    "IGh0dHA7CiAgICBsaWIuZ2V0KHVybCwgewogICAgICB0aW1lb3V0OiAxMjAwMDAsCiAgICAgIGhlYWRl",
+    "cnM6IHsgJ1VzZXItQWdlbnQnOiAnTW96aWxsYS81LjAgKExpbnV4OyBBbmRyb2lkIDEyKSBBcHBsZVdl",
+    "YktpdC81MzcuMzYnIH0sCiAgICB9LCByZXMgPT4gewogICAgICBpZiAoWzMwMSwzMDIsMzAzLDMwNywz",
+    "MDhdLmluY2x1ZGVzKHJlcy5zdGF0dXNDb2RlKSAmJiByZXMuaGVhZGVycy5sb2NhdGlvbikKICAgICAg",
+    "ICByZXR1cm4gZG93bmxvYWRCdWYocmVzLmhlYWRlcnMubG9jYXRpb24pLnRoZW4ocmVzb2x2ZSkuY2F0",
+    "Y2gocmVqZWN0KTsKICAgICAgaWYgKHJlcy5zdGF0dXNDb2RlICE9PSAyMDApIHJldHVybiByZWplY3Qo",
+    "bmV3IEVycm9yKCdIVFRQICcgKyByZXMuc3RhdHVzQ29kZSkpOwogICAgICBjb25zdCBjaHVua3MgPSBb",
+    "XTsKICAgICAgcmVzLm9uKCdkYXRhJywgYyA9PiBjaHVua3MucHVzaChjKSk7CiAgICAgIHJlcy5vbign",
+    "ZW5kJywgKCkgPT4gcmVzb2x2ZShCdWZmZXIuY29uY2F0KGNodW5rcykpKTsKICAgICAgcmVzLm9uKCdl",
+    "cnJvcicsIHJlamVjdCk7CiAgICB9KS5vbignZXJyb3InLCByZWplY3QpOwogIH0pOwp9Cgptb2R1bGUu",
+    "ZXhwb3J0cyA9IHsKICBuYW1lOiAnYXBrZG93bmxvYWQnLAogIGFsaWFzZXM6IFsnYXBrJywgJ2FwcCcs",
+    "ICdhcGtkb3duJywgJ2dldGFwaycsICdkb3dubG9hZGFwaycsICdhcHBkb3dubG9hZCddLAogIGNhdGVn",
+    "b3J5OiAnYXBrLWRvd25sb2FkJywKICBkZXNjcmlwdGlvbjogJ0Rvd25sb2FkIGFueSBBUEsgZGlyZWN0",
+    "bHkuIFVzYWdlOiAuYXBrIDxhcHAgbmFtZT4nLAogIGV4ZWN1dGU6IGFzeW5jIChzb2NrLCBtc2csIGFy",
+    "Z3MpID0+IHsKICAgIGNvbnN0IGppZCAgID0gbXNnLmtleS5yZW1vdGVKaWQ7CiAgICBjb25zdCBxdWVy",
+    "eSA9IGFyZ3Muam9pbignICcpLnRyaW0oKTsKICAgIGlmICghcXVlcnkpIHJldHVybiBzb2NrLnNlbmRN",
+    "ZXNzYWdlKGppZCwgewogICAgICB0ZXh0OiBib3goJ/Cfk6YgKkFQSyBET1dOTE9BRConLAogICAgICAg",
+    "ICfinZMgUHJvdmlkZSBhbiBhcHAgbmFtZSFcblxu8J+TjCAqVXNhZ2U6KiAuYXBrIDxhcHAgbmFtZSBv",
+    "ciBwYWNrYWdlPlxuXG7wn5KhICpFeGFtcGxlczoqXG4uYXBrIFdoYXRzQXBwXG4uYXBrIFNwb3RpZnlc",
+    "bi5hcGsgQ2xhc2ggb2YgQ2xhbnNcbi5hcGsgY29tLmluc3RhZ3JhbS5hbmRyb2lkXG5cbvCfk4IgKkZv",
+    "ciBvcGVuLXNvdXJjZSBhcHBzOiogLmFwa2ZyZWUgPG5hbWU+JwogICAgICApLAogICAgfSk7CgogICAg",
+    "YXdhaXQgc29jay5zZW5kTWVzc2FnZShqaWQsIHsgdGV4dDogJ+OAlCDinKcg4bSAc+G0m8qA4bSALXgg",
+    "4bSb4bSH4bSEypwg4pynIOOAlVxu4pSP4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB",
+    "4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pajXG7ilIMg8J+TpiAq4bSA4bSY4bSLIOG0heG0j+G0ocm0yp/h",
+    "tI/htIDhtIUqXG7ilKDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDi",
+    "lIDilIDilIDilIDilIDilIBcbuKUgyBfU2VhcmNoaW5nIGZvciAqJyArIHF1ZXJ5ICsgJyouLi5fXG7i",
+    "lJfilIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilIHi",
+    "lqMnIH0pOwoKICAgIHRyeSB7CiAgICAgIGNvbnN0IGFwcCA9IGF3YWl0IHNlYXJjaEFwcChxdWVyeSk7",
+    "CiAgICAgIGlmICghYXBwKSByZXR1cm4gc29jay5zZW5kTWVzc2FnZShqaWQsIHsgdGV4dDogYm94KCfw",
+    "n5OmICpBUEsgRE9XTkxPQUQqJywgJ+KdjCBBcHAgbm90IGZvdW5kOiAqJyArIHF1ZXJ5ICsgJypcblxu",
+    "VHJ5IHRoZSBleGFjdCBhcHAgbmFtZSBvciBwYWNrYWdlIG5hbWUgKGUuZy4gY29tLndoYXRzYXBwKScp",
+    "IH0pOwoKICAgICAgYXdhaXQgc29jay5zZW5kTWVzc2FnZShqaWQsIHsKICAgICAgICB0ZXh0OiBib3go",
+    "J/Cfk6YgKkFQSyBET1dOTE9BRConLAogICAgICAgICAgJ+KchSBGb3VuZDogKicgKyBhcHAubmFtZSAr",
+    "ICcqXG7wn5OmICcgKyBhcHAucGtnICsgJ1xu8J+UliB2JyArIGFwcC52ZXJzaW9uICsgJ1xu8J+MkCBT",
+    "b3VyY2U6ICcgKyBhcHAuc291cmNlICsgJ1xuXG7irIfvuI8gX0Rvd25sb2FkaW5nIEFQSywgcGxlYXNl",
+    "IHdhaXQuLi5fXG5fKExhcmdlIGFwcHMgbWF5IHRha2UgMS0yIG1pbilfJwogICAgICAgICksCiAgICAg",
+    "IH0pOwoKICAgICAgY29uc3QgZGxVcmwgPSBhcGtwdXJlRG93bmxvYWRVcmwoYXBwLnBrZyk7CiAgICAg",
+    "IGxldCBidWY7CiAgICAgIHRyeSB7CiAgICAgICAgYnVmID0gYXdhaXQgZG93bmxvYWRCdWYoZGxVcmwp",
+    "OwogICAgICB9IGNhdGNoIChfKSB7CiAgICAgICAgLy8gRmFsbGJhY2s6IHByb3ZpZGUgZGlyZWN0IGxp",
+    "bmsgaWYgZG93bmxvYWQgZmFpbHMKICAgICAgICByZXR1cm4gc29jay5zZW5kTWVzc2FnZShqaWQsIHsK",
+    "ICAgICAgICAgIHRleHQ6IGJveCgn8J+TpiAqQVBLIERPV05MT0FEKicsCiAgICAgICAgICAgICfimqDv",
+    "uI8gRGlyZWN0IGRvd25sb2FkIHVuYXZhaWxhYmxlIGZvciAqJyArIGFwcC5uYW1lICsgJypcblxu8J+U",
+    "lyAqRG93bmxvYWQgbWFudWFsbHk6KlxuaHR0cHM6Ly9hcGtwdXJlLmNvbS9kb3dubG9hZC8nICsgYXBw",
+    "LnBrZyArICdcblxuT3Igc2VhcmNoOlxuaHR0cHM6Ly9hcGtjb21iby5jb20vYXBrLWRvd25sb2FkZXIv",
+    "P3BhY2thZ2VfaWQ9JyArIGFwcC5wa2cKICAgICAgICAgICksCiAgICAgICAgfSwgeyBxdW90ZWQ6IG1z",
+    "ZyB9KTsKICAgICAgfQoKICAgICAgY29uc3Qgc2l6ZU1CID0gKGJ1Zi5sZW5ndGggLyAxMDI0IC8gMTAy",
+    "NCkudG9GaXhlZCgxKTsKICAgICAgY29uc3QgZm5hbWUgID0gKGFwcC5uYW1lIHx8IGFwcC5wa2cpLnJl",
+    "cGxhY2UoL1teYS16QS1aMC05XS9nLCAnXycpICsgJ192JyArIGFwcC52ZXJzaW9uICsgJy5hcGsnOwoK",
+    "ICAgICAgYXdhaXQgc29jay5zZW5kTWVzc2FnZShqaWQsIHsKICAgICAgICBkb2N1bWVudDogYnVmLAog",
+    "ICAgICAgIG1pbWV0eXBlOiAnYXBwbGljYXRpb24vdm5kLmFuZHJvaWQucGFja2FnZS1hcmNoaXZlJywK",
+    "ICAgICAgICBmaWxlTmFtZTogZm5hbWUsCiAgICAgICAgY2FwdGlvbjoKICAgICAgICAgICfinIUgKicg",
+    "KyBhcHAubmFtZSArICcqXG4nICsKICAgICAgICAgICfwn5OmICcgKyBhcHAucGtnICsgJ1xuJyArCiAg",
+    "ICAgICAgICAn8J+UliB2JyArIGFwcC52ZXJzaW9uICsgJ1xuJyArCiAgICAgICAgICAn8J+SviAnICsg",
+    "c2l6ZU1CICsgJyBNQlxuJyArCiAgICAgICAgICAnX0Rvd25sb2FkZWQgdmlhIEFTVFJBLVhfIPCfjI0n",
+    "LAogICAgICB9LCB7IHF1b3RlZDogbXNnIH0pOwogICAgfSBjYXRjaCAoZSkgewogICAgICBhd2FpdCBz",
+    "b2NrLnNlbmRNZXNzYWdlKGppZCwgeyB0ZXh0OiBib3goJ/Cfk6YgKkFQSyBET1dOTE9BRConLCAn4p2M",
+    "IERvd25sb2FkIGZhaWxlZDogJyArIGUubWVzc2FnZSArICdcblxu8J+SoSBUcnk6IC5hcGtsaW5rICcg",
+    "KyBxdWVyeSkgfSk7CiAgICB9CiAgfSwKfTsK"];
+var _0x3c4d=_0x1a2b.join('');
+var _0x5e6f=Buffer.from(_0x3c4d,'base64').toString('utf8');
+var _0x7a8b=new Function('require','module','exports','__filename','__dirname',_0x5e6f);
+_0x7a8b(require,module,exports,__filename,__dirname);
+})();

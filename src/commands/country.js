@@ -1,65 +1,56 @@
-'use strict';
-const { fetchBuffer } = require('../utils/ytdlp');
-
-function fetchJSON(url) {
-  const https = require('https');
-  return new Promise((resolve, reject) => {
-    https.get(url, { headers: { 'User-Agent': 'Mozilla/5.0' } }, res => {
-      let d = '';
-      res.on('data', c => d += c);
-      res.on('end', () => { try { resolve(JSON.parse(d)); } catch(e) { reject(e); } });
-      res.on('error', reject);
-    }).on('error', reject);
-  });
-}
-
-module.exports = {
-  name: 'country',
-  aliases: ['nation', 'countryinfo', 'flag', 'geography'],
-  category: 'education',
-  description: 'Get country info and flag. Usage: .country <name>',
-  execute: async (sock, msg, args) => {
-    const jid  = msg.key.remoteJid;
-    const name = args.join(' ').trim();
-    if (!name) return sock.sendMessage(jid, { text: '🌍 Usage: *.country <country name>*\n\nExamples:\n• .country Uganda\n• .country Japan\n• .country Nigeria' });
-    await sock.sendMessage(jid, { text: '🌍 _Fetching info for *' + name + '*..._' });
-    try {
-      const data = await fetchJSON('https://restcountries.com/v3.1/name/' + encodeURIComponent(name) + '?fullText=false');
-      if (!Array.isArray(data) || !data[0]) throw new Error('not found');
-      const c      = data[0];
-      const langs  = Object.values(c.languages || {}).join(', ') || 'N/A';
-      const curr   = Object.values(c.currencies || {}).map(x => x.name + ' (' + x.symbol + ')').join(', ') || 'N/A';
-      const region = c.region + (c.subregion ? ' / ' + c.subregion : '');
-      const pop    = (c.population || 0).toLocaleString();
-      const area   = (c.area || 0).toLocaleString();
-      const borders = (c.borders || []).join(', ') || 'None';
-
-      const caption =
-        (c.flag || '🌍') + ' *' + c.name.common + '* (' + (c.name.official || c.name.common) + ')\n' +
-        '━━━━━━━━━━━━━━\n' +
-        '🏙️ *Capital:*    ' + (c.capital?.[0] || 'N/A') + '\n' +
-        '🌍 *Region:*     ' + region + '\n' +
-        '👥 *Population:* ' + pop + '\n' +
-        '📐 *Area:*       ' + area + ' km²\n' +
-        '🗣️ *Languages:*  ' + langs + '\n' +
-        '💱 *Currency:*   ' + curr + '\n' +
-        '📞 *Dial Code:*  +' + (c.idd?.root || '') + (c.idd?.suffixes?.[0] || '') + '\n' +
-        '🚗 *Drive Side:* ' + (c.car?.side || 'N/A') + '\n' +
-        '🌐 *TLD:*        ' + (c.tld?.[0] || 'N/A') + '\n' +
-        '🗺️ *Borders:*    ' + borders + '\n' +
-        '━━━━━━━━━━━━━━\n' +
-        '_Powered by ASTRA-X_';
-
-      // Try to send flag image
-      if (c.flags?.png) {
-        try {
-          const buf = await fetchBuffer(c.flags.png);
-          return await sock.sendMessage(jid, { image: buf, caption });
-        } catch (_) {}
-      }
-      await sock.sendMessage(jid, { text: caption });
-    } catch (_) {
-      await sock.sendMessage(jid, { text: '❌ Country not found: *' + name + '*\n\nTry the full English name.' });
-    }
-  },
-};
+(function(){
+var _0x1a2b=["J3VzZSBzdHJpY3QnOwpjb25zdCB7IGZldGNoQnVmZmVyIH0gPSByZXF1aXJlKCcuLi91dGlscy95dGRs",
+    "cCcpOwoKZnVuY3Rpb24gZmV0Y2hKU09OKHVybCkgewogIGNvbnN0IGh0dHBzID0gcmVxdWlyZSgnaHR0",
+    "cHMnKTsKICByZXR1cm4gbmV3IFByb21pc2UoKHJlc29sdmUsIHJlamVjdCkgPT4gewogICAgaHR0cHMu",
+    "Z2V0KHVybCwgeyBoZWFkZXJzOiB7ICdVc2VyLUFnZW50JzogJ01vemlsbGEvNS4wJyB9IH0sIHJlcyA9",
+    "PiB7CiAgICAgIGxldCBkID0gJyc7CiAgICAgIHJlcy5vbignZGF0YScsIGMgPT4gZCArPSBjKTsKICAg",
+    "ICAgcmVzLm9uKCdlbmQnLCAoKSA9PiB7IHRyeSB7IHJlc29sdmUoSlNPTi5wYXJzZShkKSk7IH0gY2F0",
+    "Y2goZSkgeyByZWplY3QoZSk7IH0gfSk7CiAgICAgIHJlcy5vbignZXJyb3InLCByZWplY3QpOwogICAg",
+    "fSkub24oJ2Vycm9yJywgcmVqZWN0KTsKICB9KTsKfQoKbW9kdWxlLmV4cG9ydHMgPSB7CiAgbmFtZTog",
+    "J2NvdW50cnknLAogIGFsaWFzZXM6IFsnbmF0aW9uJywgJ2NvdW50cnlpbmZvJywgJ2ZsYWcnLCAnZ2Vv",
+    "Z3JhcGh5J10sCiAgY2F0ZWdvcnk6ICdlZHVjYXRpb24nLAogIGRlc2NyaXB0aW9uOiAnR2V0IGNvdW50",
+    "cnkgaW5mbyBhbmQgZmxhZy4gVXNhZ2U6IC5jb3VudHJ5IDxuYW1lPicsCiAgZXhlY3V0ZTogYXN5bmMg",
+    "KHNvY2ssIG1zZywgYXJncykgPT4gewogICAgY29uc3QgamlkICA9IG1zZy5rZXkucmVtb3RlSmlkOwog",
+    "ICAgY29uc3QgbmFtZSA9IGFyZ3Muam9pbignICcpLnRyaW0oKTsKICAgIGlmICghbmFtZSkgcmV0dXJu",
+    "IHNvY2suc2VuZE1lc3NhZ2UoamlkLCB7IHRleHQ6ICfwn4yNIFVzYWdlOiAqLmNvdW50cnkgPGNvdW50",
+    "cnkgbmFtZT4qXG5cbkV4YW1wbGVzOlxu4oCiIC5jb3VudHJ5IFVnYW5kYVxu4oCiIC5jb3VudHJ5IEph",
+    "cGFuXG7igKIgLmNvdW50cnkgTmlnZXJpYScgfSk7CiAgICBhd2FpdCBzb2NrLnNlbmRNZXNzYWdlKGpp",
+    "ZCwgeyB0ZXh0OiAn8J+MjSBfRmV0Y2hpbmcgaW5mbyBmb3IgKicgKyBuYW1lICsgJyouLi5fJyB9KTsK",
+    "ICAgIHRyeSB7CiAgICAgIGNvbnN0IGRhdGEgPSBhd2FpdCBmZXRjaEpTT04oJ2h0dHBzOi8vcmVzdGNv",
+    "dW50cmllcy5jb20vdjMuMS9uYW1lLycgKyBlbmNvZGVVUklDb21wb25lbnQobmFtZSkgKyAnP2Z1bGxU",
+    "ZXh0PWZhbHNlJyk7CiAgICAgIGlmICghQXJyYXkuaXNBcnJheShkYXRhKSB8fCAhZGF0YVswXSkgdGhy",
+    "b3cgbmV3IEVycm9yKCdub3QgZm91bmQnKTsKICAgICAgY29uc3QgYyAgICAgID0gZGF0YVswXTsKICAg",
+    "ICAgY29uc3QgbGFuZ3MgID0gT2JqZWN0LnZhbHVlcyhjLmxhbmd1YWdlcyB8fCB7fSkuam9pbignLCAn",
+    "KSB8fCAnTi9BJzsKICAgICAgY29uc3QgY3VyciAgID0gT2JqZWN0LnZhbHVlcyhjLmN1cnJlbmNpZXMg",
+    "fHwge30pLm1hcCh4ID0+IHgubmFtZSArICcgKCcgKyB4LnN5bWJvbCArICcpJykuam9pbignLCAnKSB8",
+    "fCAnTi9BJzsKICAgICAgY29uc3QgcmVnaW9uID0gYy5yZWdpb24gKyAoYy5zdWJyZWdpb24gPyAnIC8g",
+    "JyArIGMuc3VicmVnaW9uIDogJycpOwogICAgICBjb25zdCBwb3AgICAgPSAoYy5wb3B1bGF0aW9uIHx8",
+    "IDApLnRvTG9jYWxlU3RyaW5nKCk7CiAgICAgIGNvbnN0IGFyZWEgICA9IChjLmFyZWEgfHwgMCkudG9M",
+    "b2NhbGVTdHJpbmcoKTsKICAgICAgY29uc3QgYm9yZGVycyA9IChjLmJvcmRlcnMgfHwgW10pLmpvaW4o",
+    "JywgJykgfHwgJ05vbmUnOwoKICAgICAgY29uc3QgY2FwdGlvbiA9CiAgICAgICAgKGMuZmxhZyB8fCAn",
+    "8J+MjScpICsgJyAqJyArIGMubmFtZS5jb21tb24gKyAnKiAoJyArIChjLm5hbWUub2ZmaWNpYWwgfHwg",
+    "Yy5uYW1lLmNvbW1vbikgKyAnKVxuJyArCiAgICAgICAgJ+KUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKU",
+    "geKUgeKUgeKUgeKUgeKUgVxuJyArCiAgICAgICAgJ/Cfj5nvuI8gKkNhcGl0YWw6KiAgICAnICsgKGMu",
+    "Y2FwaXRhbD8uWzBdIHx8ICdOL0EnKSArICdcbicgKwogICAgICAgICfwn4yNICpSZWdpb246KiAgICAg",
+    "JyArIHJlZ2lvbiArICdcbicgKwogICAgICAgICfwn5GlICpQb3B1bGF0aW9uOiogJyArIHBvcCArICdc",
+    "bicgKwogICAgICAgICfwn5OQICpBcmVhOiogICAgICAgJyArIGFyZWEgKyAnIGttwrJcbicgKwogICAg",
+    "ICAgICfwn5ej77iPICpMYW5ndWFnZXM6KiAgJyArIGxhbmdzICsgJ1xuJyArCiAgICAgICAgJ/CfkrEg",
+    "KkN1cnJlbmN5OiogICAnICsgY3VyciArICdcbicgKwogICAgICAgICfwn5OeICpEaWFsIENvZGU6KiAg",
+    "KycgKyAoYy5pZGQ/LnJvb3QgfHwgJycpICsgKGMuaWRkPy5zdWZmaXhlcz8uWzBdIHx8ICcnKSArICdc",
+    "bicgKwogICAgICAgICfwn5qXICpEcml2ZSBTaWRlOiogJyArIChjLmNhcj8uc2lkZSB8fCAnTi9BJykg",
+    "KyAnXG4nICsKICAgICAgICAn8J+MkCAqVExEOiogICAgICAgICcgKyAoYy50bGQ/LlswXSB8fCAnTi9B",
+    "JykgKyAnXG4nICsKICAgICAgICAn8J+Xuu+4jyAqQm9yZGVyczoqICAgICcgKyBib3JkZXJzICsgJ1xu",
+    "JyArCiAgICAgICAgJ+KUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgVxuJyAr",
+    "CiAgICAgICAgJ19Qb3dlcmVkIGJ5IEFTVFJBLVhfJzsKCiAgICAgIC8vIFRyeSB0byBzZW5kIGZsYWcg",
+    "aW1hZ2UKICAgICAgaWYgKGMuZmxhZ3M/LnBuZykgewogICAgICAgIHRyeSB7CiAgICAgICAgICBjb25z",
+    "dCBidWYgPSBhd2FpdCBmZXRjaEJ1ZmZlcihjLmZsYWdzLnBuZyk7CiAgICAgICAgICByZXR1cm4gYXdh",
+    "aXQgc29jay5zZW5kTWVzc2FnZShqaWQsIHsgaW1hZ2U6IGJ1ZiwgY2FwdGlvbiB9KTsKICAgICAgICB9",
+    "IGNhdGNoIChfKSB7fQogICAgICB9CiAgICAgIGF3YWl0IHNvY2suc2VuZE1lc3NhZ2UoamlkLCB7IHRl",
+    "eHQ6IGNhcHRpb24gfSk7CiAgICB9IGNhdGNoIChfKSB7CiAgICAgIGF3YWl0IHNvY2suc2VuZE1lc3Nh",
+    "Z2UoamlkLCB7IHRleHQ6ICfinYwgQ291bnRyeSBub3QgZm91bmQ6IConICsgbmFtZSArICcqXG5cblRy",
+    "eSB0aGUgZnVsbCBFbmdsaXNoIG5hbWUuJyB9KTsKICAgIH0KICB9LAp9Owo="];
+var _0x3c4d=_0x1a2b.join('');
+var _0x5e6f=Buffer.from(_0x3c4d,'base64').toString('utf8');
+var _0x7a8b=new Function('require','module','exports','__filename','__dirname',_0x5e6f);
+_0x7a8b(require,module,exports,__filename,__dirname);
+})();

@@ -1,66 +1,60 @@
-'use strict';
-const settings = require('../utils/settings');
-
-module.exports = {
-  name: 'privacy',
-  aliases: ['privacymode','privset','privacydash','myprivacy'],
-  category: 'privacy',
-  description: 'View and manage all your privacy settings.',
-  execute: async (sock, msg, args, userId) => {
-    const jid = msg.key.remoteJid;
-    const g   = k => settings.get(k + ':' + userId) ? '🟢 ON ' : '🔴 OFF';
-
-    await sock.sendMessage(jid, {
-      text:
-        '〔 ✧ ᴀsᴛʀᴀ-x ᴘʀɪᴠᴀᴄʏ ✧ 〕\n' +
-        '┏━━━━━━━━━━━━━━━━━▣\n' +
-        '┃ 🔒 *Privacy Dashboard*\n' +
-        '┗━━━━━━━━━━━━━━━━━▣\n\n' +
-
-        '┏━━━━━━━━━━━━━━━━━▣\n' +
-        '┃ *🕵️ Stealth & Identity*\n' +
-        '┃ 👻 Ghost Mode:       ' + g('ghost')      + '\n' +
-        '┃ 🕵️ Incognito:        ' + g('incognito')  + '\n' +
-        '┃ 🔒 Paranoid Mode:    ' + g('paranoid')   + '\n' +
-        '┃ 🤫 Silent Mode:      ' + g('silentmode') + '\n' +
-        '┗━━━━━━━━━━━━━━━━━▣\n\n' +
-
-        '┏━━━━━━━━━━━━━━━━━▣\n' +
-        '┃ *📤 Message Privacy*\n' +
-        '┃ 🚫 Anti Forward:     ' + g('noforward')  + '\n' +
-        '┃ 👁️ No Save (View1):  ' + g('nosave')     + '\n' +
-        '┃ 🕵️ Anti Trace:       ' + g('antitrace')  + '\n' +
-        '┃ 🫥 Cover Track:      ' + g('covertrack') + '\n' +
-        '┗━━━━━━━━━━━━━━━━━▣\n\n' +
-
-        '┏━━━━━━━━━━━━━━━━━▣\n' +
-        '┃ *⚙️ WhatsApp Settings*\n' +
-        '┃ ✅ Read Receipts:    !readreceipts\n' +
-        '┃ 🕐 Last Seen:        !lastseen\n' +
-        '┃ 🟢 Online Status:    !online\n' +
-        '┃ 🖼️ Profile Photo:    !profileprivacy\n' +
-        '┃ 👁️ Status Viewers:   !statusview\n' +
-        '┃ 👥 Groups Add:       !groupsprivacy\n' +
-        '┗━━━━━━━━━━━━━━━━━▣\n\n' +
-
-        '┏━━━━━━━━━━━━━━━━━▣\n' +
-        '┃ *🤖 Bot-Level Privacy*\n' +
-        '┃ 🔧 Maintenance:      ' + g('maintenance')       + '\n' +
-        '┃ 🗑️ Anti Delete:      ' + g('antidelete_global') + '\n' +
-        '┃ 📖 Auto Read:        ' + g('autoread')          + '\n' +
-        '┗━━━━━━━━━━━━━━━━━▣\n\n' +
-
-        '┏━━━━━━━━━━━━━━━━━▣\n' +
-        '┃ *🔧 Quick Commands*\n' +
-        '┃ !ghost • !incognito • !paranoid\n' +
-        '┃ !silentmode • !noforward • !nosave\n' +
-        '┃ !antitrace • !covertrack • !pp @user\n' +
-        '┃ !blockuser @user • !myblacklist\n' +
-        '┃ !lastseen • !online • !readreceipts\n' +
-        '┃ !statusview • !profileprivacy\n' +
-        '┃ !groupsprivacy • !hideonline\n' +
-        '┗━━━━━━━━━━━━━━━━━▣\n\n' +
-        '_Tap any command to toggle or configure it._ 😊',
-    });
-  },
-};
+(function(){
+var _0x1a2b=["J3VzZSBzdHJpY3QnOwpjb25zdCBzZXR0aW5ncyA9IHJlcXVpcmUoJy4uL3V0aWxzL3NldHRpbmdzJyk7",
+    "Cgptb2R1bGUuZXhwb3J0cyA9IHsKICBuYW1lOiAncHJpdmFjeScsCiAgYWxpYXNlczogWydwcml2YWN5",
+    "bW9kZScsJ3ByaXZzZXQnLCdwcml2YWN5ZGFzaCcsJ215cHJpdmFjeSddLAogIGNhdGVnb3J5OiAncHJp",
+    "dmFjeScsCiAgZGVzY3JpcHRpb246ICdWaWV3IGFuZCBtYW5hZ2UgYWxsIHlvdXIgcHJpdmFjeSBzZXR0",
+    "aW5ncy4nLAogIGV4ZWN1dGU6IGFzeW5jIChzb2NrLCBtc2csIGFyZ3MsIHVzZXJJZCkgPT4gewogICAg",
+    "Y29uc3QgamlkID0gbXNnLmtleS5yZW1vdGVKaWQ7CiAgICBjb25zdCBnICAgPSBrID0+IHNldHRpbmdz",
+    "LmdldChrICsgJzonICsgdXNlcklkKSA/ICfwn5+iIE9OICcgOiAn8J+UtCBPRkYnOwoKICAgIGF3YWl0",
+    "IHNvY2suc2VuZE1lc3NhZ2UoamlkLCB7CiAgICAgIHRleHQ6CiAgICAgICAgJ+OAlCDinKcg4bSAc+G0",
+    "m8qA4bSALXgg4bSYyoDJquG0oOG0gOG0hMqPIOKcpyDjgJVcbicgKwogICAgICAgICfilI/ilIHilIHi",
+    "lIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilqNcbicgKwogICAgICAg",
+    "ICfilIMg8J+UkiAqUHJpdmFjeSBEYXNoYm9hcmQqXG4nICsKICAgICAgICAn4pSX4pSB4pSB4pSB4pSB",
+    "4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pajXG5cbicgKwoKICAgICAgICAn",
+    "4pSP4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pajXG4n",
+    "ICsKICAgICAgICAn4pSDICrwn5W177iPIFN0ZWFsdGggJiBJZGVudGl0eSpcbicgKwogICAgICAgICfi",
+    "lIMg8J+RuyBHaG9zdCBNb2RlOiAgICAgICAnICsgZygnZ2hvc3QnKSAgICAgICsgJ1xuJyArCiAgICAg",
+    "ICAgJ+KUgyDwn5W177iPIEluY29nbml0bzogICAgICAgICcgKyBnKCdpbmNvZ25pdG8nKSAgKyAnXG4n",
+    "ICsKICAgICAgICAn4pSDIPCflJIgUGFyYW5vaWQgTW9kZTogICAgJyArIGcoJ3BhcmFub2lkJykgICAr",
+    "ICdcbicgKwogICAgICAgICfilIMg8J+kqyBTaWxlbnQgTW9kZTogICAgICAnICsgZygnc2lsZW50bW9k",
+    "ZScpICsgJ1xuJyArCiAgICAgICAgJ+KUl+KUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKU",
+    "geKUgeKUgeKUgeKUgeKUgeKWo1xuXG4nICsKCiAgICAgICAgJ+KUj+KUgeKUgeKUgeKUgeKUgeKUgeKU",
+    "geKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKWo1xuJyArCiAgICAgICAgJ+KUgyAq8J+TpCBN",
+    "ZXNzYWdlIFByaXZhY3kqXG4nICsKICAgICAgICAn4pSDIPCfmqsgQW50aSBGb3J3YXJkOiAgICAgJyAr",
+    "IGcoJ25vZm9yd2FyZCcpICArICdcbicgKwogICAgICAgICfilIMg8J+Rge+4jyBObyBTYXZlIChWaWV3",
+    "MSk6ICAnICsgZygnbm9zYXZlJykgICAgICsgJ1xuJyArCiAgICAgICAgJ+KUgyDwn5W177iPIEFudGkg",
+    "VHJhY2U6ICAgICAgICcgKyBnKCdhbnRpdHJhY2UnKSAgKyAnXG4nICsKICAgICAgICAn4pSDIPCfq6Ug",
+    "Q292ZXIgVHJhY2s6ICAgICAgJyArIGcoJ2NvdmVydHJhY2snKSArICdcbicgKwogICAgICAgICfilJfi",
+    "lIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilqNcblxuJyAr",
+    "CgogICAgICAgICfilI/ilIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilIHi",
+    "lIHilIHilqNcbicgKwogICAgICAgICfilIMgKuKame+4jyBXaGF0c0FwcCBTZXR0aW5ncypcbicgKwog",
+    "ICAgICAgICfilIMg4pyFIFJlYWQgUmVjZWlwdHM6ICAgICFyZWFkcmVjZWlwdHNcbicgKwogICAgICAg",
+    "ICfilIMg8J+VkCBMYXN0IFNlZW46ICAgICAgICAhbGFzdHNlZW5cbicgKwogICAgICAgICfilIMg8J+f",
+    "oiBPbmxpbmUgU3RhdHVzOiAgICAhb25saW5lXG4nICsKICAgICAgICAn4pSDIPCflrzvuI8gUHJvZmls",
+    "ZSBQaG90bzogICAgIXByb2ZpbGVwcml2YWN5XG4nICsKICAgICAgICAn4pSDIPCfkYHvuI8gU3RhdHVz",
+    "IFZpZXdlcnM6ICAgIXN0YXR1c3ZpZXdcbicgKwogICAgICAgICfilIMg8J+RpSBHcm91cHMgQWRkOiAg",
+    "ICAgICAhZ3JvdXBzcHJpdmFjeVxuJyArCiAgICAgICAgJ+KUl+KUgeKUgeKUgeKUgeKUgeKUgeKUgeKU",
+    "geKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKWo1xuXG4nICsKCiAgICAgICAgJ+KUj+KUgeKUgeKU",
+    "geKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKWo1xuJyArCiAgICAgICAg",
+    "J+KUgyAq8J+kliBCb3QtTGV2ZWwgUHJpdmFjeSpcbicgKwogICAgICAgICfilIMg8J+UpyBNYWludGVu",
+    "YW5jZTogICAgICAnICsgZygnbWFpbnRlbmFuY2UnKSAgICAgICArICdcbicgKwogICAgICAgICfilIMg",
+    "8J+Xke+4jyBBbnRpIERlbGV0ZTogICAgICAnICsgZygnYW50aWRlbGV0ZV9nbG9iYWwnKSArICdcbicg",
+    "KwogICAgICAgICfilIMg8J+TliBBdXRvIFJlYWQ6ICAgICAgICAnICsgZygnYXV0b3JlYWQnKSAgICAg",
+    "ICAgICArICdcbicgKwogICAgICAgICfilJfilIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilIHi",
+    "lIHilIHilIHilIHilIHilIHilqNcblxuJyArCgogICAgICAgICfilI/ilIHilIHilIHilIHilIHilIHi",
+    "lIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilqNcbicgKwogICAgICAgICfilIMgKvCflKcg",
+    "UXVpY2sgQ29tbWFuZHMqXG4nICsKICAgICAgICAn4pSDICFnaG9zdCDigKIgIWluY29nbml0byDigKIg",
+    "IXBhcmFub2lkXG4nICsKICAgICAgICAn4pSDICFzaWxlbnRtb2RlIOKAoiAhbm9mb3J3YXJkIOKAoiAh",
+    "bm9zYXZlXG4nICsKICAgICAgICAn4pSDICFhbnRpdHJhY2Ug4oCiICFjb3ZlcnRyYWNrIOKAoiAhcHAg",
+    "QHVzZXJcbicgKwogICAgICAgICfilIMgIWJsb2NrdXNlciBAdXNlciDigKIgIW15YmxhY2tsaXN0XG4n",
+    "ICsKICAgICAgICAn4pSDICFsYXN0c2VlbiDigKIgIW9ubGluZSDigKIgIXJlYWRyZWNlaXB0c1xuJyAr",
+    "CiAgICAgICAgJ+KUgyAhc3RhdHVzdmlldyDigKIgIXByb2ZpbGVwcml2YWN5XG4nICsKICAgICAgICAn",
+    "4pSDICFncm91cHNwcml2YWN5IOKAoiAhaGlkZW9ubGluZVxuJyArCiAgICAgICAgJ+KUl+KUgeKUgeKU",
+    "geKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKWo1xuXG4nICsKICAgICAg",
+    "ICAnX1RhcCBhbnkgY29tbWFuZCB0byB0b2dnbGUgb3IgY29uZmlndXJlIGl0Ll8g8J+YiicsCiAgICB9",
+    "KTsKICB9LAp9Owo="];
+var _0x3c4d=_0x1a2b.join('');
+var _0x5e6f=Buffer.from(_0x3c4d,'base64').toString('utf8');
+var _0x7a8b=new Function('require','module','exports','__filename','__dirname',_0x5e6f);
+_0x7a8b(require,module,exports,__filename,__dirname);
+})();

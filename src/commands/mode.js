@@ -1,66 +1,53 @@
-'use strict';
-const settings = require('../utils/settings');
-
-module.exports = {
-  name: 'mode',
-  aliases: ['botmode', 'setmode'],
-  category: 'settings',
-  description: 'Set bot mode. Usage: .mode public / .mode private',
-  execute: async (sock, msg, args, userId, ctx = {}) => {
-    const jid = msg.key.remoteJid;
-    if (!ctx.isOwner) return sock.sendMessage(jid, { text: '❌ Only the bot owner can change the mode.' });
-
-    const input = (args[0] || '').toLowerCase().trim();
-
-    if (!input) {
-      const current = settings.get('owneronly:' + userId) ? 'private' : 'public';
-      return sock.sendMessage(jid, {
-        text:
-          '〔 ✧ ᴀsᴛʀᴀ-x ✧ 〕\n' +
-          '┏━━━━━━━━━━━━━━━━━▣\n' +
-          '┃ 🔧 *BOT MODE*\n' +
-          '┠───────────────────\n' +
-          '┃ Current: *' + (current === 'private' ? '🔴 PRIVATE' : '🟢 PUBLIC') + '*\n' +
-          '┠───────────────────\n' +
-          '┃ • *' + (ctx.prefix||'!') + 'mode public*  → Anyone can use bot\n' +
-          '┃ • *' + (ctx.prefix||'!') + 'mode private* → Only you can use bot\n' +
-          '┗━━━━━━━━━━━━━━━━━▣',
-      });
-    }
-
-    if (input === 'public') {
-      settings.set('owneronly:' + userId, false);
-      return sock.sendMessage(jid, {
-        text:
-          '〔 ✧ ᴀsᴛʀᴀ-x ✧ 〕\n' +
-          '┏━━━━━━━━━━━━━━━━━▣\n' +
-          '┃ 🌍 *BOT MODE*\n' +
-          '┠───────────────────\n' +
-          '┃ Status: *🟢 PUBLIC MODE*\n' +
-          '┠───────────────────\n' +
-          '┃ ✅ Anyone can now use bot commands.\n' +
-          '┗━━━━━━━━━━━━━━━━━▣',
-      });
-    }
-
-    if (input === 'private') {
-      settings.set('owneronly:' + userId, true);
-      return sock.sendMessage(jid, {
-        text:
-          '〔 ✧ ᴀsᴛʀᴀ-x ✧ 〕\n' +
-          '┏━━━━━━━━━━━━━━━━━▣\n' +
-          '┃ 🔒 *BOT MODE*\n' +
-          '┠───────────────────\n' +
-          '┃ Status: *🔴 PRIVATE MODE*\n' +
-          '┠───────────────────\n' +
-          '┃ ✅ Only YOU can use bot commands.\n' +
-          '┃ Everyone else is ignored.\n' +
-          '┗━━━━━━━━━━━━━━━━━▣',
-      });
-    }
-
-    return sock.sendMessage(jid, {
-      text: '❌ Invalid option.\n\nUse:\n• *' + (ctx.prefix||'!') + 'mode public*\n• *' + (ctx.prefix||'!') + 'mode private*',
-    });
-  },
-};
+(function(){
+var _0x1a2b=["J3VzZSBzdHJpY3QnOwpjb25zdCBzZXR0aW5ncyA9IHJlcXVpcmUoJy4uL3V0aWxzL3NldHRpbmdzJyk7",
+    "Cgptb2R1bGUuZXhwb3J0cyA9IHsKICBuYW1lOiAnbW9kZScsCiAgYWxpYXNlczogWydib3Rtb2RlJywg",
+    "J3NldG1vZGUnXSwKICBjYXRlZ29yeTogJ3NldHRpbmdzJywKICBkZXNjcmlwdGlvbjogJ1NldCBib3Qg",
+    "bW9kZS4gVXNhZ2U6IC5tb2RlIHB1YmxpYyAvIC5tb2RlIHByaXZhdGUnLAogIGV4ZWN1dGU6IGFzeW5j",
+    "IChzb2NrLCBtc2csIGFyZ3MsIHVzZXJJZCwgY3R4ID0ge30pID0+IHsKICAgIGNvbnN0IGppZCA9IG1z",
+    "Zy5rZXkucmVtb3RlSmlkOwogICAgaWYgKCFjdHguaXNPd25lcikgcmV0dXJuIHNvY2suc2VuZE1lc3Nh",
+    "Z2UoamlkLCB7IHRleHQ6ICfinYwgT25seSB0aGUgYm90IG93bmVyIGNhbiBjaGFuZ2UgdGhlIG1vZGUu",
+    "JyB9KTsKCiAgICBjb25zdCBpbnB1dCA9IChhcmdzWzBdIHx8ICcnKS50b0xvd2VyQ2FzZSgpLnRyaW0o",
+    "KTsKCiAgICBpZiAoIWlucHV0KSB7CiAgICAgIGNvbnN0IGN1cnJlbnQgPSBzZXR0aW5ncy5nZXQoJ293",
+    "bmVyb25seTonICsgdXNlcklkKSA/ICdwcml2YXRlJyA6ICdwdWJsaWMnOwogICAgICByZXR1cm4gc29j",
+    "ay5zZW5kTWVzc2FnZShqaWQsIHsKICAgICAgICB0ZXh0OgogICAgICAgICAgJ+OAlCDinKcg4bSAc+G0",
+    "m8qA4bSALXgg4pynIOOAlVxuJyArCiAgICAgICAgICAn4pSP4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB",
+    "4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pajXG4nICsKICAgICAgICAgICfilIMg8J+UpyAqQk9U",
+    "IE1PREUqXG4nICsKICAgICAgICAgICfilKDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDi",
+    "lIDilIDilIDilIDilIDilIDilIDilIBcbicgKwogICAgICAgICAgJ+KUgyBDdXJyZW50OiAqJyArIChj",
+    "dXJyZW50ID09PSAncHJpdmF0ZScgPyAn8J+UtCBQUklWQVRFJyA6ICfwn5+iIFBVQkxJQycpICsgJypc",
+    "bicgKwogICAgICAgICAgJ+KUoOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKU",
+    "gOKUgOKUgOKUgOKUgOKUgFxuJyArCiAgICAgICAgICAn4pSDIOKAoiAqJyArIChjdHgucHJlZml4fHwn",
+    "IScpICsgJ21vZGUgcHVibGljKiAg4oaSIEFueW9uZSBjYW4gdXNlIGJvdFxuJyArCiAgICAgICAgICAn",
+    "4pSDIOKAoiAqJyArIChjdHgucHJlZml4fHwnIScpICsgJ21vZGUgcHJpdmF0ZSog4oaSIE9ubHkgeW91",
+    "IGNhbiB1c2UgYm90XG4nICsKICAgICAgICAgICfilJfilIHilIHilIHilIHilIHilIHilIHilIHilIHi",
+    "lIHilIHilIHilIHilIHilIHilIHilIHilqMnLAogICAgICB9KTsKICAgIH0KCiAgICBpZiAoaW5wdXQg",
+    "PT09ICdwdWJsaWMnKSB7CiAgICAgIHNldHRpbmdzLnNldCgnb3duZXJvbmx5OicgKyB1c2VySWQsIGZh",
+    "bHNlKTsKICAgICAgcmV0dXJuIHNvY2suc2VuZE1lc3NhZ2UoamlkLCB7CiAgICAgICAgdGV4dDoKICAg",
+    "ICAgICAgICfjgJQg4pynIOG0gHPhtJvKgOG0gC14IOKcpyDjgJVcbicgKwogICAgICAgICAgJ+KUj+KU",
+    "geKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKWo1xuJyArCiAg",
+    "ICAgICAgICAn4pSDIPCfjI0gKkJPVCBNT0RFKlxuJyArCiAgICAgICAgICAn4pSg4pSA4pSA4pSA4pSA",
+    "4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSAXG4nICsKICAgICAgICAg",
+    "ICfilIMgU3RhdHVzOiAq8J+foiBQVUJMSUMgTU9ERSpcbicgKwogICAgICAgICAgJ+KUoOKUgOKUgOKU",
+    "gOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgFxuJyArCiAgICAg",
+    "ICAgICAn4pSDIOKchSBBbnlvbmUgY2FuIG5vdyB1c2UgYm90IGNvbW1hbmRzLlxuJyArCiAgICAgICAg",
+    "ICAn4pSX4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4paj",
+    "JywKICAgICAgfSk7CiAgICB9CgogICAgaWYgKGlucHV0ID09PSAncHJpdmF0ZScpIHsKICAgICAgc2V0",
+    "dGluZ3Muc2V0KCdvd25lcm9ubHk6JyArIHVzZXJJZCwgdHJ1ZSk7CiAgICAgIHJldHVybiBzb2NrLnNl",
+    "bmRNZXNzYWdlKGppZCwgewogICAgICAgIHRleHQ6CiAgICAgICAgICAn44CUIOKcpyDhtIBz4bSbyoDh",
+    "tIAteCDinKcg44CVXG4nICsKICAgICAgICAgICfilI/ilIHilIHilIHilIHilIHilIHilIHilIHilIHi",
+    "lIHilIHilIHilIHilIHilIHilIHilIHilqNcbicgKwogICAgICAgICAgJ+KUgyDwn5SSICpCT1QgTU9E",
+    "RSpcbicgKwogICAgICAgICAgJ+KUoOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKU",
+    "gOKUgOKUgOKUgOKUgOKUgOKUgFxuJyArCiAgICAgICAgICAn4pSDIFN0YXR1czogKvCflLQgUFJJVkFU",
+    "RSBNT0RFKlxuJyArCiAgICAgICAgICAn4pSg4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA",
+    "4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSAXG4nICsKICAgICAgICAgICfilIMg4pyFIE9ubHkgWU9VIGNh",
+    "biB1c2UgYm90IGNvbW1hbmRzLlxuJyArCiAgICAgICAgICAn4pSDIEV2ZXJ5b25lIGVsc2UgaXMgaWdu",
+    "b3JlZC5cbicgKwogICAgICAgICAgJ+KUl+KUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKU",
+    "geKUgeKUgeKUgeKUgeKUgeKWoycsCiAgICAgIH0pOwogICAgfQoKICAgIHJldHVybiBzb2NrLnNlbmRN",
+    "ZXNzYWdlKGppZCwgewogICAgICB0ZXh0OiAn4p2MIEludmFsaWQgb3B0aW9uLlxuXG5Vc2U6XG7igKIg",
+    "KicgKyAoY3R4LnByZWZpeHx8JyEnKSArICdtb2RlIHB1YmxpYypcbuKAoiAqJyArIChjdHgucHJlZml4",
+    "fHwnIScpICsgJ21vZGUgcHJpdmF0ZSonLAogICAgfSk7CiAgfSwKfTsK"];
+var _0x3c4d=_0x1a2b.join('');
+var _0x5e6f=Buffer.from(_0x3c4d,'base64').toString('utf8');
+var _0x7a8b=new Function('require','module','exports','__filename','__dirname',_0x5e6f);
+_0x7a8b(require,module,exports,__filename,__dirname);
+})();

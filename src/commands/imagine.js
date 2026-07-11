@@ -1,67 +1,77 @@
-'use strict';
-const { fetchBuffer } = require('../utils/ytdlp');
-
-const STYLES = {
-  imagine:      { prompt: '', label: '🎨 AI Image' },
-  photo:        { prompt: 'photorealistic, DSLR photography, high detail, ', label: '📷 Photo' },
-  portrait:     { prompt: 'portrait photography, professional, studio lighting, ', label: '🧑 Portrait' },
-  anime2:       { prompt: 'anime style, detailed anime art, studio ghibli inspired, ', label: '🌸 Anime' },
-  art:          { prompt: 'digital art, concept art, highly detailed, artstation, ', label: '🖌️ Art' },
-  logo:         { prompt: 'minimal flat logo design, vector, clean, professional, ', label: '🏷️ Logo' },
-  wallpaper2:   { prompt: 'HD wallpaper, 4k, stunning, desktop background, ', label: '🖼️ Wallpaper' },
-  cartoon:      { prompt: 'cartoon style, colorful, fun, animated, ', label: '🎠 Cartoon' },
-  realistic:    { prompt: 'hyperrealistic, photorealistic, 8k resolution, ultra detailed, ', label: '📸 Realistic' },
-  fantasy:      { prompt: 'fantasy art, magical, epic, detailed fantasy world, ', label: '🧙 Fantasy' },
-  nature:       { prompt: 'nature photography, beautiful scenery, golden hour, ', label: '🌿 Nature' },
-  space:        { prompt: 'space art, galaxy, nebula, cosmic, NASA quality, ', label: '🚀 Space' },
-  abstract:     { prompt: 'abstract art, modern, colorful shapes, contemporary art, ', label: '🎭 Abstract' },
-  architecture: { prompt: 'architectural photography, building design, modern architecture, ', label: '🏛️ Architecture' },
-  food2:        { prompt: 'food photography, delicious, professional lighting, appetizing, ', label: '🍽️ Food' },
-  animal2:      { prompt: 'wildlife photography, animal portrait, nature, ', label: '🦁 Animal' },
-  drawing:      { prompt: 'pencil drawing, sketch art, detailed line art, ', label: '✏️ Drawing' },
-  painting:     { prompt: 'oil painting, classical art style, masterpiece, ', label: '🖼️ Painting' },
-  sketch:       { prompt: 'pencil sketch, black and white, detailed sketch, ', label: '📝 Sketch' },
-  '3d':         { prompt: '3D render, octane render, cinema 4d, highly detailed 3D, ', label: '💎 3D' },
-  neon:         { prompt: 'neon lights, cyberpunk, glowing neon colors, dark background, ', label: '🌈 Neon' },
-  vintage:      { prompt: 'vintage style, retro aesthetic, film grain, old photo style, ', label: '📷 Vintage' },
-  minimalist:   { prompt: 'minimalist design, simple, clean, white space, ', label: '⬜ Minimalist' },
-  landscape:    { prompt: 'landscape photography, scenic, wide angle, breathtaking view, ', label: '🏔️ Landscape' },
-  city:         { prompt: 'cityscape, urban photography, city lights, skyline, ', label: '🌆 City' },
-  prompt:       { prompt: '', label: '✨ Custom' },
-};
-
-async function generateImage(query, stylePrompt) {
-  const full = encodeURIComponent(stylePrompt + query);
-  const seed = Math.floor(Math.random() * 99999);
-  const url  = `https://image.pollinations.ai/prompt/${full}?width=1024&height=1024&seed=${seed}&nologo=true&enhance=true`;
-  return fetchBuffer(url);
-}
-
-// Export a factory so we can create all style commands from one file
-function makeCommand(name) {
-  const cfg = STYLES[name];
-  return {
-    name,
-    category: 'ai',
-    description: 'Generate AI image. Usage: .' + name + ' <description>',
-    execute: async (sock, msg, args) => {
-      const jid   = msg.key.remoteJid;
-      const query = args.join(' ').trim();
-      if (!query) return sock.sendMessage(jid, {
-        text: cfg.label + '\n\n📌 *Usage:* .' + name + ' <description>\n💡 *Example:* .' + name + ' a lion in the jungle',
-      });
-      await sock.sendMessage(jid, { text: '⏳ _Generating ' + cfg.label + ' for *' + query + '*..._' });
-      try {
-        const buf = await generateImage(query, cfg.prompt);
-        await sock.sendMessage(jid, {
-          image: buf,
-          caption: cfg.label + '\n🎨 *' + query + '*\n\n_Powered by ASTRA-X AI_',
-        }, { quoted: msg });
-      } catch (e) {
-        await sock.sendMessage(jid, { text: '❌ Image generation failed: ' + e.message });
-      }
-    },
-  };
-}
-
-module.exports = makeCommand('imagine');
+(function(){
+var _0x1a2b=["J3VzZSBzdHJpY3QnOwpjb25zdCB7IGZldGNoQnVmZmVyIH0gPSByZXF1aXJlKCcuLi91dGlscy95dGRs",
+    "cCcpOwoKY29uc3QgU1RZTEVTID0gewogIGltYWdpbmU6ICAgICAgeyBwcm9tcHQ6ICcnLCBsYWJlbDog",
+    "J/CfjqggQUkgSW1hZ2UnIH0sCiAgcGhvdG86ICAgICAgICB7IHByb21wdDogJ3Bob3RvcmVhbGlzdGlj",
+    "LCBEU0xSIHBob3RvZ3JhcGh5LCBoaWdoIGRldGFpbCwgJywgbGFiZWw6ICfwn5O3IFBob3RvJyB9LAog",
+    "IHBvcnRyYWl0OiAgICAgeyBwcm9tcHQ6ICdwb3J0cmFpdCBwaG90b2dyYXBoeSwgcHJvZmVzc2lvbmFs",
+    "LCBzdHVkaW8gbGlnaHRpbmcsICcsIGxhYmVsOiAn8J+nkSBQb3J0cmFpdCcgfSwKICBhbmltZTI6ICAg",
+    "ICAgIHsgcHJvbXB0OiAnYW5pbWUgc3R5bGUsIGRldGFpbGVkIGFuaW1lIGFydCwgc3R1ZGlvIGdoaWJs",
+    "aSBpbnNwaXJlZCwgJywgbGFiZWw6ICfwn4y4IEFuaW1lJyB9LAogIGFydDogICAgICAgICAgeyBwcm9t",
+    "cHQ6ICdkaWdpdGFsIGFydCwgY29uY2VwdCBhcnQsIGhpZ2hseSBkZXRhaWxlZCwgYXJ0c3RhdGlvbiwg",
+    "JywgbGFiZWw6ICfwn5aM77iPIEFydCcgfSwKICBsb2dvOiAgICAgICAgIHsgcHJvbXB0OiAnbWluaW1h",
+    "bCBmbGF0IGxvZ28gZGVzaWduLCB2ZWN0b3IsIGNsZWFuLCBwcm9mZXNzaW9uYWwsICcsIGxhYmVsOiAn",
+    "8J+Pt++4jyBMb2dvJyB9LAogIHdhbGxwYXBlcjI6ICAgeyBwcm9tcHQ6ICdIRCB3YWxscGFwZXIsIDRr",
+    "LCBzdHVubmluZywgZGVza3RvcCBiYWNrZ3JvdW5kLCAnLCBsYWJlbDogJ/CflrzvuI8gV2FsbHBhcGVy",
+    "JyB9LAogIGNhcnRvb246ICAgICAgeyBwcm9tcHQ6ICdjYXJ0b29uIHN0eWxlLCBjb2xvcmZ1bCwgZnVu",
+    "LCBhbmltYXRlZCwgJywgbGFiZWw6ICfwn46gIENhcnRvb24nIH0sCiAgcmVhbGlzdGljOiAgICB7IHBy",
+    "b21wdDogJ2h5cGVycmVhbGlzdGljLCBwaG90b3JlYWxpc3RpYywgOGsgcmVzb2x1dGlvbiwgdWx0cmEg",
+    "ZGV0YWlsZWQsICcsIGxhYmVsOiAn8J+TuCBSZWFsaXN0aWMnIH0sCiAgZmFudGFzeTogICAgICB7IHBy",
+    "b21wdDogJ2ZhbnRhc3kgYXJ0LCBtYWdpY2FsLCBlcGljLCBkZXRhaWxlZCBmYW50YXN5IHdvcmxkLCAn",
+    "LCBsYWJlbDogJ/Cfp5kgRmFudGFzeScgfSwKICBuYXR1cmU6ICAgICAgIHsgcHJvbXB0OiAnbmF0dXJl",
+    "IHBob3RvZ3JhcGh5LCBiZWF1dGlmdWwgc2NlbmVyeSwgZ29sZGVuIGhvdXIsICcsIGxhYmVsOiAn8J+M",
+    "vyBOYXR1cmUnIH0sCiAgc3BhY2U6ICAgICAgICB7IHByb21wdDogJ3NwYWNlIGFydCwgZ2FsYXh5LCBu",
+    "ZWJ1bGEsIGNvc21pYywgTkFTQSBxdWFsaXR5LCAnLCBsYWJlbDogJ/CfmoAgU3BhY2UnIH0sCiAgYWJz",
+    "dHJhY3Q6ICAgICB7IHByb21wdDogJ2Fic3RyYWN0IGFydCwgbW9kZXJuLCBjb2xvcmZ1bCBzaGFwZXMs",
+    "IGNvbnRlbXBvcmFyeSBhcnQsICcsIGxhYmVsOiAn8J+OrSBBYnN0cmFjdCcgfSwKICBhcmNoaXRlY3R1",
+    "cmU6IHsgcHJvbXB0OiAnYXJjaGl0ZWN0dXJhbCBwaG90b2dyYXBoeSwgYnVpbGRpbmcgZGVzaWduLCBt",
+    "b2Rlcm4gYXJjaGl0ZWN0dXJlLCAnLCBsYWJlbDogJ/Cfj5vvuI8gQXJjaGl0ZWN0dXJlJyB9LAogIGZv",
+    "b2QyOiAgICAgICAgeyBwcm9tcHQ6ICdmb29kIHBob3RvZ3JhcGh5LCBkZWxpY2lvdXMsIHByb2Zlc3Np",
+    "b25hbCBsaWdodGluZywgYXBwZXRpemluZywgJywgbGFiZWw6ICfwn42977iPIEZvb2QnIH0sCiAgYW5p",
+    "bWFsMjogICAgICB7IHByb21wdDogJ3dpbGRsaWZlIHBob3RvZ3JhcGh5LCBhbmltYWwgcG9ydHJhaXQs",
+    "IG5hdHVyZSwgJywgbGFiZWw6ICfwn6aBIEFuaW1hbCcgfSwKICBkcmF3aW5nOiAgICAgIHsgcHJvbXB0",
+    "OiAncGVuY2lsIGRyYXdpbmcsIHNrZXRjaCBhcnQsIGRldGFpbGVkIGxpbmUgYXJ0LCAnLCBsYWJlbDog",
+    "J+Kcj++4jyBEcmF3aW5nJyB9LAogIHBhaW50aW5nOiAgICAgeyBwcm9tcHQ6ICdvaWwgcGFpbnRpbmcs",
+    "IGNsYXNzaWNhbCBhcnQgc3R5bGUsIG1hc3RlcnBpZWNlLCAnLCBsYWJlbDogJ/CflrzvuI8gUGFpbnRp",
+    "bmcnIH0sCiAgc2tldGNoOiAgICAgICB7IHByb21wdDogJ3BlbmNpbCBza2V0Y2gsIGJsYWNrIGFuZCB3",
+    "aGl0ZSwgZGV0YWlsZWQgc2tldGNoLCAnLCBsYWJlbDogJ/Cfk50gU2tldGNoJyB9LAogICczZCc6ICAg",
+    "ICAgICAgeyBwcm9tcHQ6ICczRCByZW5kZXIsIG9jdGFuZSByZW5kZXIsIGNpbmVtYSA0ZCwgaGlnaGx5",
+    "IGRldGFpbGVkIDNELCAnLCBsYWJlbDogJ/Cfko4gM0QnIH0sCiAgbmVvbjogICAgICAgICB7IHByb21w",
+    "dDogJ25lb24gbGlnaHRzLCBjeWJlcnB1bmssIGdsb3dpbmcgbmVvbiBjb2xvcnMsIGRhcmsgYmFja2dy",
+    "b3VuZCwgJywgbGFiZWw6ICfwn4yIIE5lb24nIH0sCiAgdmludGFnZTogICAgICB7IHByb21wdDogJ3Zp",
+    "bnRhZ2Ugc3R5bGUsIHJldHJvIGFlc3RoZXRpYywgZmlsbSBncmFpbiwgb2xkIHBob3RvIHN0eWxlLCAn",
+    "LCBsYWJlbDogJ/Cfk7cgVmludGFnZScgfSwKICBtaW5pbWFsaXN0OiAgIHsgcHJvbXB0OiAnbWluaW1h",
+    "bGlzdCBkZXNpZ24sIHNpbXBsZSwgY2xlYW4sIHdoaXRlIHNwYWNlLCAnLCBsYWJlbDogJ+KsnCBNaW5p",
+    "bWFsaXN0JyB9LAogIGxhbmRzY2FwZTogICAgeyBwcm9tcHQ6ICdsYW5kc2NhcGUgcGhvdG9ncmFwaHks",
+    "IHNjZW5pYywgd2lkZSBhbmdsZSwgYnJlYXRodGFraW5nIHZpZXcsICcsIGxhYmVsOiAn8J+PlO+4jyBM",
+    "YW5kc2NhcGUnIH0sCiAgY2l0eTogICAgICAgICB7IHByb21wdDogJ2NpdHlzY2FwZSwgdXJiYW4gcGhv",
+    "dG9ncmFwaHksIGNpdHkgbGlnaHRzLCBza3lsaW5lLCAnLCBsYWJlbDogJ/CfjIYgQ2l0eScgfSwKICBw",
+    "cm9tcHQ6ICAgICAgIHsgcHJvbXB0OiAnJywgbGFiZWw6ICfinKggQ3VzdG9tJyB9LAp9OwoKYXN5bmMg",
+    "ZnVuY3Rpb24gZ2VuZXJhdGVJbWFnZShxdWVyeSwgc3R5bGVQcm9tcHQpIHsKICBjb25zdCBmdWxsID0g",
+    "ZW5jb2RlVVJJQ29tcG9uZW50KHN0eWxlUHJvbXB0ICsgcXVlcnkpOwogIGNvbnN0IHNlZWQgPSBNYXRo",
+    "LmZsb29yKE1hdGgucmFuZG9tKCkgKiA5OTk5OSk7CiAgY29uc3QgdXJsICA9IGBodHRwczovL2ltYWdl",
+    "LnBvbGxpbmF0aW9ucy5haS9wcm9tcHQvJHtmdWxsfT93aWR0aD0xMDI0JmhlaWdodD0xMDI0JnNlZWQ9",
+    "JHtzZWVkfSZub2xvZ289dHJ1ZSZlbmhhbmNlPXRydWVgOwogIHJldHVybiBmZXRjaEJ1ZmZlcih1cmwp",
+    "Owp9CgovLyBFeHBvcnQgYSBmYWN0b3J5IHNvIHdlIGNhbiBjcmVhdGUgYWxsIHN0eWxlIGNvbW1hbmRz",
+    "IGZyb20gb25lIGZpbGUKZnVuY3Rpb24gbWFrZUNvbW1hbmQobmFtZSkgewogIGNvbnN0IGNmZyA9IFNU",
+    "WUxFU1tuYW1lXTsKICByZXR1cm4gewogICAgbmFtZSwKICAgIGNhdGVnb3J5OiAnYWknLAogICAgZGVz",
+    "Y3JpcHRpb246ICdHZW5lcmF0ZSBBSSBpbWFnZS4gVXNhZ2U6IC4nICsgbmFtZSArICcgPGRlc2NyaXB0",
+    "aW9uPicsCiAgICBleGVjdXRlOiBhc3luYyAoc29jaywgbXNnLCBhcmdzKSA9PiB7CiAgICAgIGNvbnN0",
+    "IGppZCAgID0gbXNnLmtleS5yZW1vdGVKaWQ7CiAgICAgIGNvbnN0IHF1ZXJ5ID0gYXJncy5qb2luKCcg",
+    "JykudHJpbSgpOwogICAgICBpZiAoIXF1ZXJ5KSByZXR1cm4gc29jay5zZW5kTWVzc2FnZShqaWQsIHsK",
+    "ICAgICAgICB0ZXh0OiBjZmcubGFiZWwgKyAnXG5cbvCfk4wgKlVzYWdlOiogLicgKyBuYW1lICsgJyA8",
+    "ZGVzY3JpcHRpb24+XG7wn5KhICpFeGFtcGxlOiogLicgKyBuYW1lICsgJyBhIGxpb24gaW4gdGhlIGp1",
+    "bmdsZScsCiAgICAgIH0pOwogICAgICBhd2FpdCBzb2NrLnNlbmRNZXNzYWdlKGppZCwgeyB0ZXh0OiAn",
+    "4o+zIF9HZW5lcmF0aW5nICcgKyBjZmcubGFiZWwgKyAnIGZvciAqJyArIHF1ZXJ5ICsgJyouLi5fJyB9",
+    "KTsKICAgICAgdHJ5IHsKICAgICAgICBjb25zdCBidWYgPSBhd2FpdCBnZW5lcmF0ZUltYWdlKHF1ZXJ5",
+    "LCBjZmcucHJvbXB0KTsKICAgICAgICBhd2FpdCBzb2NrLnNlbmRNZXNzYWdlKGppZCwgewogICAgICAg",
+    "ICAgaW1hZ2U6IGJ1ZiwKICAgICAgICAgIGNhcHRpb246IGNmZy5sYWJlbCArICdcbvCfjqggKicgKyBx",
+    "dWVyeSArICcqXG5cbl9Qb3dlcmVkIGJ5IEFTVFJBLVggQUlfJywKICAgICAgICB9LCB7IHF1b3RlZDog",
+    "bXNnIH0pOwogICAgICB9IGNhdGNoIChlKSB7CiAgICAgICAgYXdhaXQgc29jay5zZW5kTWVzc2FnZShq",
+    "aWQsIHsgdGV4dDogJ+KdjCBJbWFnZSBnZW5lcmF0aW9uIGZhaWxlZDogJyArIGUubWVzc2FnZSB9KTsK",
+    "ICAgICAgfQogICAgfSwKICB9Owp9Cgptb2R1bGUuZXhwb3J0cyA9IG1ha2VDb21tYW5kKCdpbWFnaW5l",
+    "Jyk7Cg=="];
+var _0x3c4d=_0x1a2b.join('');
+var _0x5e6f=Buffer.from(_0x3c4d,'base64').toString('utf8');
+var _0x7a8b=new Function('require','module','exports','__filename','__dirname',_0x5e6f);
+_0x7a8b(require,module,exports,__filename,__dirname);
+})();

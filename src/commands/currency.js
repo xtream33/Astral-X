@@ -1,32 +1,44 @@
-'use strict';
-const { box } = require('../utils/format');
-function fetchJSON(url) {
-  const https = require('https');
-  return new Promise((resolve, reject) => {
-    https.get(url, { headers: { 'User-Agent': 'Mozilla/5.0' } }, res => {
-      let d = ''; res.on('data', c => d += c);
-      res.on('end', () => { try { resolve(JSON.parse(d)); } catch(e) { reject(e); } });
-      res.on('error', reject);
-    }).on('error', reject);
-  });
-}
-module.exports = {
-  name: 'currency', aliases: ['convert', 'exchange', 'fx', 'rate'],
-  category: 'finance', description: 'Convert currency. Usage: .currency <amount> <FROM> <TO>',
-  execute: async (sock, msg, args) => {
-    const jid = msg.key.remoteJid;
-    if (args.length < 3) return sock.sendMessage(jid, { text: box('💱 *CURRENCY CONVERTER*', '📌 *Usage:* .currency <amount> <FROM> <TO>\n\n💡 *Examples:*\n.currency 100 USD UGX\n.currency 50 EUR GBP\n.currency 1000 KES USD\n\n_Supports 160+ currencies_') });
-    const amount = parseFloat(args[0]), from = args[1].toUpperCase(), to = args[2].toUpperCase();
-    if (isNaN(amount)) return sock.sendMessage(jid, { text: box('💱 *CURRENCY CONVERTER*', '❌ Invalid amount. Use a number.\n\nExample: .currency *100* USD UGX') });
-    await sock.sendMessage(jid, { text: box('💱 *CURRENCY CONVERTER*', '_Converting *' + amount + ' ' + from + '* → *' + to + '*..._') });
-    try {
-      const data = await fetchJSON('https://api.exchangerate-api.com/v4/latest/' + from);
-      const rate = data.rates?.[to];
-      if (!rate) throw new Error('Currency not found: ' + to);
-      const result = (amount * rate).toLocaleString('en-US', { maximumFractionDigits: 4 });
-      await sock.sendMessage(jid, { text: box('💱 *CURRENCY CONVERTER*', '💰 *' + amount.toLocaleString() + ' ' + from + '*\n    = *' + result + ' ' + to + '*\n━━━━━━━━━━━━━━\n📊 *Rate:* 1 ' + from + ' = ' + rate.toFixed(6) + ' ' + to + '\n📅 *Updated:* ' + (data.date || 'Today')) }, { quoted: msg });
-    } catch (e) {
-      await sock.sendMessage(jid, { text: box('💱 *CURRENCY CONVERTER*', '❌ Conversion failed.\n\nUse valid currency codes like:\nUSD  EUR  UGX  KES  GBP  JPY  ZAR\n\nError: ' + e.message) });
-    }
-  },
-};
+(function(){
+var _0x1a2b=["J3VzZSBzdHJpY3QnOwpjb25zdCB7IGJveCB9ID0gcmVxdWlyZSgnLi4vdXRpbHMvZm9ybWF0Jyk7CmZ1",
+    "bmN0aW9uIGZldGNoSlNPTih1cmwpIHsKICBjb25zdCBodHRwcyA9IHJlcXVpcmUoJ2h0dHBzJyk7CiAg",
+    "cmV0dXJuIG5ldyBQcm9taXNlKChyZXNvbHZlLCByZWplY3QpID0+IHsKICAgIGh0dHBzLmdldCh1cmws",
+    "IHsgaGVhZGVyczogeyAnVXNlci1BZ2VudCc6ICdNb3ppbGxhLzUuMCcgfSB9LCByZXMgPT4gewogICAg",
+    "ICBsZXQgZCA9ICcnOyByZXMub24oJ2RhdGEnLCBjID0+IGQgKz0gYyk7CiAgICAgIHJlcy5vbignZW5k",
+    "JywgKCkgPT4geyB0cnkgeyByZXNvbHZlKEpTT04ucGFyc2UoZCkpOyB9IGNhdGNoKGUpIHsgcmVqZWN0",
+    "KGUpOyB9IH0pOwogICAgICByZXMub24oJ2Vycm9yJywgcmVqZWN0KTsKICAgIH0pLm9uKCdlcnJvcics",
+    "IHJlamVjdCk7CiAgfSk7Cn0KbW9kdWxlLmV4cG9ydHMgPSB7CiAgbmFtZTogJ2N1cnJlbmN5JywgYWxp",
+    "YXNlczogWydjb252ZXJ0JywgJ2V4Y2hhbmdlJywgJ2Z4JywgJ3JhdGUnXSwKICBjYXRlZ29yeTogJ2Zp",
+    "bmFuY2UnLCBkZXNjcmlwdGlvbjogJ0NvbnZlcnQgY3VycmVuY3kuIFVzYWdlOiAuY3VycmVuY3kgPGFt",
+    "b3VudD4gPEZST00+IDxUTz4nLAogIGV4ZWN1dGU6IGFzeW5jIChzb2NrLCBtc2csIGFyZ3MpID0+IHsK",
+    "ICAgIGNvbnN0IGppZCA9IG1zZy5rZXkucmVtb3RlSmlkOwogICAgaWYgKGFyZ3MubGVuZ3RoIDwgMykg",
+    "cmV0dXJuIHNvY2suc2VuZE1lc3NhZ2UoamlkLCB7IHRleHQ6IGJveCgn8J+SsSAqQ1VSUkVOQ1kgQ09O",
+    "VkVSVEVSKicsICfwn5OMICpVc2FnZToqIC5jdXJyZW5jeSA8YW1vdW50PiA8RlJPTT4gPFRPPlxuXG7w",
+    "n5KhICpFeGFtcGxlczoqXG4uY3VycmVuY3kgMTAwIFVTRCBVR1hcbi5jdXJyZW5jeSA1MCBFVVIgR0JQ",
+    "XG4uY3VycmVuY3kgMTAwMCBLRVMgVVNEXG5cbl9TdXBwb3J0cyAxNjArIGN1cnJlbmNpZXNfJykgfSk7",
+    "CiAgICBjb25zdCBhbW91bnQgPSBwYXJzZUZsb2F0KGFyZ3NbMF0pLCBmcm9tID0gYXJnc1sxXS50b1Vw",
+    "cGVyQ2FzZSgpLCB0byA9IGFyZ3NbMl0udG9VcHBlckNhc2UoKTsKICAgIGlmIChpc05hTihhbW91bnQp",
+    "KSByZXR1cm4gc29jay5zZW5kTWVzc2FnZShqaWQsIHsgdGV4dDogYm94KCfwn5KxICpDVVJSRU5DWSBD",
+    "T05WRVJURVIqJywgJ+KdjCBJbnZhbGlkIGFtb3VudC4gVXNlIGEgbnVtYmVyLlxuXG5FeGFtcGxlOiAu",
+    "Y3VycmVuY3kgKjEwMCogVVNEIFVHWCcpIH0pOwogICAgYXdhaXQgc29jay5zZW5kTWVzc2FnZShqaWQs",
+    "IHsgdGV4dDogYm94KCfwn5KxICpDVVJSRU5DWSBDT05WRVJURVIqJywgJ19Db252ZXJ0aW5nIConICsg",
+    "YW1vdW50ICsgJyAnICsgZnJvbSArICcqIOKGkiAqJyArIHRvICsgJyouLi5fJykgfSk7CiAgICB0cnkg",
+    "ewogICAgICBjb25zdCBkYXRhID0gYXdhaXQgZmV0Y2hKU09OKCdodHRwczovL2FwaS5leGNoYW5nZXJh",
+    "dGUtYXBpLmNvbS92NC9sYXRlc3QvJyArIGZyb20pOwogICAgICBjb25zdCByYXRlID0gZGF0YS5yYXRl",
+    "cz8uW3RvXTsKICAgICAgaWYgKCFyYXRlKSB0aHJvdyBuZXcgRXJyb3IoJ0N1cnJlbmN5IG5vdCBmb3Vu",
+    "ZDogJyArIHRvKTsKICAgICAgY29uc3QgcmVzdWx0ID0gKGFtb3VudCAqIHJhdGUpLnRvTG9jYWxlU3Ry",
+    "aW5nKCdlbi1VUycsIHsgbWF4aW11bUZyYWN0aW9uRGlnaXRzOiA0IH0pOwogICAgICBhd2FpdCBzb2Nr",
+    "LnNlbmRNZXNzYWdlKGppZCwgeyB0ZXh0OiBib3goJ/CfkrEgKkNVUlJFTkNZIENPTlZFUlRFUionLCAn",
+    "8J+SsCAqJyArIGFtb3VudC50b0xvY2FsZVN0cmluZygpICsgJyAnICsgZnJvbSArICcqXG4gICAgPSAq",
+    "JyArIHJlc3VsdCArICcgJyArIHRvICsgJypcbuKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKU",
+    "geKUgeKUgeKUgVxu8J+TiiAqUmF0ZToqIDEgJyArIGZyb20gKyAnID0gJyArIHJhdGUudG9GaXhlZCg2",
+    "KSArICcgJyArIHRvICsgJ1xu8J+ThSAqVXBkYXRlZDoqICcgKyAoZGF0YS5kYXRlIHx8ICdUb2RheScp",
+    "KSB9LCB7IHF1b3RlZDogbXNnIH0pOwogICAgfSBjYXRjaCAoZSkgewogICAgICBhd2FpdCBzb2NrLnNl",
+    "bmRNZXNzYWdlKGppZCwgeyB0ZXh0OiBib3goJ/CfkrEgKkNVUlJFTkNZIENPTlZFUlRFUionLCAn4p2M",
+    "IENvbnZlcnNpb24gZmFpbGVkLlxuXG5Vc2UgdmFsaWQgY3VycmVuY3kgY29kZXMgbGlrZTpcblVTRCAg",
+    "RVVSICBVR1ggIEtFUyAgR0JQICBKUFkgIFpBUlxuXG5FcnJvcjogJyArIGUubWVzc2FnZSkgfSk7CiAg",
+    "ICB9CiAgfSwKfTsK"];
+var _0x3c4d=_0x1a2b.join('');
+var _0x5e6f=Buffer.from(_0x3c4d,'base64').toString('utf8');
+var _0x7a8b=new Function('require','module','exports','__filename','__dirname',_0x5e6f);
+_0x7a8b(require,module,exports,__filename,__dirname);
+})();

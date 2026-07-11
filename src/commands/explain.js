@@ -1,50 +1,43 @@
-'use strict';
-const { ask, askWithImage, getImageFromMsg } = require('../utils/gemini');
-
-function getQuotedText(msg) {
-  return msg.message?.extendedTextMessage?.contextInfo?.quotedMessage?.conversation
-      || msg.message?.extendedTextMessage?.contextInfo?.quotedMessage?.extendedTextMessage?.text
-      || null;
-}
-
-module.exports = {
-  name: 'explain',
-  aliases: ['whatmeans', 'describe', 'elaborate', 'breakdown'],
-  category: 'education',
-  description: 'Explain anything in simple terms. Reply text/image or type topic.',
-  execute: async (sock, msg, args) => {
-    const jid   = msg.key.remoteJid;
-    const topic = args.join(' ').trim() || getQuotedText(msg);
-
-    // Check for image
-    const img = await getImageFromMsg(sock, msg).catch(() => null);
-    if (img) {
-      await sock.sendMessage(jid, { text: '🔬 _Explaining what\'s in this image..._' });
-      try {
-        const reply = await askWithImage(img.buf, img.mime,
-          'Explain what is shown in this image in simple, easy to understand terms. Include key details.'
-        );
-        return await sock.sendMessage(jid, {
-          text: '🔬 *Explanation*\n━━━━━━━━━━━━━━\n\n' + reply + '\n\n_Powered by ASTRA-X_',
-        }, { quoted: msg });
-      } catch (e) {
-        return await sock.sendMessage(jid, { text: '❌ Error: ' + e.message });
-      }
-    }
-
-    if (!topic) return sock.sendMessage(jid, { text: '🔬 Usage: *.explain <topic>* or reply to text/image\n\nExamples:\n• .explain black holes\n• .explain how vaccines work\n• .explain quantum physics simply' });
-
-    await sock.sendMessage(jid, { text: '🔬 _Explaining *' + topic + '*..._' });
-    try {
-      const reply = await ask(
-        'Explain this in simple, easy-to-understand language as if talking to a 15 year old: ' + topic +
-        '\n\nUse examples and analogies where helpful. Break it down clearly.'
-      );
-      await sock.sendMessage(jid, {
-        text: '🔬 *Explanation: ' + topic + '*\n━━━━━━━━━━━━━━\n\n' + reply + '\n\n_Powered by ASTRA-X_',
-      }, { quoted: msg });
-    } catch (e) {
-      await sock.sendMessage(jid, { text: '❌ Error: ' + e.message });
-    }
-  },
-};
+(function(){
+var _0x1a2b=["J3VzZSBzdHJpY3QnOwpjb25zdCB7IGFzaywgYXNrV2l0aEltYWdlLCBnZXRJbWFnZUZyb21Nc2cgfSA9",
+    "IHJlcXVpcmUoJy4uL3V0aWxzL2dlbWluaScpOwoKZnVuY3Rpb24gZ2V0UXVvdGVkVGV4dChtc2cpIHsK",
+    "ICByZXR1cm4gbXNnLm1lc3NhZ2U/LmV4dGVuZGVkVGV4dE1lc3NhZ2U/LmNvbnRleHRJbmZvPy5xdW90",
+    "ZWRNZXNzYWdlPy5jb252ZXJzYXRpb24KICAgICAgfHwgbXNnLm1lc3NhZ2U/LmV4dGVuZGVkVGV4dE1l",
+    "c3NhZ2U/LmNvbnRleHRJbmZvPy5xdW90ZWRNZXNzYWdlPy5leHRlbmRlZFRleHRNZXNzYWdlPy50ZXh0",
+    "CiAgICAgIHx8IG51bGw7Cn0KCm1vZHVsZS5leHBvcnRzID0gewogIG5hbWU6ICdleHBsYWluJywKICBh",
+    "bGlhc2VzOiBbJ3doYXRtZWFucycsICdkZXNjcmliZScsICdlbGFib3JhdGUnLCAnYnJlYWtkb3duJ10s",
+    "CiAgY2F0ZWdvcnk6ICdlZHVjYXRpb24nLAogIGRlc2NyaXB0aW9uOiAnRXhwbGFpbiBhbnl0aGluZyBp",
+    "biBzaW1wbGUgdGVybXMuIFJlcGx5IHRleHQvaW1hZ2Ugb3IgdHlwZSB0b3BpYy4nLAogIGV4ZWN1dGU6",
+    "IGFzeW5jIChzb2NrLCBtc2csIGFyZ3MpID0+IHsKICAgIGNvbnN0IGppZCAgID0gbXNnLmtleS5yZW1v",
+    "dGVKaWQ7CiAgICBjb25zdCB0b3BpYyA9IGFyZ3Muam9pbignICcpLnRyaW0oKSB8fCBnZXRRdW90ZWRU",
+    "ZXh0KG1zZyk7CgogICAgLy8gQ2hlY2sgZm9yIGltYWdlCiAgICBjb25zdCBpbWcgPSBhd2FpdCBnZXRJ",
+    "bWFnZUZyb21Nc2coc29jaywgbXNnKS5jYXRjaCgoKSA9PiBudWxsKTsKICAgIGlmIChpbWcpIHsKICAg",
+    "ICAgYXdhaXQgc29jay5zZW5kTWVzc2FnZShqaWQsIHsgdGV4dDogJ/CflKwgX0V4cGxhaW5pbmcgd2hh",
+    "dFwncyBpbiB0aGlzIGltYWdlLi4uXycgfSk7CiAgICAgIHRyeSB7CiAgICAgICAgY29uc3QgcmVwbHkg",
+    "PSBhd2FpdCBhc2tXaXRoSW1hZ2UoaW1nLmJ1ZiwgaW1nLm1pbWUsCiAgICAgICAgICAnRXhwbGFpbiB3",
+    "aGF0IGlzIHNob3duIGluIHRoaXMgaW1hZ2UgaW4gc2ltcGxlLCBlYXN5IHRvIHVuZGVyc3RhbmQgdGVy",
+    "bXMuIEluY2x1ZGUga2V5IGRldGFpbHMuJwogICAgICAgICk7CiAgICAgICAgcmV0dXJuIGF3YWl0IHNv",
+    "Y2suc2VuZE1lc3NhZ2UoamlkLCB7CiAgICAgICAgICB0ZXh0OiAn8J+UrCAqRXhwbGFuYXRpb24qXG7i",
+    "lIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilIFcblxuJyArIHJlcGx5ICsgJ1xu",
+    "XG5fUG93ZXJlZCBieSBBU1RSQS1YXycsCiAgICAgICAgfSwgeyBxdW90ZWQ6IG1zZyB9KTsKICAgICAg",
+    "fSBjYXRjaCAoZSkgewogICAgICAgIHJldHVybiBhd2FpdCBzb2NrLnNlbmRNZXNzYWdlKGppZCwgeyB0",
+    "ZXh0OiAn4p2MIEVycm9yOiAnICsgZS5tZXNzYWdlIH0pOwogICAgICB9CiAgICB9CgogICAgaWYgKCF0",
+    "b3BpYykgcmV0dXJuIHNvY2suc2VuZE1lc3NhZ2UoamlkLCB7IHRleHQ6ICfwn5SsIFVzYWdlOiAqLmV4",
+    "cGxhaW4gPHRvcGljPiogb3IgcmVwbHkgdG8gdGV4dC9pbWFnZVxuXG5FeGFtcGxlczpcbuKAoiAuZXhw",
+    "bGFpbiBibGFjayBob2xlc1xu4oCiIC5leHBsYWluIGhvdyB2YWNjaW5lcyB3b3JrXG7igKIgLmV4cGxh",
+    "aW4gcXVhbnR1bSBwaHlzaWNzIHNpbXBseScgfSk7CgogICAgYXdhaXQgc29jay5zZW5kTWVzc2FnZShq",
+    "aWQsIHsgdGV4dDogJ/CflKwgX0V4cGxhaW5pbmcgKicgKyB0b3BpYyArICcqLi4uXycgfSk7CiAgICB0",
+    "cnkgewogICAgICBjb25zdCByZXBseSA9IGF3YWl0IGFzaygKICAgICAgICAnRXhwbGFpbiB0aGlzIGlu",
+    "IHNpbXBsZSwgZWFzeS10by11bmRlcnN0YW5kIGxhbmd1YWdlIGFzIGlmIHRhbGtpbmcgdG8gYSAxNSB5",
+    "ZWFyIG9sZDogJyArIHRvcGljICsKICAgICAgICAnXG5cblVzZSBleGFtcGxlcyBhbmQgYW5hbG9naWVz",
+    "IHdoZXJlIGhlbHBmdWwuIEJyZWFrIGl0IGRvd24gY2xlYXJseS4nCiAgICAgICk7CiAgICAgIGF3YWl0",
+    "IHNvY2suc2VuZE1lc3NhZ2UoamlkLCB7CiAgICAgICAgdGV4dDogJ/CflKwgKkV4cGxhbmF0aW9uOiAn",
+    "ICsgdG9waWMgKyAnKlxu4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSBXG5c",
+    "bicgKyByZXBseSArICdcblxuX1Bvd2VyZWQgYnkgQVNUUkEtWF8nLAogICAgICB9LCB7IHF1b3RlZDog",
+    "bXNnIH0pOwogICAgfSBjYXRjaCAoZSkgewogICAgICBhd2FpdCBzb2NrLnNlbmRNZXNzYWdlKGppZCwg",
+    "eyB0ZXh0OiAn4p2MIEVycm9yOiAnICsgZS5tZXNzYWdlIH0pOwogICAgfQogIH0sCn07Cg=="];
+var _0x3c4d=_0x1a2b.join('');
+var _0x5e6f=Buffer.from(_0x3c4d,'base64').toString('utf8');
+var _0x7a8b=new Function('require','module','exports','__filename','__dirname',_0x5e6f);
+_0x7a8b(require,module,exports,__filename,__dirname);
+})();

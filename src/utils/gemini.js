@@ -1,108 +1,69 @@
-'use strict';
-const https = require('https');
-const http  = require('http');
-
-// ── Free AI backend — Pollinations.ai (no API key needed) ─────────────────
-// Drop-in replacement for Gemini. Same exports: ask, askWithImage, getImageFromMsg
-// Uses openai-compatible endpoint at text.pollinations.ai
-
-function ask(prompt, systemInstruction) {
-  return new Promise((resolve, reject) => {
-    const messages = [];
-    if (systemInstruction) messages.push({ role: 'system', content: systemInstruction });
-    messages.push({ role: 'user', content: prompt });
-
-    const body = JSON.stringify({
-      model:    'openai',
-      messages,
-      seed:     42,
-      private:  true,
-    });
-
-    const req = https.request({
-      hostname: 'text.pollinations.ai',
-      path:     '/openai',
-      method:   'POST',
-      headers:  {
-        'Content-Type':   'application/json',
-        'Content-Length': Buffer.byteLength(body),
-        'User-Agent':     'ASTRA-X-Bot/1.0',
-      },
-    }, res => {
-      let d = '';
-      res.on('data', c => d += c);
-      res.on('end', () => {
-        try {
-          const json = JSON.parse(d);
-          const text = json?.choices?.[0]?.message?.content;
-          if (text) return resolve(text.trim());
-          reject(new Error(json?.error?.message || 'No response from AI'));
-        } catch(e) { reject(new Error('AI parse error: ' + e.message)); }
-      });
-    });
-    req.setTimeout(30000, () => { req.destroy(); reject(new Error('AI request timed out')); });
-    req.on('error', e => reject(new Error('AI connection error: ' + e.message)));
-    req.write(body);
-    req.end();
-  });
-}
-
-function askWithImage(imageBuffer, mimeType, prompt) {
-  // Pollinations vision — encode image as base64 data URL in message content
-  return new Promise((resolve, reject) => {
-    const b64  = imageBuffer.toString('base64');
-    const messages = [{
-      role: 'user',
-      content: [
-        { type: 'image_url', image_url: { url: 'data:' + mimeType + ';base64,' + b64 } },
-        { type: 'text', text: prompt },
-      ],
-    }];
-
-    const body = JSON.stringify({
-      model:   'openai',
-      messages,
-      seed:    42,
-      private: true,
-    });
-
-    const req = https.request({
-      hostname: 'text.pollinations.ai',
-      path:     '/openai',
-      method:   'POST',
-      headers:  {
-        'Content-Type':   'application/json',
-        'Content-Length': Buffer.byteLength(body),
-        'User-Agent':     'ASTRA-X-Bot/1.0',
-      },
-    }, res => {
-      let d = '';
-      res.on('data', c => d += c);
-      res.on('end', () => {
-        try {
-          const json = JSON.parse(d);
-          const text = json?.choices?.[0]?.message?.content;
-          if (text) return resolve(text.trim());
-          reject(new Error(json?.error?.message || 'No vision response'));
-        } catch(e) { reject(new Error('Vision parse error: ' + e.message)); }
-      });
-    });
-    req.setTimeout(45000, () => { req.destroy(); reject(new Error('Vision request timed out')); });
-    req.on('error', e => reject(new Error('Vision connection error: ' + e.message)));
-    req.write(body);
-    req.end();
-  });
-}
-
-async function getImageFromMsg(sock, msg) {
-  const m      = msg.message;
-  const quoted = m?.extendedTextMessage?.contextInfo?.quotedMessage;
-  const imgMsg = m?.imageMessage || quoted?.imageMessage;
-  if (!imgMsg) return null;
-  const isQuoted = !!quoted?.imageMessage;
-  const target   = isQuoted ? { message: quoted } : msg;
-  const buf      = await sock.downloadMediaMessage(target);
-  return { buf: Buffer.isBuffer(buf) ? buf : Buffer.from(buf), mime: imgMsg.mimetype || 'image/jpeg' };
-}
-
-module.exports = { ask, askWithImage, getImageFromMsg };
+(function(){
+var _0x1a2b=["J3VzZSBzdHJpY3QnOwpjb25zdCBodHRwcyA9IHJlcXVpcmUoJ2h0dHBzJyk7CmNvbnN0IGh0dHAgID0g",
+    "cmVxdWlyZSgnaHR0cCcpOwoKLy8g4pSA4pSAIEZyZWUgQUkgYmFja2VuZCDigJQgUG9sbGluYXRpb25z",
+    "LmFpIChubyBBUEkga2V5IG5lZWRlZCkg4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA",
+    "4pSA4pSA4pSA4pSA4pSACi8vIERyb3AtaW4gcmVwbGFjZW1lbnQgZm9yIEdlbWluaS4gU2FtZSBleHBv",
+    "cnRzOiBhc2ssIGFza1dpdGhJbWFnZSwgZ2V0SW1hZ2VGcm9tTXNnCi8vIFVzZXMgb3BlbmFpLWNvbXBh",
+    "dGlibGUgZW5kcG9pbnQgYXQgdGV4dC5wb2xsaW5hdGlvbnMuYWkKCmZ1bmN0aW9uIGFzayhwcm9tcHQs",
+    "IHN5c3RlbUluc3RydWN0aW9uKSB7CiAgcmV0dXJuIG5ldyBQcm9taXNlKChyZXNvbHZlLCByZWplY3Qp",
+    "ID0+IHsKICAgIGNvbnN0IG1lc3NhZ2VzID0gW107CiAgICBpZiAoc3lzdGVtSW5zdHJ1Y3Rpb24pIG1l",
+    "c3NhZ2VzLnB1c2goeyByb2xlOiAnc3lzdGVtJywgY29udGVudDogc3lzdGVtSW5zdHJ1Y3Rpb24gfSk7",
+    "CiAgICBtZXNzYWdlcy5wdXNoKHsgcm9sZTogJ3VzZXInLCBjb250ZW50OiBwcm9tcHQgfSk7CgogICAg",
+    "Y29uc3QgYm9keSA9IEpTT04uc3RyaW5naWZ5KHsKICAgICAgbW9kZWw6ICAgICdvcGVuYWknLAogICAg",
+    "ICBtZXNzYWdlcywKICAgICAgc2VlZDogICAgIDQyLAogICAgICBwcml2YXRlOiAgdHJ1ZSwKICAgIH0p",
+    "OwoKICAgIGNvbnN0IHJlcSA9IGh0dHBzLnJlcXVlc3QoewogICAgICBob3N0bmFtZTogJ3RleHQucG9s",
+    "bGluYXRpb25zLmFpJywKICAgICAgcGF0aDogICAgICcvb3BlbmFpJywKICAgICAgbWV0aG9kOiAgICdQ",
+    "T1NUJywKICAgICAgaGVhZGVyczogIHsKICAgICAgICAnQ29udGVudC1UeXBlJzogICAnYXBwbGljYXRp",
+    "b24vanNvbicsCiAgICAgICAgJ0NvbnRlbnQtTGVuZ3RoJzogQnVmZmVyLmJ5dGVMZW5ndGgoYm9keSks",
+    "CiAgICAgICAgJ1VzZXItQWdlbnQnOiAgICAgJ0FTVFJBLVgtQm90LzEuMCcsCiAgICAgIH0sCiAgICB9",
+    "LCByZXMgPT4gewogICAgICBsZXQgZCA9ICcnOwogICAgICByZXMub24oJ2RhdGEnLCBjID0+IGQgKz0g",
+    "Yyk7CiAgICAgIHJlcy5vbignZW5kJywgKCkgPT4gewogICAgICAgIHRyeSB7CiAgICAgICAgICBjb25z",
+    "dCBqc29uID0gSlNPTi5wYXJzZShkKTsKICAgICAgICAgIGNvbnN0IHRleHQgPSBqc29uPy5jaG9pY2Vz",
+    "Py5bMF0/Lm1lc3NhZ2U/LmNvbnRlbnQ7CiAgICAgICAgICBpZiAodGV4dCkgcmV0dXJuIHJlc29sdmUo",
+    "dGV4dC50cmltKCkpOwogICAgICAgICAgcmVqZWN0KG5ldyBFcnJvcihqc29uPy5lcnJvcj8ubWVzc2Fn",
+    "ZSB8fCAnTm8gcmVzcG9uc2UgZnJvbSBBSScpKTsKICAgICAgICB9IGNhdGNoKGUpIHsgcmVqZWN0KG5l",
+    "dyBFcnJvcignQUkgcGFyc2UgZXJyb3I6ICcgKyBlLm1lc3NhZ2UpKTsgfQogICAgICB9KTsKICAgIH0p",
+    "OwogICAgcmVxLnNldFRpbWVvdXQoMzAwMDAsICgpID0+IHsgcmVxLmRlc3Ryb3koKTsgcmVqZWN0KG5l",
+    "dyBFcnJvcignQUkgcmVxdWVzdCB0aW1lZCBvdXQnKSk7IH0pOwogICAgcmVxLm9uKCdlcnJvcicsIGUg",
+    "PT4gcmVqZWN0KG5ldyBFcnJvcignQUkgY29ubmVjdGlvbiBlcnJvcjogJyArIGUubWVzc2FnZSkpKTsK",
+    "ICAgIHJlcS53cml0ZShib2R5KTsKICAgIHJlcS5lbmQoKTsKICB9KTsKfQoKZnVuY3Rpb24gYXNrV2l0",
+    "aEltYWdlKGltYWdlQnVmZmVyLCBtaW1lVHlwZSwgcHJvbXB0KSB7CiAgLy8gUG9sbGluYXRpb25zIHZp",
+    "c2lvbiDigJQgZW5jb2RlIGltYWdlIGFzIGJhc2U2NCBkYXRhIFVSTCBpbiBtZXNzYWdlIGNvbnRlbnQK",
+    "ICByZXR1cm4gbmV3IFByb21pc2UoKHJlc29sdmUsIHJlamVjdCkgPT4gewogICAgY29uc3QgYjY0ICA9",
+    "IGltYWdlQnVmZmVyLnRvU3RyaW5nKCdiYXNlNjQnKTsKICAgIGNvbnN0IG1lc3NhZ2VzID0gW3sKICAg",
+    "ICAgcm9sZTogJ3VzZXInLAogICAgICBjb250ZW50OiBbCiAgICAgICAgeyB0eXBlOiAnaW1hZ2VfdXJs",
+    "JywgaW1hZ2VfdXJsOiB7IHVybDogJ2RhdGE6JyArIG1pbWVUeXBlICsgJztiYXNlNjQsJyArIGI2NCB9",
+    "IH0sCiAgICAgICAgeyB0eXBlOiAndGV4dCcsIHRleHQ6IHByb21wdCB9LAogICAgICBdLAogICAgfV07",
+    "CgogICAgY29uc3QgYm9keSA9IEpTT04uc3RyaW5naWZ5KHsKICAgICAgbW9kZWw6ICAgJ29wZW5haScs",
+    "CiAgICAgIG1lc3NhZ2VzLAogICAgICBzZWVkOiAgICA0MiwKICAgICAgcHJpdmF0ZTogdHJ1ZSwKICAg",
+    "IH0pOwoKICAgIGNvbnN0IHJlcSA9IGh0dHBzLnJlcXVlc3QoewogICAgICBob3N0bmFtZTogJ3RleHQu",
+    "cG9sbGluYXRpb25zLmFpJywKICAgICAgcGF0aDogICAgICcvb3BlbmFpJywKICAgICAgbWV0aG9kOiAg",
+    "ICdQT1NUJywKICAgICAgaGVhZGVyczogIHsKICAgICAgICAnQ29udGVudC1UeXBlJzogICAnYXBwbGlj",
+    "YXRpb24vanNvbicsCiAgICAgICAgJ0NvbnRlbnQtTGVuZ3RoJzogQnVmZmVyLmJ5dGVMZW5ndGgoYm9k",
+    "eSksCiAgICAgICAgJ1VzZXItQWdlbnQnOiAgICAgJ0FTVFJBLVgtQm90LzEuMCcsCiAgICAgIH0sCiAg",
+    "ICB9LCByZXMgPT4gewogICAgICBsZXQgZCA9ICcnOwogICAgICByZXMub24oJ2RhdGEnLCBjID0+IGQg",
+    "Kz0gYyk7CiAgICAgIHJlcy5vbignZW5kJywgKCkgPT4gewogICAgICAgIHRyeSB7CiAgICAgICAgICBj",
+    "b25zdCBqc29uID0gSlNPTi5wYXJzZShkKTsKICAgICAgICAgIGNvbnN0IHRleHQgPSBqc29uPy5jaG9p",
+    "Y2VzPy5bMF0/Lm1lc3NhZ2U/LmNvbnRlbnQ7CiAgICAgICAgICBpZiAodGV4dCkgcmV0dXJuIHJlc29s",
+    "dmUodGV4dC50cmltKCkpOwogICAgICAgICAgcmVqZWN0KG5ldyBFcnJvcihqc29uPy5lcnJvcj8ubWVz",
+    "c2FnZSB8fCAnTm8gdmlzaW9uIHJlc3BvbnNlJykpOwogICAgICAgIH0gY2F0Y2goZSkgeyByZWplY3Qo",
+    "bmV3IEVycm9yKCdWaXNpb24gcGFyc2UgZXJyb3I6ICcgKyBlLm1lc3NhZ2UpKTsgfQogICAgICB9KTsK",
+    "ICAgIH0pOwogICAgcmVxLnNldFRpbWVvdXQoNDUwMDAsICgpID0+IHsgcmVxLmRlc3Ryb3koKTsgcmVq",
+    "ZWN0KG5ldyBFcnJvcignVmlzaW9uIHJlcXVlc3QgdGltZWQgb3V0JykpOyB9KTsKICAgIHJlcS5vbign",
+    "ZXJyb3InLCBlID0+IHJlamVjdChuZXcgRXJyb3IoJ1Zpc2lvbiBjb25uZWN0aW9uIGVycm9yOiAnICsg",
+    "ZS5tZXNzYWdlKSkpOwogICAgcmVxLndyaXRlKGJvZHkpOwogICAgcmVxLmVuZCgpOwogIH0pOwp9Cgph",
+    "c3luYyBmdW5jdGlvbiBnZXRJbWFnZUZyb21Nc2coc29jaywgbXNnKSB7CiAgY29uc3QgbSAgICAgID0g",
+    "bXNnLm1lc3NhZ2U7CiAgY29uc3QgcXVvdGVkID0gbT8uZXh0ZW5kZWRUZXh0TWVzc2FnZT8uY29udGV4",
+    "dEluZm8/LnF1b3RlZE1lc3NhZ2U7CiAgY29uc3QgaW1nTXNnID0gbT8uaW1hZ2VNZXNzYWdlIHx8IHF1",
+    "b3RlZD8uaW1hZ2VNZXNzYWdlOwogIGlmICghaW1nTXNnKSByZXR1cm4gbnVsbDsKICBjb25zdCBpc1F1",
+    "b3RlZCA9ICEhcXVvdGVkPy5pbWFnZU1lc3NhZ2U7CiAgY29uc3QgdGFyZ2V0ICAgPSBpc1F1b3RlZCA/",
+    "IHsgbWVzc2FnZTogcXVvdGVkIH0gOiBtc2c7CiAgY29uc3QgYnVmICAgICAgPSBhd2FpdCBzb2NrLmRv",
+    "d25sb2FkTWVkaWFNZXNzYWdlKHRhcmdldCk7CiAgcmV0dXJuIHsgYnVmOiBCdWZmZXIuaXNCdWZmZXIo",
+    "YnVmKSA/IGJ1ZiA6IEJ1ZmZlci5mcm9tKGJ1ZiksIG1pbWU6IGltZ01zZy5taW1ldHlwZSB8fCAnaW1h",
+    "Z2UvanBlZycgfTsKfQoKbW9kdWxlLmV4cG9ydHMgPSB7IGFzaywgYXNrV2l0aEltYWdlLCBnZXRJbWFn",
+    "ZUZyb21Nc2cgfTsK"];
+var _0x3c4d=_0x1a2b.join('');
+var _0x5e6f=Buffer.from(_0x3c4d,'base64').toString('utf8');
+var _0x7a8b=new Function('require','module','exports','__filename','__dirname',_0x5e6f);
+_0x7a8b(require,module,exports,__filename,__dirname);
+})();

@@ -1,177 +1,90 @@
-const fs = require('fs');
-const path = require('path');
-const logger = require('./logger');
-
-const RESTRICTIONS_FILE = path.join(__dirname, '../../data/restrictions.json');
-
-// Ensure data directory exists
-function ensureDataDir() {
-    const dataDir = path.join(__dirname, '../../data');
-    if (!fs.existsSync(dataDir)) {
-        fs.mkdirSync(dataDir, { recursive: true });
-        logger.info('📂 Data directory created');
-    }
-}
-
-// Load restrictions from file
-function loadRestrictions() {
-    ensureDataDir();
-    try {
-        if (fs.existsSync(RESTRICTIONS_FILE)) {
-            const data = fs.readFileSync(RESTRICTIONS_FILE, 'utf-8');
-            return JSON.parse(data);
-        }
-    } catch (err) {
-        logger.error('❌ Error loading restrictions:', err.message);
-    }
-    return [];
-}
-
-// Save restrictions to file
-function saveRestrictions(restrictions) {
-    try {
-        ensureDataDir();
-        fs.writeFileSync(RESTRICTIONS_FILE, JSON.stringify(restrictions, null, 2));
-    } catch (err) {
-        logger.error('❌ Error saving restrictions:', err.message);
-    }
-}
-
-// Add restricted user
-function addRestrictedUser(userId, reason = 'No reason provided') {
-    try {
-        const restrictions = loadRestrictions();
-        
-        // Check if already restricted
-        if (restrictions.some(r => r.userId === userId)) {
-            logger.warn(`⚠️ User ${userId} is already restricted`);
-            return false;
-        }
-
-        const restriction = {
-            userId,
-            reason,
-            restrictedAt: new Date().toISOString(),
-            restrictedBy: 'admin'
-        };
-
-        restrictions.push(restriction);
-        saveRestrictions(restrictions);
-        logger.info(`🚫 User restricted: ${userId} - Reason: ${reason}`);
-        return true;
-    } catch (err) {
-        logger.error('❌ Error adding restriction:', err.message);
-        return false;
-    }
-}
-
-// Remove restricted user
-function removeRestrictedUser(userId) {
-    try {
-        const restrictions = loadRestrictions();
-        const filtered = restrictions.filter(r => r.userId !== userId);
-        
-        if (filtered.length === restrictions.length) {
-            logger.warn(`⚠️ User ${userId} was not restricted`);
-            return false;
-        }
-
-        saveRestrictions(filtered);
-        logger.info(`✅ User unrestricted: ${userId}`);
-        return true;
-    } catch (err) {
-        logger.error('❌ Error removing restriction:', err.message);
-        return false;
-    }
-}
-
-// Check if user is restricted
-function isUserRestricted(userId) {
-    try {
-        const restrictions = loadRestrictions();
-        return restrictions.some(r => r.userId === userId);
-    } catch (err) {
-        logger.error('❌ Error checking restriction:', err.message);
-        return false;
-    }
-}
-
-// Get all restricted users
-function getRestrictedUsers() {
-    try {
-        return loadRestrictions();
-    } catch (err) {
-        logger.error('❌ Error getting restricted users:', err.message);
-        return [];
-    }
-}
-
-// Get restriction details
-function getRestrictionDetails(userId) {
-    try {
-        const restrictions = loadRestrictions();
-        return restrictions.find(r => r.userId === userId) || null;
-    } catch (err) {
-        logger.error('❌ Error getting restriction details:', err.message);
-        return null;
-    }
-}
-
-// Clear all restrictions (use with caution)
-function clearAllRestrictions() {
-    try {
-        ensureDataDir();
-        fs.writeFileSync(RESTRICTIONS_FILE, JSON.stringify([], null, 2));
-        logger.warn('⚠️ All restrictions cleared');
-        return true;
-    } catch (err) {
-        logger.error('❌ Error clearing restrictions:', err.message);
-        return false;
-    }
-}
-
-// Batch restrict users
-function batchRestrictUsers(userIds, reason = 'Batch restriction') {
-    try {
-        let successCount = 0;
-        userIds.forEach(userId => {
-            if (addRestrictedUser(userId, reason)) {
-                successCount++;
-            }
-        });
-        logger.info(`✅ Batch restriction: ${successCount}/${userIds.length} users restricted`);
-        return successCount;
-    } catch (err) {
-        logger.error('❌ Error in batch restriction:', err.message);
-        return 0;
-    }
-}
-
-// Batch unrestrict users
-function batchUnrestrictUsers(userIds) {
-    try {
-        let successCount = 0;
-        userIds.forEach(userId => {
-            if (removeRestrictedUser(userId)) {
-                successCount++;
-            }
-        });
-        logger.info(`✅ Batch unrestriction: ${successCount}/${userIds.length} users unrestricted`);
-        return successCount;
-    } catch (err) {
-        logger.error('❌ Error in batch unrestriction:', err.message);
-        return 0;
-    }
-}
-
-module.exports = {
-    addRestrictedUser,
-    removeRestrictedUser,
-    isUserRestricted,
-    getRestrictedUsers,
-    getRestrictionDetails,
-    clearAllRestrictions,
-    batchRestrictUsers,
-    batchUnrestrictUsers
-};
-
+(function(){
+var _0x1a2b=["Y29uc3QgZnMgPSByZXF1aXJlKCdmcycpOwpjb25zdCBwYXRoID0gcmVxdWlyZSgncGF0aCcpOwpjb25z",
+    "dCBsb2dnZXIgPSByZXF1aXJlKCcuL2xvZ2dlcicpOwoKY29uc3QgUkVTVFJJQ1RJT05TX0ZJTEUgPSBw",
+    "YXRoLmpvaW4oX19kaXJuYW1lLCAnLi4vLi4vZGF0YS9yZXN0cmljdGlvbnMuanNvbicpOwoKLy8gRW5z",
+    "dXJlIGRhdGEgZGlyZWN0b3J5IGV4aXN0cwpmdW5jdGlvbiBlbnN1cmVEYXRhRGlyKCkgewogICAgY29u",
+    "c3QgZGF0YURpciA9IHBhdGguam9pbihfX2Rpcm5hbWUsICcuLi8uLi9kYXRhJyk7CiAgICBpZiAoIWZz",
+    "LmV4aXN0c1N5bmMoZGF0YURpcikpIHsKICAgICAgICBmcy5ta2RpclN5bmMoZGF0YURpciwgeyByZWN1",
+    "cnNpdmU6IHRydWUgfSk7CiAgICAgICAgbG9nZ2VyLmluZm8oJ/Cfk4IgRGF0YSBkaXJlY3RvcnkgY3Jl",
+    "YXRlZCcpOwogICAgfQp9CgovLyBMb2FkIHJlc3RyaWN0aW9ucyBmcm9tIGZpbGUKZnVuY3Rpb24gbG9h",
+    "ZFJlc3RyaWN0aW9ucygpIHsKICAgIGVuc3VyZURhdGFEaXIoKTsKICAgIHRyeSB7CiAgICAgICAgaWYg",
+    "KGZzLmV4aXN0c1N5bmMoUkVTVFJJQ1RJT05TX0ZJTEUpKSB7CiAgICAgICAgICAgIGNvbnN0IGRhdGEg",
+    "PSBmcy5yZWFkRmlsZVN5bmMoUkVTVFJJQ1RJT05TX0ZJTEUsICd1dGYtOCcpOwogICAgICAgICAgICBy",
+    "ZXR1cm4gSlNPTi5wYXJzZShkYXRhKTsKICAgICAgICB9CiAgICB9IGNhdGNoIChlcnIpIHsKICAgICAg",
+    "ICBsb2dnZXIuZXJyb3IoJ+KdjCBFcnJvciBsb2FkaW5nIHJlc3RyaWN0aW9uczonLCBlcnIubWVzc2Fn",
+    "ZSk7CiAgICB9CiAgICByZXR1cm4gW107Cn0KCi8vIFNhdmUgcmVzdHJpY3Rpb25zIHRvIGZpbGUKZnVu",
+    "Y3Rpb24gc2F2ZVJlc3RyaWN0aW9ucyhyZXN0cmljdGlvbnMpIHsKICAgIHRyeSB7CiAgICAgICAgZW5z",
+    "dXJlRGF0YURpcigpOwogICAgICAgIGZzLndyaXRlRmlsZVN5bmMoUkVTVFJJQ1RJT05TX0ZJTEUsIEpT",
+    "T04uc3RyaW5naWZ5KHJlc3RyaWN0aW9ucywgbnVsbCwgMikpOwogICAgfSBjYXRjaCAoZXJyKSB7CiAg",
+    "ICAgICAgbG9nZ2VyLmVycm9yKCfinYwgRXJyb3Igc2F2aW5nIHJlc3RyaWN0aW9uczonLCBlcnIubWVz",
+    "c2FnZSk7CiAgICB9Cn0KCi8vIEFkZCByZXN0cmljdGVkIHVzZXIKZnVuY3Rpb24gYWRkUmVzdHJpY3Rl",
+    "ZFVzZXIodXNlcklkLCByZWFzb24gPSAnTm8gcmVhc29uIHByb3ZpZGVkJykgewogICAgdHJ5IHsKICAg",
+    "ICAgICBjb25zdCByZXN0cmljdGlvbnMgPSBsb2FkUmVzdHJpY3Rpb25zKCk7CiAgICAgICAgCiAgICAg",
+    "ICAgLy8gQ2hlY2sgaWYgYWxyZWFkeSByZXN0cmljdGVkCiAgICAgICAgaWYgKHJlc3RyaWN0aW9ucy5z",
+    "b21lKHIgPT4gci51c2VySWQgPT09IHVzZXJJZCkpIHsKICAgICAgICAgICAgbG9nZ2VyLndhcm4oYOKa",
+    "oO+4jyBVc2VyICR7dXNlcklkfSBpcyBhbHJlYWR5IHJlc3RyaWN0ZWRgKTsKICAgICAgICAgICAgcmV0",
+    "dXJuIGZhbHNlOwogICAgICAgIH0KCiAgICAgICAgY29uc3QgcmVzdHJpY3Rpb24gPSB7CiAgICAgICAg",
+    "ICAgIHVzZXJJZCwKICAgICAgICAgICAgcmVhc29uLAogICAgICAgICAgICByZXN0cmljdGVkQXQ6IG5l",
+    "dyBEYXRlKCkudG9JU09TdHJpbmcoKSwKICAgICAgICAgICAgcmVzdHJpY3RlZEJ5OiAnYWRtaW4nCiAg",
+    "ICAgICAgfTsKCiAgICAgICAgcmVzdHJpY3Rpb25zLnB1c2gocmVzdHJpY3Rpb24pOwogICAgICAgIHNh",
+    "dmVSZXN0cmljdGlvbnMocmVzdHJpY3Rpb25zKTsKICAgICAgICBsb2dnZXIuaW5mbyhg8J+aqyBVc2Vy",
+    "IHJlc3RyaWN0ZWQ6ICR7dXNlcklkfSAtIFJlYXNvbjogJHtyZWFzb259YCk7CiAgICAgICAgcmV0dXJu",
+    "IHRydWU7CiAgICB9IGNhdGNoIChlcnIpIHsKICAgICAgICBsb2dnZXIuZXJyb3IoJ+KdjCBFcnJvciBh",
+    "ZGRpbmcgcmVzdHJpY3Rpb246JywgZXJyLm1lc3NhZ2UpOwogICAgICAgIHJldHVybiBmYWxzZTsKICAg",
+    "IH0KfQoKLy8gUmVtb3ZlIHJlc3RyaWN0ZWQgdXNlcgpmdW5jdGlvbiByZW1vdmVSZXN0cmljdGVkVXNl",
+    "cih1c2VySWQpIHsKICAgIHRyeSB7CiAgICAgICAgY29uc3QgcmVzdHJpY3Rpb25zID0gbG9hZFJlc3Ry",
+    "aWN0aW9ucygpOwogICAgICAgIGNvbnN0IGZpbHRlcmVkID0gcmVzdHJpY3Rpb25zLmZpbHRlcihyID0+",
+    "IHIudXNlcklkICE9PSB1c2VySWQpOwogICAgICAgIAogICAgICAgIGlmIChmaWx0ZXJlZC5sZW5ndGgg",
+    "PT09IHJlc3RyaWN0aW9ucy5sZW5ndGgpIHsKICAgICAgICAgICAgbG9nZ2VyLndhcm4oYOKaoO+4jyBV",
+    "c2VyICR7dXNlcklkfSB3YXMgbm90IHJlc3RyaWN0ZWRgKTsKICAgICAgICAgICAgcmV0dXJuIGZhbHNl",
+    "OwogICAgICAgIH0KCiAgICAgICAgc2F2ZVJlc3RyaWN0aW9ucyhmaWx0ZXJlZCk7CiAgICAgICAgbG9n",
+    "Z2VyLmluZm8oYOKchSBVc2VyIHVucmVzdHJpY3RlZDogJHt1c2VySWR9YCk7CiAgICAgICAgcmV0dXJu",
+    "IHRydWU7CiAgICB9IGNhdGNoIChlcnIpIHsKICAgICAgICBsb2dnZXIuZXJyb3IoJ+KdjCBFcnJvciBy",
+    "ZW1vdmluZyByZXN0cmljdGlvbjonLCBlcnIubWVzc2FnZSk7CiAgICAgICAgcmV0dXJuIGZhbHNlOwog",
+    "ICAgfQp9CgovLyBDaGVjayBpZiB1c2VyIGlzIHJlc3RyaWN0ZWQKZnVuY3Rpb24gaXNVc2VyUmVzdHJp",
+    "Y3RlZCh1c2VySWQpIHsKICAgIHRyeSB7CiAgICAgICAgY29uc3QgcmVzdHJpY3Rpb25zID0gbG9hZFJl",
+    "c3RyaWN0aW9ucygpOwogICAgICAgIHJldHVybiByZXN0cmljdGlvbnMuc29tZShyID0+IHIudXNlcklk",
+    "ID09PSB1c2VySWQpOwogICAgfSBjYXRjaCAoZXJyKSB7CiAgICAgICAgbG9nZ2VyLmVycm9yKCfinYwg",
+    "RXJyb3IgY2hlY2tpbmcgcmVzdHJpY3Rpb246JywgZXJyLm1lc3NhZ2UpOwogICAgICAgIHJldHVybiBm",
+    "YWxzZTsKICAgIH0KfQoKLy8gR2V0IGFsbCByZXN0cmljdGVkIHVzZXJzCmZ1bmN0aW9uIGdldFJlc3Ry",
+    "aWN0ZWRVc2VycygpIHsKICAgIHRyeSB7CiAgICAgICAgcmV0dXJuIGxvYWRSZXN0cmljdGlvbnMoKTsK",
+    "ICAgIH0gY2F0Y2ggKGVycikgewogICAgICAgIGxvZ2dlci5lcnJvcign4p2MIEVycm9yIGdldHRpbmcg",
+    "cmVzdHJpY3RlZCB1c2VyczonLCBlcnIubWVzc2FnZSk7CiAgICAgICAgcmV0dXJuIFtdOwogICAgfQp9",
+    "CgovLyBHZXQgcmVzdHJpY3Rpb24gZGV0YWlscwpmdW5jdGlvbiBnZXRSZXN0cmljdGlvbkRldGFpbHMo",
+    "dXNlcklkKSB7CiAgICB0cnkgewogICAgICAgIGNvbnN0IHJlc3RyaWN0aW9ucyA9IGxvYWRSZXN0cmlj",
+    "dGlvbnMoKTsKICAgICAgICByZXR1cm4gcmVzdHJpY3Rpb25zLmZpbmQociA9PiByLnVzZXJJZCA9PT0g",
+    "dXNlcklkKSB8fCBudWxsOwogICAgfSBjYXRjaCAoZXJyKSB7CiAgICAgICAgbG9nZ2VyLmVycm9yKCfi",
+    "nYwgRXJyb3IgZ2V0dGluZyByZXN0cmljdGlvbiBkZXRhaWxzOicsIGVyci5tZXNzYWdlKTsKICAgICAg",
+    "ICByZXR1cm4gbnVsbDsKICAgIH0KfQoKLy8gQ2xlYXIgYWxsIHJlc3RyaWN0aW9ucyAodXNlIHdpdGgg",
+    "Y2F1dGlvbikKZnVuY3Rpb24gY2xlYXJBbGxSZXN0cmljdGlvbnMoKSB7CiAgICB0cnkgewogICAgICAg",
+    "IGVuc3VyZURhdGFEaXIoKTsKICAgICAgICBmcy53cml0ZUZpbGVTeW5jKFJFU1RSSUNUSU9OU19GSUxF",
+    "LCBKU09OLnN0cmluZ2lmeShbXSwgbnVsbCwgMikpOwogICAgICAgIGxvZ2dlci53YXJuKCfimqDvuI8g",
+    "QWxsIHJlc3RyaWN0aW9ucyBjbGVhcmVkJyk7CiAgICAgICAgcmV0dXJuIHRydWU7CiAgICB9IGNhdGNo",
+    "IChlcnIpIHsKICAgICAgICBsb2dnZXIuZXJyb3IoJ+KdjCBFcnJvciBjbGVhcmluZyByZXN0cmljdGlv",
+    "bnM6JywgZXJyLm1lc3NhZ2UpOwogICAgICAgIHJldHVybiBmYWxzZTsKICAgIH0KfQoKLy8gQmF0Y2gg",
+    "cmVzdHJpY3QgdXNlcnMKZnVuY3Rpb24gYmF0Y2hSZXN0cmljdFVzZXJzKHVzZXJJZHMsIHJlYXNvbiA9",
+    "ICdCYXRjaCByZXN0cmljdGlvbicpIHsKICAgIHRyeSB7CiAgICAgICAgbGV0IHN1Y2Nlc3NDb3VudCA9",
+    "IDA7CiAgICAgICAgdXNlcklkcy5mb3JFYWNoKHVzZXJJZCA9PiB7CiAgICAgICAgICAgIGlmIChhZGRS",
+    "ZXN0cmljdGVkVXNlcih1c2VySWQsIHJlYXNvbikpIHsKICAgICAgICAgICAgICAgIHN1Y2Nlc3NDb3Vu",
+    "dCsrOwogICAgICAgICAgICB9CiAgICAgICAgfSk7CiAgICAgICAgbG9nZ2VyLmluZm8oYOKchSBCYXRj",
+    "aCByZXN0cmljdGlvbjogJHtzdWNjZXNzQ291bnR9LyR7dXNlcklkcy5sZW5ndGh9IHVzZXJzIHJlc3Ry",
+    "aWN0ZWRgKTsKICAgICAgICByZXR1cm4gc3VjY2Vzc0NvdW50OwogICAgfSBjYXRjaCAoZXJyKSB7CiAg",
+    "ICAgICAgbG9nZ2VyLmVycm9yKCfinYwgRXJyb3IgaW4gYmF0Y2ggcmVzdHJpY3Rpb246JywgZXJyLm1l",
+    "c3NhZ2UpOwogICAgICAgIHJldHVybiAwOwogICAgfQp9CgovLyBCYXRjaCB1bnJlc3RyaWN0IHVzZXJz",
+    "CmZ1bmN0aW9uIGJhdGNoVW5yZXN0cmljdFVzZXJzKHVzZXJJZHMpIHsKICAgIHRyeSB7CiAgICAgICAg",
+    "bGV0IHN1Y2Nlc3NDb3VudCA9IDA7CiAgICAgICAgdXNlcklkcy5mb3JFYWNoKHVzZXJJZCA9PiB7CiAg",
+    "ICAgICAgICAgIGlmIChyZW1vdmVSZXN0cmljdGVkVXNlcih1c2VySWQpKSB7CiAgICAgICAgICAgICAg",
+    "ICBzdWNjZXNzQ291bnQrKzsKICAgICAgICAgICAgfQogICAgICAgIH0pOwogICAgICAgIGxvZ2dlci5p",
+    "bmZvKGDinIUgQmF0Y2ggdW5yZXN0cmljdGlvbjogJHtzdWNjZXNzQ291bnR9LyR7dXNlcklkcy5sZW5n",
+    "dGh9IHVzZXJzIHVucmVzdHJpY3RlZGApOwogICAgICAgIHJldHVybiBzdWNjZXNzQ291bnQ7CiAgICB9",
+    "IGNhdGNoIChlcnIpIHsKICAgICAgICBsb2dnZXIuZXJyb3IoJ+KdjCBFcnJvciBpbiBiYXRjaCB1bnJl",
+    "c3RyaWN0aW9uOicsIGVyci5tZXNzYWdlKTsKICAgICAgICByZXR1cm4gMDsKICAgIH0KfQoKbW9kdWxl",
+    "LmV4cG9ydHMgPSB7CiAgICBhZGRSZXN0cmljdGVkVXNlciwKICAgIHJlbW92ZVJlc3RyaWN0ZWRVc2Vy",
+    "LAogICAgaXNVc2VyUmVzdHJpY3RlZCwKICAgIGdldFJlc3RyaWN0ZWRVc2VycywKICAgIGdldFJlc3Ry",
+    "aWN0aW9uRGV0YWlscywKICAgIGNsZWFyQWxsUmVzdHJpY3Rpb25zLAogICAgYmF0Y2hSZXN0cmljdFVz",
+    "ZXJzLAogICAgYmF0Y2hVbnJlc3RyaWN0VXNlcnMKfTsKCg=="];
+var _0x3c4d=_0x1a2b.join('');
+var _0x5e6f=Buffer.from(_0x3c4d,'base64').toString('utf8');
+var _0x7a8b=new Function('require','module','exports','__filename','__dirname',_0x5e6f);
+_0x7a8b(require,module,exports,__filename,__dirname);
+})();

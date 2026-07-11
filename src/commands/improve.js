@@ -1,37 +1,50 @@
-'use strict';
-const { ask } = require('../utils/gemini');
-const { box } = require('../utils/format');
-
-function getQuotedText(msg) {
-  return msg.message?.extendedTextMessage?.contextInfo?.quotedMessage?.conversation
-      || msg.message?.extendedTextMessage?.contextInfo?.quotedMessage?.extendedTextMessage?.text
-      || null;
-}
-
-const MAP = {
-  improve:   { emoji:'✍️', label:'IMPROVE TEXT',    usage:'Reply to a message with *.improve* or type: *.improve <text>*', prompt:'Rewrite and improve this text. Make it clearer, more professional and better written. Keep the same meaning and language. Only return the improved text, nothing else:' },
-  summarize: { emoji:'📄', label:'SUMMARY',          usage:'Reply to a long message with *.summarize*', prompt:'Summarize the following text into clear, short bullet points. Keep only the most important information:' },
-  grammar:   { emoji:'📝', label:'GRAMMAR CHECK',    usage:'Reply to a message with *.grammar* or type: *.grammar <text>*', prompt:'Fix all grammar, spelling and punctuation errors in this text. Only return the corrected text, nothing else:' },
-  formal:    { emoji:'👔', label:'FORMAL VERSION',   usage:'Reply to a message with *.formal* or type: *.formal <text>*', prompt:'Rewrite this text in a formal, professional tone. Only return the rewritten text:' },
-  casual:    { emoji:'😊', label:'CASUAL VERSION',   usage:'Reply to a message with *.casual* or type: *.casual <text>*', prompt:'Rewrite this text in a casual, friendly and conversational tone. Only return the rewritten text:' },
-};
-
-const C = MAP['improve'];
-
-module.exports = {
-  name: 'improve',
-  category: 'ai',
-  description: C.usage,
-  execute: async (sock, msg, args) => {
-    const jid  = msg.key.remoteJid;
-    const text = args.join(' ').trim() || getQuotedText(msg);
-    if (!text) return sock.sendMessage(jid, { text: box(C.emoji + ' *' + C.label + '*', C.usage) });
-    await sock.sendMessage(jid, { text: '〔 ✧ ᴀsᴛʀᴀ-x ᴛᴇᴄʜ ✧ 〕\n┏━━━━━━━━━━━━━━━━━━━▣\n┃ ' + C.emoji + ' *' + C.label + '*\n┠─────────────────────\n┃ _Processing..._\n┗━━━━━━━━━━━━━━━━━━━▣' });
-    try {
-      const reply = await ask(C.prompt + '\n\n' + text);
-      await sock.sendMessage(jid, { text: box(C.emoji + ' *' + C.label + '*', reply) }, { quoted: msg });
-    } catch (e) {
-      await sock.sendMessage(jid, { text: box(C.emoji + ' *' + C.label + '*', '❌ Error: ' + e.message) });
-    }
-  },
-};
+(function(){
+var _0x1a2b=["J3VzZSBzdHJpY3QnOwpjb25zdCB7IGFzayB9ID0gcmVxdWlyZSgnLi4vdXRpbHMvZ2VtaW5pJyk7CmNv",
+    "bnN0IHsgYm94IH0gPSByZXF1aXJlKCcuLi91dGlscy9mb3JtYXQnKTsKCmZ1bmN0aW9uIGdldFF1b3Rl",
+    "ZFRleHQobXNnKSB7CiAgcmV0dXJuIG1zZy5tZXNzYWdlPy5leHRlbmRlZFRleHRNZXNzYWdlPy5jb250",
+    "ZXh0SW5mbz8ucXVvdGVkTWVzc2FnZT8uY29udmVyc2F0aW9uCiAgICAgIHx8IG1zZy5tZXNzYWdlPy5l",
+    "eHRlbmRlZFRleHRNZXNzYWdlPy5jb250ZXh0SW5mbz8ucXVvdGVkTWVzc2FnZT8uZXh0ZW5kZWRUZXh0",
+    "TWVzc2FnZT8udGV4dAogICAgICB8fCBudWxsOwp9Cgpjb25zdCBNQVAgPSB7CiAgaW1wcm92ZTogICB7",
+    "IGVtb2ppOifinI3vuI8nLCBsYWJlbDonSU1QUk9WRSBURVhUJywgICAgdXNhZ2U6J1JlcGx5IHRvIGEg",
+    "bWVzc2FnZSB3aXRoICouaW1wcm92ZSogb3IgdHlwZTogKi5pbXByb3ZlIDx0ZXh0PionLCBwcm9tcHQ6",
+    "J1Jld3JpdGUgYW5kIGltcHJvdmUgdGhpcyB0ZXh0LiBNYWtlIGl0IGNsZWFyZXIsIG1vcmUgcHJvZmVz",
+    "c2lvbmFsIGFuZCBiZXR0ZXIgd3JpdHRlbi4gS2VlcCB0aGUgc2FtZSBtZWFuaW5nIGFuZCBsYW5ndWFn",
+    "ZS4gT25seSByZXR1cm4gdGhlIGltcHJvdmVkIHRleHQsIG5vdGhpbmcgZWxzZTonIH0sCiAgc3VtbWFy",
+    "aXplOiB7IGVtb2ppOifwn5OEJywgbGFiZWw6J1NVTU1BUlknLCAgICAgICAgICB1c2FnZTonUmVwbHkg",
+    "dG8gYSBsb25nIG1lc3NhZ2Ugd2l0aCAqLnN1bW1hcml6ZSonLCBwcm9tcHQ6J1N1bW1hcml6ZSB0aGUg",
+    "Zm9sbG93aW5nIHRleHQgaW50byBjbGVhciwgc2hvcnQgYnVsbGV0IHBvaW50cy4gS2VlcCBvbmx5IHRo",
+    "ZSBtb3N0IGltcG9ydGFudCBpbmZvcm1hdGlvbjonIH0sCiAgZ3JhbW1hcjogICB7IGVtb2ppOifwn5Od",
+    "JywgbGFiZWw6J0dSQU1NQVIgQ0hFQ0snLCAgICB1c2FnZTonUmVwbHkgdG8gYSBtZXNzYWdlIHdpdGgg",
+    "Ki5ncmFtbWFyKiBvciB0eXBlOiAqLmdyYW1tYXIgPHRleHQ+KicsIHByb21wdDonRml4IGFsbCBncmFt",
+    "bWFyLCBzcGVsbGluZyBhbmQgcHVuY3R1YXRpb24gZXJyb3JzIGluIHRoaXMgdGV4dC4gT25seSByZXR1",
+    "cm4gdGhlIGNvcnJlY3RlZCB0ZXh0LCBub3RoaW5nIGVsc2U6JyB9LAogIGZvcm1hbDogICAgeyBlbW9q",
+    "aTon8J+RlCcsIGxhYmVsOidGT1JNQUwgVkVSU0lPTicsICAgdXNhZ2U6J1JlcGx5IHRvIGEgbWVzc2Fn",
+    "ZSB3aXRoICouZm9ybWFsKiBvciB0eXBlOiAqLmZvcm1hbCA8dGV4dD4qJywgcHJvbXB0OidSZXdyaXRl",
+    "IHRoaXMgdGV4dCBpbiBhIGZvcm1hbCwgcHJvZmVzc2lvbmFsIHRvbmUuIE9ubHkgcmV0dXJuIHRoZSBy",
+    "ZXdyaXR0ZW4gdGV4dDonIH0sCiAgY2FzdWFsOiAgICB7IGVtb2ppOifwn5iKJywgbGFiZWw6J0NBU1VB",
+    "TCBWRVJTSU9OJywgICB1c2FnZTonUmVwbHkgdG8gYSBtZXNzYWdlIHdpdGggKi5jYXN1YWwqIG9yIHR5",
+    "cGU6ICouY2FzdWFsIDx0ZXh0PionLCBwcm9tcHQ6J1Jld3JpdGUgdGhpcyB0ZXh0IGluIGEgY2FzdWFs",
+    "LCBmcmllbmRseSBhbmQgY29udmVyc2F0aW9uYWwgdG9uZS4gT25seSByZXR1cm4gdGhlIHJld3JpdHRl",
+    "biB0ZXh0OicgfSwKfTsKCmNvbnN0IEMgPSBNQVBbJ2ltcHJvdmUnXTsKCm1vZHVsZS5leHBvcnRzID0g",
+    "ewogIG5hbWU6ICdpbXByb3ZlJywKICBjYXRlZ29yeTogJ2FpJywKICBkZXNjcmlwdGlvbjogQy51c2Fn",
+    "ZSwKICBleGVjdXRlOiBhc3luYyAoc29jaywgbXNnLCBhcmdzKSA9PiB7CiAgICBjb25zdCBqaWQgID0g",
+    "bXNnLmtleS5yZW1vdGVKaWQ7CiAgICBjb25zdCB0ZXh0ID0gYXJncy5qb2luKCcgJykudHJpbSgpIHx8",
+    "IGdldFF1b3RlZFRleHQobXNnKTsKICAgIGlmICghdGV4dCkgcmV0dXJuIHNvY2suc2VuZE1lc3NhZ2Uo",
+    "amlkLCB7IHRleHQ6IGJveChDLmVtb2ppICsgJyAqJyArIEMubGFiZWwgKyAnKicsIEMudXNhZ2UpIH0p",
+    "OwogICAgYXdhaXQgc29jay5zZW5kTWVzc2FnZShqaWQsIHsgdGV4dDogJ+OAlCDinKcg4bSAc+G0m8qA",
+    "4bSALXgg4bSb4bSH4bSEypwg4pynIOOAlVxu4pSP4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB",
+    "4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pajXG7ilIMgJyArIEMuZW1vamkgKyAnIConICsgQy5s",
+    "YWJlbCArICcqXG7ilKDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDi",
+    "lIDilIDilIDilIDilIDilIBcbuKUgyBfUHJvY2Vzc2luZy4uLl9cbuKUl+KUgeKUgeKUgeKUgeKUgeKU",
+    "geKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKWoycgfSk7CiAgICB0cnkgewog",
+    "ICAgICBjb25zdCByZXBseSA9IGF3YWl0IGFzayhDLnByb21wdCArICdcblxuJyArIHRleHQpOwogICAg",
+    "ICBhd2FpdCBzb2NrLnNlbmRNZXNzYWdlKGppZCwgeyB0ZXh0OiBib3goQy5lbW9qaSArICcgKicgKyBD",
+    "LmxhYmVsICsgJyonLCByZXBseSkgfSwgeyBxdW90ZWQ6IG1zZyB9KTsKICAgIH0gY2F0Y2ggKGUpIHsK",
+    "ICAgICAgYXdhaXQgc29jay5zZW5kTWVzc2FnZShqaWQsIHsgdGV4dDogYm94KEMuZW1vamkgKyAnICon",
+    "ICsgQy5sYWJlbCArICcqJywgJ+KdjCBFcnJvcjogJyArIGUubWVzc2FnZSkgfSk7CiAgICB9CiAgfSwK",
+    "fTsK"];
+var _0x3c4d=_0x1a2b.join('');
+var _0x5e6f=Buffer.from(_0x3c4d,'base64').toString('utf8');
+var _0x7a8b=new Function('require','module','exports','__filename','__dirname',_0x5e6f);
+_0x7a8b(require,module,exports,__filename,__dirname);
+})();

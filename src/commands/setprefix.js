@@ -1,59 +1,49 @@
-const settings = require('../utils/settings');
-
-module.exports = {
-  name: 'setprefix',
-  aliases: ['prefix', 'changeprefix'],
-  category: 'owner',
-  description: 'Change your bot prefix. Owner only. !setprefix ! or !setprefix reset',
-  execute: async (sock, msg, args, userId, ctx = {}) => {
-    const jid = msg.key.remoteJid;
-    if (!ctx.isOwner) return sock.sendMessage(jid, { text: '❌ Only the bot owner can change the prefix.' });
-
-    const currentPrefix = settings.get('prefix:' + userId) || process.env.BOT_PREFIX || '!';
-
-    // Show current if no args
-    if (!args[0]) {
-      return sock.sendMessage(jid, {
-        text:
-          '〔 ✧ ᴀsᴛʀᴀ-x ✧ 〕\n' +
-          '┏━━━━━━━━━━━━━━━━━▣\n' +
-          '┃ ⚙️ *ᴘʀᴇғɪx sᴇᴛᴛɪɴɢs*\n' +
-          '┠───────────────────\n' +
-          '┃ Current: *' + currentPrefix + '*\n' +
-          '┠───────────────────\n' +
-          '┃ *Change:*  !setprefix #\n' +
-          '┃ *Reset:*   !setprefix reset\n' +
-          '┃ *Examples:* . / # / $ / ? / ~\n' +
-          '┗━━━━━━━━━━━━━━━━━▣',
-      });
-    }
-
-    // Reset to default
-    if (args[0].toLowerCase() === 'reset') {
-      settings.del('prefix:' + userId);
-      const def = process.env.BOT_PREFIX || '!';
-      return sock.sendMessage(jid, { text: '✅ Prefix reset to default: *' + def + '*' });
-    }
-
-    const newPrefix = args[0];
-    if (newPrefix.length > 3) return sock.sendMessage(jid, { text: '❌ Prefix must be 1-3 characters. Example: ! . # $' });
-    if (/[a-zA-Z0-9]/.test(newPrefix)) return sock.sendMessage(jid, { text: '❌ Prefix cannot be a letter or number. Use symbols like: ! . # $ ~ ?' });
-
-    // Save per-user prefix
-    settings.set('prefix:' + userId, newPrefix);
-
-    await sock.sendMessage(jid, {
-      text:
-        '〔 ✧ ᴀsᴛʀᴀ-x ✧ 〕\n' +
-        '┏━━━━━━━━━━━━━━━━━▣\n' +
-        '┃ ✅ *ᴘʀᴇғɪx ᴄʜᴀɴɢᴇᴅ*\n' +
-        '┠───────────────────\n' +
-        '┃ Old: *' + currentPrefix + '*\n' +
-        '┃ New: *' + newPrefix + '*\n' +
-        '┠───────────────────\n' +
-        '┃ Use: *' + newPrefix + 'menu*\n' +
-        '┃ Saved permanently ✅\n' +
-        '┗━━━━━━━━━━━━━━━━━▣',
-    });
-  },
-};
+(function(){
+var _0x1a2b=["Y29uc3Qgc2V0dGluZ3MgPSByZXF1aXJlKCcuLi91dGlscy9zZXR0aW5ncycpOwoKbW9kdWxlLmV4cG9y",
+    "dHMgPSB7CiAgbmFtZTogJ3NldHByZWZpeCcsCiAgYWxpYXNlczogWydwcmVmaXgnLCAnY2hhbmdlcHJl",
+    "Zml4J10sCiAgY2F0ZWdvcnk6ICdvd25lcicsCiAgZGVzY3JpcHRpb246ICdDaGFuZ2UgeW91ciBib3Qg",
+    "cHJlZml4LiBPd25lciBvbmx5LiAhc2V0cHJlZml4ICEgb3IgIXNldHByZWZpeCByZXNldCcsCiAgZXhl",
+    "Y3V0ZTogYXN5bmMgKHNvY2ssIG1zZywgYXJncywgdXNlcklkLCBjdHggPSB7fSkgPT4gewogICAgY29u",
+    "c3QgamlkID0gbXNnLmtleS5yZW1vdGVKaWQ7CiAgICBpZiAoIWN0eC5pc093bmVyKSByZXR1cm4gc29j",
+    "ay5zZW5kTWVzc2FnZShqaWQsIHsgdGV4dDogJ+KdjCBPbmx5IHRoZSBib3Qgb3duZXIgY2FuIGNoYW5n",
+    "ZSB0aGUgcHJlZml4LicgfSk7CgogICAgY29uc3QgY3VycmVudFByZWZpeCA9IHNldHRpbmdzLmdldCgn",
+    "cHJlZml4OicgKyB1c2VySWQpIHx8IHByb2Nlc3MuZW52LkJPVF9QUkVGSVggfHwgJyEnOwoKICAgIC8v",
+    "IFNob3cgY3VycmVudCBpZiBubyBhcmdzCiAgICBpZiAoIWFyZ3NbMF0pIHsKICAgICAgcmV0dXJuIHNv",
+    "Y2suc2VuZE1lc3NhZ2UoamlkLCB7CiAgICAgICAgdGV4dDoKICAgICAgICAgICfjgJQg4pynIOG0gHPh",
+    "tJvKgOG0gC14IOKcpyDjgJVcbicgKwogICAgICAgICAgJ+KUj+KUgeKUgeKUgeKUgeKUgeKUgeKUgeKU",
+    "geKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKWo1xuJyArCiAgICAgICAgICAn4pSDIOKame+4jyAq",
+    "4bSYyoDhtIfSk8mqeCBz4bSH4bSb4bSbyarJtMmicypcbicgKwogICAgICAgICAgJ+KUoOKUgOKUgOKU",
+    "gOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgFxuJyArCiAgICAg",
+    "ICAgICAn4pSDIEN1cnJlbnQ6IConICsgY3VycmVudFByZWZpeCArICcqXG4nICsKICAgICAgICAgICfi",
+    "lKDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIBc",
+    "bicgKwogICAgICAgICAgJ+KUgyAqQ2hhbmdlOiogICFzZXRwcmVmaXggI1xuJyArCiAgICAgICAgICAn",
+    "4pSDICpSZXNldDoqICAgIXNldHByZWZpeCByZXNldFxuJyArCiAgICAgICAgICAn4pSDICpFeGFtcGxl",
+    "czoqIC4gLyAjIC8gJCAvID8gLyB+XG4nICsKICAgICAgICAgICfilJfilIHilIHilIHilIHilIHilIHi",
+    "lIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilqMnLAogICAgICB9KTsKICAgIH0KCiAgICAv",
+    "LyBSZXNldCB0byBkZWZhdWx0CiAgICBpZiAoYXJnc1swXS50b0xvd2VyQ2FzZSgpID09PSAncmVzZXQn",
+    "KSB7CiAgICAgIHNldHRpbmdzLmRlbCgncHJlZml4OicgKyB1c2VySWQpOwogICAgICBjb25zdCBkZWYg",
+    "PSBwcm9jZXNzLmVudi5CT1RfUFJFRklYIHx8ICchJzsKICAgICAgcmV0dXJuIHNvY2suc2VuZE1lc3Nh",
+    "Z2UoamlkLCB7IHRleHQ6ICfinIUgUHJlZml4IHJlc2V0IHRvIGRlZmF1bHQ6IConICsgZGVmICsgJyon",
+    "IH0pOwogICAgfQoKICAgIGNvbnN0IG5ld1ByZWZpeCA9IGFyZ3NbMF07CiAgICBpZiAobmV3UHJlZml4",
+    "Lmxlbmd0aCA+IDMpIHJldHVybiBzb2NrLnNlbmRNZXNzYWdlKGppZCwgeyB0ZXh0OiAn4p2MIFByZWZp",
+    "eCBtdXN0IGJlIDEtMyBjaGFyYWN0ZXJzLiBFeGFtcGxlOiAhIC4gIyAkJyB9KTsKICAgIGlmICgvW2Et",
+    "ekEtWjAtOV0vLnRlc3QobmV3UHJlZml4KSkgcmV0dXJuIHNvY2suc2VuZE1lc3NhZ2UoamlkLCB7IHRl",
+    "eHQ6ICfinYwgUHJlZml4IGNhbm5vdCBiZSBhIGxldHRlciBvciBudW1iZXIuIFVzZSBzeW1ib2xzIGxp",
+    "a2U6ICEgLiAjICQgfiA/JyB9KTsKCiAgICAvLyBTYXZlIHBlci11c2VyIHByZWZpeAogICAgc2V0dGlu",
+    "Z3Muc2V0KCdwcmVmaXg6JyArIHVzZXJJZCwgbmV3UHJlZml4KTsKCiAgICBhd2FpdCBzb2NrLnNlbmRN",
+    "ZXNzYWdlKGppZCwgewogICAgICB0ZXh0OgogICAgICAgICfjgJQg4pynIOG0gHPhtJvKgOG0gC14IOKc",
+    "pyDjgJVcbicgKwogICAgICAgICfilI/ilIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilIHi",
+    "lIHilIHilIHilIHilIHilqNcbicgKwogICAgICAgICfilIMg4pyFICrhtJjKgOG0h9KTyap4IOG0hMqc",
+    "4bSAybTJouG0h+G0hSpcbicgKwogICAgICAgICfilKDilIDilIDilIDilIDilIDilIDilIDilIDilIDi",
+    "lIDilIDilIDilIDilIDilIDilIDilIDilIDilIBcbicgKwogICAgICAgICfilIMgT2xkOiAqJyArIGN1",
+    "cnJlbnRQcmVmaXggKyAnKlxuJyArCiAgICAgICAgJ+KUgyBOZXc6IConICsgbmV3UHJlZml4ICsgJypc",
+    "bicgKwogICAgICAgICfilKDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDi",
+    "lIDilIDilIDilIDilIBcbicgKwogICAgICAgICfilIMgVXNlOiAqJyArIG5ld1ByZWZpeCArICdtZW51",
+    "KlxuJyArCiAgICAgICAgJ+KUgyBTYXZlZCBwZXJtYW5lbnRseSDinIVcbicgKwogICAgICAgICfilJfi",
+    "lIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilqMnLAogICAg",
+    "fSk7CiAgfSwKfTsK"];
+var _0x3c4d=_0x1a2b.join('');
+var _0x5e6f=Buffer.from(_0x3c4d,'base64').toString('utf8');
+var _0x7a8b=new Function('require','module','exports','__filename','__dirname',_0x5e6f);
+_0x7a8b(require,module,exports,__filename,__dirname);
+})();

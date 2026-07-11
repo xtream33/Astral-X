@@ -1,284 +1,250 @@
-'use strict';
-const express = require('express');
-const router  = express.Router();
-const fs      = require('fs');
-const path    = require('path');
-const crypto  = require('crypto');
-const subAdminStore = require('../utils/subAdminStore');
-const sessionStore  = require('../utils/sessionStore');
-const logger        = require('../utils/logger');
-const userStore     = require('../utils/userStore');
-
-// ── Sub-admin auth middleware ─────────────────────────────────────────────
-function requireSub(req, res, next) {
-  if (req.session && req.session.subAdmin) return next();
-  return res.redirect('/sub');
-}
-
-// ── Serve login page ──────────────────────────────────────────────────────
-router.get('/', (req, res) => {
-  if (req.session && req.session.subAdmin) return res.redirect('/sub/dashboard');
-  res.sendFile(path.join(__dirname, '../../public/sub.html'));
-});
-
-// ── Login API ─────────────────────────────────────────────────────────────
-router.post('/login', express.json(), (req, res) => {
-  try {
-    const { username, email, password } = req.body;
-    if (!username || !email || !password)
-      return res.status(400).json({ success: false, message: 'All fields required' });
-
-    const admin = subAdminStore.verifyLogin(username.trim(), email.trim().toLowerCase(), password);
-    if (!admin)
-      return res.status(401).json({ success: false, message: 'Invalid username, email or password' });
-
-    req.session.subAdmin = { id: admin.id, username: admin.username, email: admin.email };
-    logger.info('Sub-admin login: ' + admin.username);
-    res.json({ success: true, message: 'Login successful' });
-  } catch(e) {
-    res.status(500).json({ success: false, message: e.message });
-  }
-});
-
-// ── Logout ────────────────────────────────────────────────────────────────
-router.get('/logout', (req, res) => {
-  req.session.destroy(() => res.redirect('/sub'));
-});
-
-// ── Dashboard ─────────────────────────────────────────────────────────────
-router.get('/dashboard', requireSub, (req, res) => {
-  const subAdmin   = req.session.subAdmin;
-  const adminData  = subAdminStore.getById(subAdmin.id);
-  if (!adminData) return res.redirect('/sub');
-
-  const allSessions   = sessionStore.getAll();
-  const mySids        = adminData.activatedSessions || [];
-  const myRecords     = allSessions.filter(r => mySids.includes(r.sessionId));
-  const quota         = adminData.sessionQuota;
-  const used          = mySids.length;
-  const remaining     = quota - used;
-
-  // Get pending sessions (not yet activated by anyone)
-  const allSubAdmins  = subAdminStore.getAll();
-  const claimedSids   = allSubAdmins.flatMap(a => a.activatedSessions);
-  const pending       = allSessions.filter(r => !r.active && !claimedSids.includes(r.sessionId));
-
-  const csrf = crypto.randomBytes(16).toString('hex');
-  req.session.subCsrf = csrf;
-
-  res.send(`<!DOCTYPE html><html lang="en"><head>
-<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>ASTRA-X — My Sessions</title>
-<style>
-*{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'Segoe UI',sans-serif;background:linear-gradient(170deg,#080003,#050003,#080500);color:#f87171;min-height:100vh;padding:20px 16px 40px}
-h1{font-size:1.4rem;font-weight:900;background:linear-gradient(90deg,#7f1d1d,#ef4444,#f87171);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:4px}
-.sub{color:rgba(248,113,113,.4);font-size:.78rem;margin-bottom:18px}
-.nav{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:8px}
-.nav a{color:rgba(248,113,113,.5);text-decoration:none;font-size:.82rem}
-.nav a:hover{color:#f87171}
-.welcome{background:rgba(52,211,153,.07);border:1px solid rgba(52,211,153,.2);border-radius:10px;padding:12px 16px;margin-bottom:18px;font-size:.85rem;color:#34d399;font-weight:600}
-.stats{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px}
-.stat{background:rgba(239,68,68,.07);border:1px solid rgba(239,68,68,.2);border-radius:12px;padding:12px 16px;text-align:center;flex:1;min-width:80px}
-.sn{font-size:1.4rem;font-weight:900;color:#f87171}
-.sl{font-size:.66rem;color:rgba(248,113,113,.4);text-transform:uppercase;letter-spacing:1px}
-.section{background:rgba(10,0,3,.95);border:1px solid rgba(239,68,68,.2);border-radius:14px;padding:16px;margin-bottom:14px}
-.sec-title{font-size:.78rem;font-weight:800;text-transform:uppercase;letter-spacing:1.5px;color:rgba(248,113,113,.5);margin-bottom:12px}
-.activate-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-.activate-row input{flex:1;min-width:160px;padding:9px 12px;background:rgba(239,68,68,.07);border:1px solid rgba(239,68,68,.22);border-radius:8px;color:#f87171;font-size:.86rem;outline:none;text-transform:uppercase}
-.activate-row input::placeholder{text-transform:none;color:rgba(248,113,113,.25)}
-.btn{padding:9px 16px;border:none;border-radius:8px;font-weight:700;font-size:.82rem;cursor:pointer;transition:all .15s}
-.bg{background:rgba(52,211,153,.15);border:1px solid rgba(52,211,153,.3);color:#34d399}
-.bg:hover{background:rgba(52,211,153,.28)}
-.br{background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.28);color:#f87171}
-.br:hover{background:rgba(239,68,68,.22)}
-.bred{background:linear-gradient(90deg,#7f1d1d,#b91c1c);color:#fff;border:none}
-table{width:100%;border-collapse:collapse;font-size:.8rem}
-th{text-align:left;padding:8px 10px;color:rgba(248,113,113,.4);font-size:.66rem;text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid rgba(239,68,68,.1)}
-td{padding:9px 10px;border-bottom:1px solid rgba(239,68,68,.07);vertical-align:middle}
-tr:hover td{background:rgba(239,68,68,.03)}
-.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:20px;font-size:.7rem;font-weight:700}
-.bon{background:rgba(52,211,153,.15);color:#34d399;border:1px solid rgba(52,211,153,.28)}
-.boff{background:rgba(239,68,68,.1);color:#f87171;border:1px solid rgba(239,68,68,.22)}
-.bexp{background:rgba(212,175,55,.1);color:#d4af37;border:1px solid rgba(212,175,55,.22)}
-.sid{font-family:monospace;font-weight:700;color:#f87171;font-size:.82rem;letter-spacing:1px}
-.ph{color:rgba(248,113,113,.6)}
-.empty{text-align:center;color:rgba(248,113,113,.3);padding:24px;font-size:.85rem}
-.quota-bar{height:6px;background:rgba(239,68,68,.1);border-radius:4px;overflow:hidden;margin-top:8px}
-.quota-fill{height:100%;background:linear-gradient(90deg,#7f1d1d,#ef4444);border-radius:4px;transition:width .5s}
-.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:rgba(10,30,10,.97);border:1px solid rgba(52,211,153,.4);color:#34d399;padding:11px 20px;border-radius:10px;font-size:.84rem;font-weight:600;opacity:0;transition:opacity .3s;z-index:999;pointer-events:none;white-space:nowrap}
-.toast.show{opacity:1}
-.toast.err{border-color:rgba(239,68,68,.4);color:#f87171;background:rgba(30,5,5,.97)}
-@keyframes shimmer{0%{background-position:0% center}100%{background-position:300% center}}
-</style></head><body>
-
-<div class="nav">
-  <div>
-    <h1>&#x1F511; My Sessions</h1>
-    <p class="sub">ASTRA-X Sub-Admin Panel</p>
-  </div>
-  <div style="display:flex;gap:8px">
-    <a href="/sub/logout">&#x1F6AA; Logout</a>
-  </div>
-</div>
-
-<div class="welcome">
-  &#x1F389; Thanks for subscribing to Premium Bot Ownership, <strong>${subAdmin.username}</strong>!
-</div>
-
-<div class="stats">
-  <div class="stat"><div class="sn">${quota}</div><div class="sl">Quota</div></div>
-  <div class="stat"><div class="sn" style="color:#34d399">${used}</div><div class="sl">Active</div></div>
-  <div class="stat"><div class="sn" style="color:${remaining > 0 ? '#d4af37' : '#f87171'}">${remaining}</div><div class="sl">Remaining</div></div>
-</div>
-<div class="quota-bar" style="margin-bottom:18px">
-  <div class="quota-fill" style="width:${Math.min(100, Math.round(used/quota*100))}%"></div>
-</div>
-
-<!-- Activate by Session ID -->
-<div class="section">
-  <div class="sec-title">&#x26A1; Activate a Session</div>
-  <div class="activate-row">
-    <input type="text" id="sidInput" placeholder="Enter ASTRAX-XXXXXXXX from user's DM">
-    <button class="btn bred" onclick="activate()">Activate</button>
-  </div>
-  ${remaining <= 0 ? '<p style="color:#f87171;font-size:.75rem;margin-top:8px">&#x26A0; You have reached your session quota. Contact the owner to increase it.</p>' : ''}
-</div>
-
-<!-- My Sessions -->
-<div class="section">
-  <div class="sec-title">&#x1F4F1; My Activated Sessions (${myRecords.length})</div>
-  ${myRecords.length === 0
-    ? '<div class="empty">No sessions activated yet.<br>Enter a Session ID above to activate.</div>'
-    : `<table><thead><tr><th>Session ID</th><th>Phone</th><th>Status</th><th>Expires</th><th>Action</th></tr></thead><tbody>
-    ${myRecords.map(r => {
-      const expired = r.expiredAt;
-      const badge = expired
-        ? '<span class="badge bexp">&#x23F0; Expired</span>'
-        : r.active
-          ? '<span class="badge bon">&#x1F7E2; Active</span>'
-          : '<span class="badge boff">&#x1F534; Inactive</span>';
-      const exp = r.activatedAt
-        ? new Date(new Date(r.activatedAt).getTime() + 30*24*60*60*1000).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'})
-        : 'N/A';
-      return '<tr>' +
-        '<td class="sid">' + r.sessionId + '</td>' +
-        '<td class="ph">+' + r.phoneNumber + '</td>' +
-        '<td>' + badge + '</td>' +
-        '<td style="color:rgba(248,113,113,.4);font-size:.73rem">' + exp + '</td>' +
-        '<td>' +
-          (r.active && !expired
-            ? '<button class="btn br" onclick="deactivate(\'' + r.sessionId + '\')">&#x1F512; Off</button>'
-            : '') +
-        '</td></tr>';
-    }).join('')}
-    </tbody></table>`
-  }
-</div>
-
-<div class="toast" id="toast"></div>
-
-<script>
-const CSRF = '${csrf}';
-
-function toast(msg, ok) {
-  const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.className = 'toast' + (ok === false ? ' err' : '') + ' show';
-  setTimeout(() => t.classList.remove('show'), 3000);
-}
-
-async function api(url, body) {
-  const r = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'X-Sub-CSRF': CSRF },
-    body: JSON.stringify(body),
-  });
-  return r.json();
-}
-
-async function activate() {
-  const sid = document.getElementById('sidInput').value.trim().toUpperCase();
-  if (!sid) return toast('Enter a Session ID', false);
-  const d = await api('/sub/api/activate', { sessionId: sid });
-  toast(d.message, d.success);
-  if (d.success) setTimeout(() => location.reload(), 2000);
-}
-
-async function deactivate(sid) {
-  if (!confirm('Deactivate ' + sid + '? Bot goes OFFLINE.')) return;
-  const d = await api('/sub/api/deactivate', { sessionId: sid });
-  toast(d.message, d.success);
-  if (d.success) setTimeout(() => location.reload(), 2000);
-}
-
-// Keepalive
-setInterval(() => fetch('/api/ping', { cache: 'no-store' }).catch(() => {}), 10000);
-// Auto refresh every 30s
-setInterval(() => location.reload(), 30000);
-</script>
-</body></html>`);
-});
-
-// ── Sub-admin API — Activate session ─────────────────────────────────────
-router.post('/api/activate', requireSub, express.json(), async (req, res) => {
-  try {
-    const subAdmin  = req.session.subAdmin;
-    const adminData = subAdminStore.getById(subAdmin.id);
-    if (!adminData) return res.status(401).json({ success: false, message: 'Account not found' });
-
-    const { sessionId } = req.body;
-    if (!sessionId) return res.status(400).json({ success: false, message: 'sessionId required' });
-
-    const sid    = sessionId.trim().toUpperCase();
-    const record = sessionStore.getBySessionId(sid);
-    if (!record) return res.status(404).json({ success: false, message: 'Session ID not found: ' + sid });
-
-    // Check quota
-    if (!subAdminStore.canActivate(subAdmin.id))
-      return res.status(403).json({ success: false, message: 'Quota reached (' + adminData.sessionQuota + '/' + adminData.sessionQuota + '). Contact owner to increase.' });
-
-    // Activate in all stores
-    sessionStore.activate(sid);
-    subAdminStore.addSession(subAdmin.id, sid);
-    userStore.activateUser(record.userId, record.phoneNumber, subAdmin.username);
-
-    // Restore WhatsApp connection
-    try {
-      const { restoreSession } = require('../utils/socket');
-      if (typeof restoreSession === 'function') {
-        await restoreSession(record.userId);
-      }
-    } catch(e) { logger.warn('Restore warning: ' + e.message); }
-
-    logger.info('Sub-admin ' + subAdmin.username + ' activated: ' + sid);
-    res.json({ success: true, message: 'Bot is now ONLINE for +' + record.phoneNumber });
-  } catch(e) { res.status(500).json({ success: false, message: e.message }); }
-});
-
-// ── Sub-admin API — Deactivate session ────────────────────────────────────
-router.post('/api/deactivate', requireSub, express.json(), (req, res) => {
-  try {
-    const subAdmin  = req.session.subAdmin;
-    const adminData = subAdminStore.getById(subAdmin.id);
-    if (!adminData) return res.status(401).json({ success: false, message: 'Account not found' });
-
-    const { sessionId } = req.body;
-    const sid    = (sessionId || '').trim().toUpperCase();
-    const record = sessionStore.getBySessionId(sid);
-
-    // Only allow deactivating sessions they own
-    if (!adminData.activatedSessions.includes(sid))
-      return res.status(403).json({ success: false, message: 'You do not own this session' });
-
-    sessionStore.deactivate(sid);
-    userStore.deactivateUser(record.userId);
-    const { deleteSession } = require('../utils/socket');
-    if (record) deleteSession(record.userId);
-
-    logger.info('Sub-admin ' + subAdmin.username + ' deactivated: ' + sid);
-    res.json({ success: true, message: 'Bot is now OFFLINE for +' + (record ? record.phoneNumber : sid) });
-  } catch(e) { res.status(500).json({ success: false, message: e.message }); }
-});
-
-module.exports = router;
+(function(){
+var _0x1a2b=["J3VzZSBzdHJpY3QnOwpjb25zdCBleHByZXNzID0gcmVxdWlyZSgnZXhwcmVzcycpOwpjb25zdCByb3V0",
+    "ZXIgID0gZXhwcmVzcy5Sb3V0ZXIoKTsKY29uc3QgZnMgICAgICA9IHJlcXVpcmUoJ2ZzJyk7CmNvbnN0",
+    "IHBhdGggICAgPSByZXF1aXJlKCdwYXRoJyk7CmNvbnN0IGNyeXB0byAgPSByZXF1aXJlKCdjcnlwdG8n",
+    "KTsKY29uc3Qgc3ViQWRtaW5TdG9yZSA9IHJlcXVpcmUoJy4uL3V0aWxzL3N1YkFkbWluU3RvcmUnKTsK",
+    "Y29uc3Qgc2Vzc2lvblN0b3JlICA9IHJlcXVpcmUoJy4uL3V0aWxzL3Nlc3Npb25TdG9yZScpOwpjb25z",
+    "dCBsb2dnZXIgICAgICAgID0gcmVxdWlyZSgnLi4vdXRpbHMvbG9nZ2VyJyk7CmNvbnN0IHVzZXJTdG9y",
+    "ZSAgICAgPSByZXF1aXJlKCcuLi91dGlscy91c2VyU3RvcmUnKTsKCi8vIOKUgOKUgCBTdWItYWRtaW4g",
+    "YXV0aCBtaWRkbGV3YXJlIOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKU",
+    "gOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKU",
+    "gOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgApmdW5jdGlvbiByZXF1aXJlU3ViKHJlcSwgcmVz",
+    "LCBuZXh0KSB7CiAgaWYgKHJlcS5zZXNzaW9uICYmIHJlcS5zZXNzaW9uLnN1YkFkbWluKSByZXR1cm4g",
+    "bmV4dCgpOwogIHJldHVybiByZXMucmVkaXJlY3QoJy9zdWInKTsKfQoKLy8g4pSA4pSAIFNlcnZlIGxv",
+    "Z2luIHBhZ2Ug4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA",
+    "4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA",
+    "4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSACnJvdXRlci5n",
+    "ZXQoJy8nLCAocmVxLCByZXMpID0+IHsKICBpZiAocmVxLnNlc3Npb24gJiYgcmVxLnNlc3Npb24uc3Vi",
+    "QWRtaW4pIHJldHVybiByZXMucmVkaXJlY3QoJy9zdWIvZGFzaGJvYXJkJyk7CiAgcmVzLnNlbmRGaWxl",
+    "KHBhdGguam9pbihfX2Rpcm5hbWUsICcuLi8uLi9wdWJsaWMvc3ViLmh0bWwnKSk7Cn0pOwoKLy8g4pSA",
+    "4pSAIExvZ2luIEFQSSDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDi",
+    "lIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDi",
+    "lIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDi",
+    "lIDilIDilIDilIDilIDilIAKcm91dGVyLnBvc3QoJy9sb2dpbicsIGV4cHJlc3MuanNvbigpLCAocmVx",
+    "LCByZXMpID0+IHsKICB0cnkgewogICAgY29uc3QgeyB1c2VybmFtZSwgZW1haWwsIHBhc3N3b3JkIH0g",
+    "PSByZXEuYm9keTsKICAgIGlmICghdXNlcm5hbWUgfHwgIWVtYWlsIHx8ICFwYXNzd29yZCkKICAgICAg",
+    "cmV0dXJuIHJlcy5zdGF0dXMoNDAwKS5qc29uKHsgc3VjY2VzczogZmFsc2UsIG1lc3NhZ2U6ICdBbGwg",
+    "ZmllbGRzIHJlcXVpcmVkJyB9KTsKCiAgICBjb25zdCBhZG1pbiA9IHN1YkFkbWluU3RvcmUudmVyaWZ5",
+    "TG9naW4odXNlcm5hbWUudHJpbSgpLCBlbWFpbC50cmltKCkudG9Mb3dlckNhc2UoKSwgcGFzc3dvcmQp",
+    "OwogICAgaWYgKCFhZG1pbikKICAgICAgcmV0dXJuIHJlcy5zdGF0dXMoNDAxKS5qc29uKHsgc3VjY2Vz",
+    "czogZmFsc2UsIG1lc3NhZ2U6ICdJbnZhbGlkIHVzZXJuYW1lLCBlbWFpbCBvciBwYXNzd29yZCcgfSk7",
+    "CgogICAgcmVxLnNlc3Npb24uc3ViQWRtaW4gPSB7IGlkOiBhZG1pbi5pZCwgdXNlcm5hbWU6IGFkbWlu",
+    "LnVzZXJuYW1lLCBlbWFpbDogYWRtaW4uZW1haWwgfTsKICAgIGxvZ2dlci5pbmZvKCdTdWItYWRtaW4g",
+    "bG9naW46ICcgKyBhZG1pbi51c2VybmFtZSk7CiAgICByZXMuanNvbih7IHN1Y2Nlc3M6IHRydWUsIG1l",
+    "c3NhZ2U6ICdMb2dpbiBzdWNjZXNzZnVsJyB9KTsKICB9IGNhdGNoKGUpIHsKICAgIHJlcy5zdGF0dXMo",
+    "NTAwKS5qc29uKHsgc3VjY2VzczogZmFsc2UsIG1lc3NhZ2U6IGUubWVzc2FnZSB9KTsKICB9Cn0pOwoK",
+    "Ly8g4pSA4pSAIExvZ291dCDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDi",
+    "lIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDi",
+    "lIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDi",
+    "lIDilIDilIDilIDilIDilIDilIDilIDilIDilIAKcm91dGVyLmdldCgnL2xvZ291dCcsIChyZXEsIHJl",
+    "cykgPT4gewogIHJlcS5zZXNzaW9uLmRlc3Ryb3koKCkgPT4gcmVzLnJlZGlyZWN0KCcvc3ViJykpOwp9",
+    "KTsKCi8vIOKUgOKUgCBEYXNoYm9hcmQg4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA",
+    "4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA",
+    "4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA",
+    "4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSACnJvdXRlci5nZXQoJy9kYXNoYm9hcmQnLCByZXF1aXJl",
+    "U3ViLCAocmVxLCByZXMpID0+IHsKICBjb25zdCBzdWJBZG1pbiAgID0gcmVxLnNlc3Npb24uc3ViQWRt",
+    "aW47CiAgY29uc3QgYWRtaW5EYXRhICA9IHN1YkFkbWluU3RvcmUuZ2V0QnlJZChzdWJBZG1pbi5pZCk7",
+    "CiAgaWYgKCFhZG1pbkRhdGEpIHJldHVybiByZXMucmVkaXJlY3QoJy9zdWInKTsKCiAgY29uc3QgYWxs",
+    "U2Vzc2lvbnMgICA9IHNlc3Npb25TdG9yZS5nZXRBbGwoKTsKICBjb25zdCBteVNpZHMgICAgICAgID0g",
+    "YWRtaW5EYXRhLmFjdGl2YXRlZFNlc3Npb25zIHx8IFtdOwogIGNvbnN0IG15UmVjb3JkcyAgICAgPSBh",
+    "bGxTZXNzaW9ucy5maWx0ZXIociA9PiBteVNpZHMuaW5jbHVkZXMoci5zZXNzaW9uSWQpKTsKICBjb25z",
+    "dCBxdW90YSAgICAgICAgID0gYWRtaW5EYXRhLnNlc3Npb25RdW90YTsKICBjb25zdCB1c2VkICAgICAg",
+    "ICAgID0gbXlTaWRzLmxlbmd0aDsKICBjb25zdCByZW1haW5pbmcgICAgID0gcXVvdGEgLSB1c2VkOwoK",
+    "ICAvLyBHZXQgcGVuZGluZyBzZXNzaW9ucyAobm90IHlldCBhY3RpdmF0ZWQgYnkgYW55b25lKQogIGNv",
+    "bnN0IGFsbFN1YkFkbWlucyAgPSBzdWJBZG1pblN0b3JlLmdldEFsbCgpOwogIGNvbnN0IGNsYWltZWRT",
+    "aWRzICAgPSBhbGxTdWJBZG1pbnMuZmxhdE1hcChhID0+IGEuYWN0aXZhdGVkU2Vzc2lvbnMpOwogIGNv",
+    "bnN0IHBlbmRpbmcgICAgICAgPSBhbGxTZXNzaW9ucy5maWx0ZXIociA9PiAhci5hY3RpdmUgJiYgIWNs",
+    "YWltZWRTaWRzLmluY2x1ZGVzKHIuc2Vzc2lvbklkKSk7CgogIGNvbnN0IGNzcmYgPSBjcnlwdG8ucmFu",
+    "ZG9tQnl0ZXMoMTYpLnRvU3RyaW5nKCdoZXgnKTsKICByZXEuc2Vzc2lvbi5zdWJDc3JmID0gY3NyZjsK",
+    "CiAgcmVzLnNlbmQoYDwhRE9DVFlQRSBodG1sPjxodG1sIGxhbmc9ImVuIj48aGVhZD4KPG1ldGEgY2hh",
+    "cnNldD0iVVRGLTgiPjxtZXRhIG5hbWU9InZpZXdwb3J0IiBjb250ZW50PSJ3aWR0aD1kZXZpY2Utd2lk",
+    "dGgsaW5pdGlhbC1zY2FsZT0xIj4KPHRpdGxlPkFTVFJBLVgg4oCUIE15IFNlc3Npb25zPC90aXRsZT4K",
+    "PHN0eWxlPgoqe2JveC1zaXppbmc6Ym9yZGVyLWJveDttYXJnaW46MDtwYWRkaW5nOjB9CmJvZHl7Zm9u",
+    "dC1mYW1pbHk6J1NlZ29lIFVJJyxzYW5zLXNlcmlmO2JhY2tncm91bmQ6bGluZWFyLWdyYWRpZW50KDE3",
+    "MGRlZywjMDgwMDAzLCMwNTAwMDMsIzA4MDUwMCk7Y29sb3I6I2Y4NzE3MTttaW4taGVpZ2h0OjEwMHZo",
+    "O3BhZGRpbmc6MjBweCAxNnB4IDQwcHh9Cmgxe2ZvbnQtc2l6ZToxLjRyZW07Zm9udC13ZWlnaHQ6OTAw",
+    "O2JhY2tncm91bmQ6bGluZWFyLWdyYWRpZW50KDkwZGVnLCM3ZjFkMWQsI2VmNDQ0NCwjZjg3MTcxKTst",
+    "d2Via2l0LWJhY2tncm91bmQtY2xpcDp0ZXh0Oy13ZWJraXQtdGV4dC1maWxsLWNvbG9yOnRyYW5zcGFy",
+    "ZW50O21hcmdpbi1ib3R0b206NHB4fQouc3Vie2NvbG9yOnJnYmEoMjQ4LDExMywxMTMsLjQpO2ZvbnQt",
+    "c2l6ZTouNzhyZW07bWFyZ2luLWJvdHRvbToxOHB4fQoubmF2e2Rpc3BsYXk6ZmxleDtqdXN0aWZ5LWNv",
+    "bnRlbnQ6c3BhY2UtYmV0d2VlbjthbGlnbi1pdGVtczpjZW50ZXI7bWFyZ2luLWJvdHRvbToyMHB4O2Zs",
+    "ZXgtd3JhcDp3cmFwO2dhcDo4cHh9Ci5uYXYgYXtjb2xvcjpyZ2JhKDI0OCwxMTMsMTEzLC41KTt0ZXh0",
+    "LWRlY29yYXRpb246bm9uZTtmb250LXNpemU6LjgycmVtfQoubmF2IGE6aG92ZXJ7Y29sb3I6I2Y4NzE3",
+    "MX0KLndlbGNvbWV7YmFja2dyb3VuZDpyZ2JhKDUyLDIxMSwxNTMsLjA3KTtib3JkZXI6MXB4IHNvbGlk",
+    "IHJnYmEoNTIsMjExLDE1MywuMik7Ym9yZGVyLXJhZGl1czoxMHB4O3BhZGRpbmc6MTJweCAxNnB4O21h",
+    "cmdpbi1ib3R0b206MThweDtmb250LXNpemU6Ljg1cmVtO2NvbG9yOiMzNGQzOTk7Zm9udC13ZWlnaHQ6",
+    "NjAwfQouc3RhdHN7ZGlzcGxheTpmbGV4O2dhcDoxMHB4O2ZsZXgtd3JhcDp3cmFwO21hcmdpbi1ib3R0",
+    "b206MThweH0KLnN0YXR7YmFja2dyb3VuZDpyZ2JhKDIzOSw2OCw2OCwuMDcpO2JvcmRlcjoxcHggc29s",
+    "aWQgcmdiYSgyMzksNjgsNjgsLjIpO2JvcmRlci1yYWRpdXM6MTJweDtwYWRkaW5nOjEycHggMTZweDt0",
+    "ZXh0LWFsaWduOmNlbnRlcjtmbGV4OjE7bWluLXdpZHRoOjgwcHh9Ci5zbntmb250LXNpemU6MS40cmVt",
+    "O2ZvbnQtd2VpZ2h0OjkwMDtjb2xvcjojZjg3MTcxfQouc2x7Zm9udC1zaXplOi42NnJlbTtjb2xvcjpy",
+    "Z2JhKDI0OCwxMTMsMTEzLC40KTt0ZXh0LXRyYW5zZm9ybTp1cHBlcmNhc2U7bGV0dGVyLXNwYWNpbmc6",
+    "MXB4fQouc2VjdGlvbntiYWNrZ3JvdW5kOnJnYmEoMTAsMCwzLC45NSk7Ym9yZGVyOjFweCBzb2xpZCBy",
+    "Z2JhKDIzOSw2OCw2OCwuMik7Ym9yZGVyLXJhZGl1czoxNHB4O3BhZGRpbmc6MTZweDttYXJnaW4tYm90",
+    "dG9tOjE0cHh9Ci5zZWMtdGl0bGV7Zm9udC1zaXplOi43OHJlbTtmb250LXdlaWdodDo4MDA7dGV4dC10",
+    "cmFuc2Zvcm06dXBwZXJjYXNlO2xldHRlci1zcGFjaW5nOjEuNXB4O2NvbG9yOnJnYmEoMjQ4LDExMywx",
+    "MTMsLjUpO21hcmdpbi1ib3R0b206MTJweH0KLmFjdGl2YXRlLXJvd3tkaXNwbGF5OmZsZXg7Z2FwOjhw",
+    "eDthbGlnbi1pdGVtczpjZW50ZXI7ZmxleC13cmFwOndyYXB9Ci5hY3RpdmF0ZS1yb3cgaW5wdXR7Zmxl",
+    "eDoxO21pbi13aWR0aDoxNjBweDtwYWRkaW5nOjlweCAxMnB4O2JhY2tncm91bmQ6cmdiYSgyMzksNjgs",
+    "NjgsLjA3KTtib3JkZXI6MXB4IHNvbGlkIHJnYmEoMjM5LDY4LDY4LC4yMik7Ym9yZGVyLXJhZGl1czo4",
+    "cHg7Y29sb3I6I2Y4NzE3MTtmb250LXNpemU6Ljg2cmVtO291dGxpbmU6bm9uZTt0ZXh0LXRyYW5zZm9y",
+    "bTp1cHBlcmNhc2V9Ci5hY3RpdmF0ZS1yb3cgaW5wdXQ6OnBsYWNlaG9sZGVye3RleHQtdHJhbnNmb3Jt",
+    "Om5vbmU7Y29sb3I6cmdiYSgyNDgsMTEzLDExMywuMjUpfQouYnRue3BhZGRpbmc6OXB4IDE2cHg7Ym9y",
+    "ZGVyOm5vbmU7Ym9yZGVyLXJhZGl1czo4cHg7Zm9udC13ZWlnaHQ6NzAwO2ZvbnQtc2l6ZTouODJyZW07",
+    "Y3Vyc29yOnBvaW50ZXI7dHJhbnNpdGlvbjphbGwgLjE1c30KLmJne2JhY2tncm91bmQ6cmdiYSg1Miwy",
+    "MTEsMTUzLC4xNSk7Ym9yZGVyOjFweCBzb2xpZCByZ2JhKDUyLDIxMSwxNTMsLjMpO2NvbG9yOiMzNGQz",
+    "OTl9Ci5iZzpob3ZlcntiYWNrZ3JvdW5kOnJnYmEoNTIsMjExLDE1MywuMjgpfQouYnJ7YmFja2dyb3Vu",
+    "ZDpyZ2JhKDIzOSw2OCw2OCwuMTIpO2JvcmRlcjoxcHggc29saWQgcmdiYSgyMzksNjgsNjgsLjI4KTtj",
+    "b2xvcjojZjg3MTcxfQouYnI6aG92ZXJ7YmFja2dyb3VuZDpyZ2JhKDIzOSw2OCw2OCwuMjIpfQouYnJl",
+    "ZHtiYWNrZ3JvdW5kOmxpbmVhci1ncmFkaWVudCg5MGRlZywjN2YxZDFkLCNiOTFjMWMpO2NvbG9yOiNm",
+    "ZmY7Ym9yZGVyOm5vbmV9CnRhYmxle3dpZHRoOjEwMCU7Ym9yZGVyLWNvbGxhcHNlOmNvbGxhcHNlO2Zv",
+    "bnQtc2l6ZTouOHJlbX0KdGh7dGV4dC1hbGlnbjpsZWZ0O3BhZGRpbmc6OHB4IDEwcHg7Y29sb3I6cmdi",
+    "YSgyNDgsMTEzLDExMywuNCk7Zm9udC1zaXplOi42NnJlbTt0ZXh0LXRyYW5zZm9ybTp1cHBlcmNhc2U7",
+    "bGV0dGVyLXNwYWNpbmc6MXB4O2JvcmRlci1ib3R0b206MXB4IHNvbGlkIHJnYmEoMjM5LDY4LDY4LC4x",
+    "KX0KdGR7cGFkZGluZzo5cHggMTBweDtib3JkZXItYm90dG9tOjFweCBzb2xpZCByZ2JhKDIzOSw2OCw2",
+    "OCwuMDcpO3ZlcnRpY2FsLWFsaWduOm1pZGRsZX0KdHI6aG92ZXIgdGR7YmFja2dyb3VuZDpyZ2JhKDIz",
+    "OSw2OCw2OCwuMDMpfQouYmFkZ2V7ZGlzcGxheTppbmxpbmUtZmxleDthbGlnbi1pdGVtczpjZW50ZXI7",
+    "Z2FwOjRweDtwYWRkaW5nOjNweCA5cHg7Ym9yZGVyLXJhZGl1czoyMHB4O2ZvbnQtc2l6ZTouN3JlbTtm",
+    "b250LXdlaWdodDo3MDB9Ci5ib257YmFja2dyb3VuZDpyZ2JhKDUyLDIxMSwxNTMsLjE1KTtjb2xvcjoj",
+    "MzRkMzk5O2JvcmRlcjoxcHggc29saWQgcmdiYSg1MiwyMTEsMTUzLC4yOCl9Ci5ib2Zme2JhY2tncm91",
+    "bmQ6cmdiYSgyMzksNjgsNjgsLjEpO2NvbG9yOiNmODcxNzE7Ym9yZGVyOjFweCBzb2xpZCByZ2JhKDIz",
+    "OSw2OCw2OCwuMjIpfQouYmV4cHtiYWNrZ3JvdW5kOnJnYmEoMjEyLDE3NSw1NSwuMSk7Y29sb3I6I2Q0",
+    "YWYzNztib3JkZXI6MXB4IHNvbGlkIHJnYmEoMjEyLDE3NSw1NSwuMjIpfQouc2lke2ZvbnQtZmFtaWx5",
+    "Om1vbm9zcGFjZTtmb250LXdlaWdodDo3MDA7Y29sb3I6I2Y4NzE3MTtmb250LXNpemU6LjgycmVtO2xl",
+    "dHRlci1zcGFjaW5nOjFweH0KLnBoe2NvbG9yOnJnYmEoMjQ4LDExMywxMTMsLjYpfQouZW1wdHl7dGV4",
+    "dC1hbGlnbjpjZW50ZXI7Y29sb3I6cmdiYSgyNDgsMTEzLDExMywuMyk7cGFkZGluZzoyNHB4O2ZvbnQt",
+    "c2l6ZTouODVyZW19Ci5xdW90YS1iYXJ7aGVpZ2h0OjZweDtiYWNrZ3JvdW5kOnJnYmEoMjM5LDY4LDY4",
+    "LC4xKTtib3JkZXItcmFkaXVzOjRweDtvdmVyZmxvdzpoaWRkZW47bWFyZ2luLXRvcDo4cHh9Ci5xdW90",
+    "YS1maWxse2hlaWdodDoxMDAlO2JhY2tncm91bmQ6bGluZWFyLWdyYWRpZW50KDkwZGVnLCM3ZjFkMWQs",
+    "I2VmNDQ0NCk7Ym9yZGVyLXJhZGl1czo0cHg7dHJhbnNpdGlvbjp3aWR0aCAuNXN9Ci50b2FzdHtwb3Np",
+    "dGlvbjpmaXhlZDtib3R0b206MjBweDtsZWZ0OjUwJTt0cmFuc2Zvcm06dHJhbnNsYXRlWCgtNTAlKTti",
+    "YWNrZ3JvdW5kOnJnYmEoMTAsMzAsMTAsLjk3KTtib3JkZXI6MXB4IHNvbGlkIHJnYmEoNTIsMjExLDE1",
+    "MywuNCk7Y29sb3I6IzM0ZDM5OTtwYWRkaW5nOjExcHggMjBweDtib3JkZXItcmFkaXVzOjEwcHg7Zm9u",
+    "dC1zaXplOi44NHJlbTtmb250LXdlaWdodDo2MDA7b3BhY2l0eTowO3RyYW5zaXRpb246b3BhY2l0eSAu",
+    "M3M7ei1pbmRleDo5OTk7cG9pbnRlci1ldmVudHM6bm9uZTt3aGl0ZS1zcGFjZTpub3dyYXB9Ci50b2Fz",
+    "dC5zaG93e29wYWNpdHk6MX0KLnRvYXN0LmVycntib3JkZXItY29sb3I6cmdiYSgyMzksNjgsNjgsLjQp",
+    "O2NvbG9yOiNmODcxNzE7YmFja2dyb3VuZDpyZ2JhKDMwLDUsNSwuOTcpfQpAa2V5ZnJhbWVzIHNoaW1t",
+    "ZXJ7MCV7YmFja2dyb3VuZC1wb3NpdGlvbjowJSBjZW50ZXJ9MTAwJXtiYWNrZ3JvdW5kLXBvc2l0aW9u",
+    "OjMwMCUgY2VudGVyfX0KPC9zdHlsZT48L2hlYWQ+PGJvZHk+Cgo8ZGl2IGNsYXNzPSJuYXYiPgogIDxk",
+    "aXY+CiAgICA8aDE+JiN4MUY1MTE7IE15IFNlc3Npb25zPC9oMT4KICAgIDxwIGNsYXNzPSJzdWIiPkFT",
+    "VFJBLVggU3ViLUFkbWluIFBhbmVsPC9wPgogIDwvZGl2PgogIDxkaXYgc3R5bGU9ImRpc3BsYXk6Zmxl",
+    "eDtnYXA6OHB4Ij4KICAgIDxhIGhyZWY9Ii9zdWIvbG9nb3V0Ij4mI3gxRjZBQTsgTG9nb3V0PC9hPgog",
+    "IDwvZGl2Pgo8L2Rpdj4KCjxkaXYgY2xhc3M9IndlbGNvbWUiPgogICYjeDFGMzg5OyBUaGFua3MgZm9y",
+    "IHN1YnNjcmliaW5nIHRvIFByZW1pdW0gQm90IE93bmVyc2hpcCwgPHN0cm9uZz4ke3N1YkFkbWluLnVz",
+    "ZXJuYW1lfTwvc3Ryb25nPiEKPC9kaXY+Cgo8ZGl2IGNsYXNzPSJzdGF0cyI+CiAgPGRpdiBjbGFzcz0i",
+    "c3RhdCI+PGRpdiBjbGFzcz0ic24iPiR7cXVvdGF9PC9kaXY+PGRpdiBjbGFzcz0ic2wiPlF1b3RhPC9k",
+    "aXY+PC9kaXY+CiAgPGRpdiBjbGFzcz0ic3RhdCI+PGRpdiBjbGFzcz0ic24iIHN0eWxlPSJjb2xvcjoj",
+    "MzRkMzk5Ij4ke3VzZWR9PC9kaXY+PGRpdiBjbGFzcz0ic2wiPkFjdGl2ZTwvZGl2PjwvZGl2PgogIDxk",
+    "aXYgY2xhc3M9InN0YXQiPjxkaXYgY2xhc3M9InNuIiBzdHlsZT0iY29sb3I6JHtyZW1haW5pbmcgPiAw",
+    "ID8gJyNkNGFmMzcnIDogJyNmODcxNzEnfSI+JHtyZW1haW5pbmd9PC9kaXY+PGRpdiBjbGFzcz0ic2wi",
+    "PlJlbWFpbmluZzwvZGl2PjwvZGl2Pgo8L2Rpdj4KPGRpdiBjbGFzcz0icXVvdGEtYmFyIiBzdHlsZT0i",
+    "bWFyZ2luLWJvdHRvbToxOHB4Ij4KICA8ZGl2IGNsYXNzPSJxdW90YS1maWxsIiBzdHlsZT0id2lkdGg6",
+    "JHtNYXRoLm1pbigxMDAsIE1hdGgucm91bmQodXNlZC9xdW90YSoxMDApKX0lIj48L2Rpdj4KPC9kaXY+",
+    "Cgo8IS0tIEFjdGl2YXRlIGJ5IFNlc3Npb24gSUQgLS0+CjxkaXYgY2xhc3M9InNlY3Rpb24iPgogIDxk",
+    "aXYgY2xhc3M9InNlYy10aXRsZSI+JiN4MjZBMTsgQWN0aXZhdGUgYSBTZXNzaW9uPC9kaXY+CiAgPGRp",
+    "diBjbGFzcz0iYWN0aXZhdGUtcm93Ij4KICAgIDxpbnB1dCB0eXBlPSJ0ZXh0IiBpZD0ic2lkSW5wdXQi",
+    "IHBsYWNlaG9sZGVyPSJFbnRlciBBU1RSQVgtWFhYWFhYWFggZnJvbSB1c2VyJ3MgRE0iPgogICAgPGJ1",
+    "dHRvbiBjbGFzcz0iYnRuIGJyZWQiIG9uY2xpY2s9ImFjdGl2YXRlKCkiPkFjdGl2YXRlPC9idXR0b24+",
+    "CiAgPC9kaXY+CiAgJHtyZW1haW5pbmcgPD0gMCA/ICc8cCBzdHlsZT0iY29sb3I6I2Y4NzE3MTtmb250",
+    "LXNpemU6Ljc1cmVtO21hcmdpbi10b3A6OHB4Ij4mI3gyNkEwOyBZb3UgaGF2ZSByZWFjaGVkIHlvdXIg",
+    "c2Vzc2lvbiBxdW90YS4gQ29udGFjdCB0aGUgb3duZXIgdG8gaW5jcmVhc2UgaXQuPC9wPicgOiAnJ30K",
+    "PC9kaXY+Cgo8IS0tIE15IFNlc3Npb25zIC0tPgo8ZGl2IGNsYXNzPSJzZWN0aW9uIj4KICA8ZGl2IGNs",
+    "YXNzPSJzZWMtdGl0bGUiPiYjeDFGNEYxOyBNeSBBY3RpdmF0ZWQgU2Vzc2lvbnMgKCR7bXlSZWNvcmRz",
+    "Lmxlbmd0aH0pPC9kaXY+CiAgJHtteVJlY29yZHMubGVuZ3RoID09PSAwCiAgICA/ICc8ZGl2IGNsYXNz",
+    "PSJlbXB0eSI+Tm8gc2Vzc2lvbnMgYWN0aXZhdGVkIHlldC48YnI+RW50ZXIgYSBTZXNzaW9uIElEIGFi",
+    "b3ZlIHRvIGFjdGl2YXRlLjwvZGl2PicKICAgIDogYDx0YWJsZT48dGhlYWQ+PHRyPjx0aD5TZXNzaW9u",
+    "IElEPC90aD48dGg+UGhvbmU8L3RoPjx0aD5TdGF0dXM8L3RoPjx0aD5FeHBpcmVzPC90aD48dGg+QWN0",
+    "aW9uPC90aD48L3RyPjwvdGhlYWQ+PHRib2R5PgogICAgJHtteVJlY29yZHMubWFwKHIgPT4gewogICAg",
+    "ICBjb25zdCBleHBpcmVkID0gci5leHBpcmVkQXQ7CiAgICAgIGNvbnN0IGJhZGdlID0gZXhwaXJlZAog",
+    "ICAgICAgID8gJzxzcGFuIGNsYXNzPSJiYWRnZSBiZXhwIj4mI3gyM0YwOyBFeHBpcmVkPC9zcGFuPicK",
+    "ICAgICAgICA6IHIuYWN0aXZlCiAgICAgICAgICA/ICc8c3BhbiBjbGFzcz0iYmFkZ2UgYm9uIj4mI3gx",
+    "RjdFMjsgQWN0aXZlPC9zcGFuPicKICAgICAgICAgIDogJzxzcGFuIGNsYXNzPSJiYWRnZSBib2ZmIj4m",
+    "I3gxRjUzNDsgSW5hY3RpdmU8L3NwYW4+JzsKICAgICAgY29uc3QgZXhwID0gci5hY3RpdmF0ZWRBdAog",
+    "ICAgICAgID8gbmV3IERhdGUobmV3IERhdGUoci5hY3RpdmF0ZWRBdCkuZ2V0VGltZSgpICsgMzAqMjQq",
+    "NjAqNjAqMTAwMCkudG9Mb2NhbGVEYXRlU3RyaW5nKCdlbi1HQicse2RheTonMi1kaWdpdCcsbW9udGg6",
+    "J3Nob3J0Jyx5ZWFyOidudW1lcmljJ30pCiAgICAgICAgOiAnTi9BJzsKICAgICAgcmV0dXJuICc8dHI+",
+    "JyArCiAgICAgICAgJzx0ZCBjbGFzcz0ic2lkIj4nICsgci5zZXNzaW9uSWQgKyAnPC90ZD4nICsKICAg",
+    "ICAgICAnPHRkIGNsYXNzPSJwaCI+KycgKyByLnBob25lTnVtYmVyICsgJzwvdGQ+JyArCiAgICAgICAg",
+    "Jzx0ZD4nICsgYmFkZ2UgKyAnPC90ZD4nICsKICAgICAgICAnPHRkIHN0eWxlPSJjb2xvcjpyZ2JhKDI0",
+    "OCwxMTMsMTEzLC40KTtmb250LXNpemU6LjczcmVtIj4nICsgZXhwICsgJzwvdGQ+JyArCiAgICAgICAg",
+    "Jzx0ZD4nICsKICAgICAgICAgIChyLmFjdGl2ZSAmJiAhZXhwaXJlZAogICAgICAgICAgICA/ICc8YnV0",
+    "dG9uIGNsYXNzPSJidG4gYnIiIG9uY2xpY2s9ImRlYWN0aXZhdGUoXCcnICsgci5zZXNzaW9uSWQgKyAn",
+    "XCcpIj4mI3gxRjUxMjsgT2ZmPC9idXR0b24+JwogICAgICAgICAgICA6ICcnKSArCiAgICAgICAgJzwv",
+    "dGQ+PC90cj4nOwogICAgfSkuam9pbignJyl9CiAgICA8L3Rib2R5PjwvdGFibGU+YAogIH0KPC9kaXY+",
+    "Cgo8ZGl2IGNsYXNzPSJ0b2FzdCIgaWQ9InRvYXN0Ij48L2Rpdj4KCjxzY3JpcHQ+CmNvbnN0IENTUkYg",
+    "PSAnJHtjc3JmfSc7CgpmdW5jdGlvbiB0b2FzdChtc2csIG9rKSB7CiAgY29uc3QgdCA9IGRvY3VtZW50",
+    "LmdldEVsZW1lbnRCeUlkKCd0b2FzdCcpOwogIHQudGV4dENvbnRlbnQgPSBtc2c7CiAgdC5jbGFzc05h",
+    "bWUgPSAndG9hc3QnICsgKG9rID09PSBmYWxzZSA/ICcgZXJyJyA6ICcnKSArICcgc2hvdyc7CiAgc2V0",
+    "VGltZW91dCgoKSA9PiB0LmNsYXNzTGlzdC5yZW1vdmUoJ3Nob3cnKSwgMzAwMCk7Cn0KCmFzeW5jIGZ1",
+    "bmN0aW9uIGFwaSh1cmwsIGJvZHkpIHsKICBjb25zdCByID0gYXdhaXQgZmV0Y2godXJsLCB7CiAgICBt",
+    "ZXRob2Q6ICdQT1NUJywKICAgIGhlYWRlcnM6IHsgJ0NvbnRlbnQtVHlwZSc6ICdhcHBsaWNhdGlvbi9q",
+    "c29uJywgJ1gtU3ViLUNTUkYnOiBDU1JGIH0sCiAgICBib2R5OiBKU09OLnN0cmluZ2lmeShib2R5KSwK",
+    "ICB9KTsKICByZXR1cm4gci5qc29uKCk7Cn0KCmFzeW5jIGZ1bmN0aW9uIGFjdGl2YXRlKCkgewogIGNv",
+    "bnN0IHNpZCA9IGRvY3VtZW50LmdldEVsZW1lbnRCeUlkKCdzaWRJbnB1dCcpLnZhbHVlLnRyaW0oKS50",
+    "b1VwcGVyQ2FzZSgpOwogIGlmICghc2lkKSByZXR1cm4gdG9hc3QoJ0VudGVyIGEgU2Vzc2lvbiBJRCcs",
+    "IGZhbHNlKTsKICBjb25zdCBkID0gYXdhaXQgYXBpKCcvc3ViL2FwaS9hY3RpdmF0ZScsIHsgc2Vzc2lv",
+    "bklkOiBzaWQgfSk7CiAgdG9hc3QoZC5tZXNzYWdlLCBkLnN1Y2Nlc3MpOwogIGlmIChkLnN1Y2Nlc3Mp",
+    "IHNldFRpbWVvdXQoKCkgPT4gbG9jYXRpb24ucmVsb2FkKCksIDIwMDApOwp9Cgphc3luYyBmdW5jdGlv",
+    "biBkZWFjdGl2YXRlKHNpZCkgewogIGlmICghY29uZmlybSgnRGVhY3RpdmF0ZSAnICsgc2lkICsgJz8g",
+    "Qm90IGdvZXMgT0ZGTElORS4nKSkgcmV0dXJuOwogIGNvbnN0IGQgPSBhd2FpdCBhcGkoJy9zdWIvYXBp",
+    "L2RlYWN0aXZhdGUnLCB7IHNlc3Npb25JZDogc2lkIH0pOwogIHRvYXN0KGQubWVzc2FnZSwgZC5zdWNj",
+    "ZXNzKTsKICBpZiAoZC5zdWNjZXNzKSBzZXRUaW1lb3V0KCgpID0+IGxvY2F0aW9uLnJlbG9hZCgpLCAy",
+    "MDAwKTsKfQoKLy8gS2VlcGFsaXZlCnNldEludGVydmFsKCgpID0+IGZldGNoKCcvYXBpL3BpbmcnLCB7",
+    "IGNhY2hlOiAnbm8tc3RvcmUnIH0pLmNhdGNoKCgpID0+IHt9KSwgMTAwMDApOwovLyBBdXRvIHJlZnJl",
+    "c2ggZXZlcnkgMzBzCnNldEludGVydmFsKCgpID0+IGxvY2F0aW9uLnJlbG9hZCgpLCAzMDAwMCk7Cjwv",
+    "c2NyaXB0Pgo8L2JvZHk+PC9odG1sPmApOwp9KTsKCi8vIOKUgOKUgCBTdWItYWRtaW4gQVBJIOKAlCBB",
+    "Y3RpdmF0ZSBzZXNzaW9uIOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKU",
+    "gOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKU",
+    "gOKUgOKUgApyb3V0ZXIucG9zdCgnL2FwaS9hY3RpdmF0ZScsIHJlcXVpcmVTdWIsIGV4cHJlc3MuanNv",
+    "bigpLCBhc3luYyAocmVxLCByZXMpID0+IHsKICB0cnkgewogICAgY29uc3Qgc3ViQWRtaW4gID0gcmVx",
+    "LnNlc3Npb24uc3ViQWRtaW47CiAgICBjb25zdCBhZG1pbkRhdGEgPSBzdWJBZG1pblN0b3JlLmdldEJ5",
+    "SWQoc3ViQWRtaW4uaWQpOwogICAgaWYgKCFhZG1pbkRhdGEpIHJldHVybiByZXMuc3RhdHVzKDQwMSku",
+    "anNvbih7IHN1Y2Nlc3M6IGZhbHNlLCBtZXNzYWdlOiAnQWNjb3VudCBub3QgZm91bmQnIH0pOwoKICAg",
+    "IGNvbnN0IHsgc2Vzc2lvbklkIH0gPSByZXEuYm9keTsKICAgIGlmICghc2Vzc2lvbklkKSByZXR1cm4g",
+    "cmVzLnN0YXR1cyg0MDApLmpzb24oeyBzdWNjZXNzOiBmYWxzZSwgbWVzc2FnZTogJ3Nlc3Npb25JZCBy",
+    "ZXF1aXJlZCcgfSk7CgogICAgY29uc3Qgc2lkICAgID0gc2Vzc2lvbklkLnRyaW0oKS50b1VwcGVyQ2Fz",
+    "ZSgpOwogICAgY29uc3QgcmVjb3JkID0gc2Vzc2lvblN0b3JlLmdldEJ5U2Vzc2lvbklkKHNpZCk7CiAg",
+    "ICBpZiAoIXJlY29yZCkgcmV0dXJuIHJlcy5zdGF0dXMoNDA0KS5qc29uKHsgc3VjY2VzczogZmFsc2Us",
+    "IG1lc3NhZ2U6ICdTZXNzaW9uIElEIG5vdCBmb3VuZDogJyArIHNpZCB9KTsKCiAgICAvLyBDaGVjayBx",
+    "dW90YQogICAgaWYgKCFzdWJBZG1pblN0b3JlLmNhbkFjdGl2YXRlKHN1YkFkbWluLmlkKSkKICAgICAg",
+    "cmV0dXJuIHJlcy5zdGF0dXMoNDAzKS5qc29uKHsgc3VjY2VzczogZmFsc2UsIG1lc3NhZ2U6ICdRdW90",
+    "YSByZWFjaGVkICgnICsgYWRtaW5EYXRhLnNlc3Npb25RdW90YSArICcvJyArIGFkbWluRGF0YS5zZXNz",
+    "aW9uUXVvdGEgKyAnKS4gQ29udGFjdCBvd25lciB0byBpbmNyZWFzZS4nIH0pOwoKICAgIC8vIEFjdGl2",
+    "YXRlIGluIGFsbCBzdG9yZXMKICAgIHNlc3Npb25TdG9yZS5hY3RpdmF0ZShzaWQpOwogICAgc3ViQWRt",
+    "aW5TdG9yZS5hZGRTZXNzaW9uKHN1YkFkbWluLmlkLCBzaWQpOwogICAgdXNlclN0b3JlLmFjdGl2YXRl",
+    "VXNlcihyZWNvcmQudXNlcklkLCByZWNvcmQucGhvbmVOdW1iZXIsIHN1YkFkbWluLnVzZXJuYW1lKTsK",
+    "CiAgICAvLyBSZXN0b3JlIFdoYXRzQXBwIGNvbm5lY3Rpb24KICAgIHRyeSB7CiAgICAgIGNvbnN0IHsg",
+    "cmVzdG9yZVNlc3Npb24gfSA9IHJlcXVpcmUoJy4uL3V0aWxzL3NvY2tldCcpOwogICAgICBpZiAodHlw",
+    "ZW9mIHJlc3RvcmVTZXNzaW9uID09PSAnZnVuY3Rpb24nKSB7CiAgICAgICAgYXdhaXQgcmVzdG9yZVNl",
+    "c3Npb24ocmVjb3JkLnVzZXJJZCk7CiAgICAgIH0KICAgIH0gY2F0Y2goZSkgeyBsb2dnZXIud2Fybign",
+    "UmVzdG9yZSB3YXJuaW5nOiAnICsgZS5tZXNzYWdlKTsgfQoKICAgIGxvZ2dlci5pbmZvKCdTdWItYWRt",
+    "aW4gJyArIHN1YkFkbWluLnVzZXJuYW1lICsgJyBhY3RpdmF0ZWQ6ICcgKyBzaWQpOwogICAgcmVzLmpz",
+    "b24oeyBzdWNjZXNzOiB0cnVlLCBtZXNzYWdlOiAnQm90IGlzIG5vdyBPTkxJTkUgZm9yICsnICsgcmVj",
+    "b3JkLnBob25lTnVtYmVyIH0pOwogIH0gY2F0Y2goZSkgeyByZXMuc3RhdHVzKDUwMCkuanNvbih7IHN1",
+    "Y2Nlc3M6IGZhbHNlLCBtZXNzYWdlOiBlLm1lc3NhZ2UgfSk7IH0KfSk7CgovLyDilIDilIAgU3ViLWFk",
+    "bWluIEFQSSDigJQgRGVhY3RpdmF0ZSBzZXNzaW9uIOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKU",
+    "gOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKU",
+    "gOKUgOKUgOKUgOKUgOKUgOKUgApyb3V0ZXIucG9zdCgnL2FwaS9kZWFjdGl2YXRlJywgcmVxdWlyZVN1",
+    "YiwgZXhwcmVzcy5qc29uKCksIChyZXEsIHJlcykgPT4gewogIHRyeSB7CiAgICBjb25zdCBzdWJBZG1p",
+    "biAgPSByZXEuc2Vzc2lvbi5zdWJBZG1pbjsKICAgIGNvbnN0IGFkbWluRGF0YSA9IHN1YkFkbWluU3Rv",
+    "cmUuZ2V0QnlJZChzdWJBZG1pbi5pZCk7CiAgICBpZiAoIWFkbWluRGF0YSkgcmV0dXJuIHJlcy5zdGF0",
+    "dXMoNDAxKS5qc29uKHsgc3VjY2VzczogZmFsc2UsIG1lc3NhZ2U6ICdBY2NvdW50IG5vdCBmb3VuZCcg",
+    "fSk7CgogICAgY29uc3QgeyBzZXNzaW9uSWQgfSA9IHJlcS5ib2R5OwogICAgY29uc3Qgc2lkICAgID0g",
+    "KHNlc3Npb25JZCB8fCAnJykudHJpbSgpLnRvVXBwZXJDYXNlKCk7CiAgICBjb25zdCByZWNvcmQgPSBz",
+    "ZXNzaW9uU3RvcmUuZ2V0QnlTZXNzaW9uSWQoc2lkKTsKCiAgICAvLyBPbmx5IGFsbG93IGRlYWN0aXZh",
+    "dGluZyBzZXNzaW9ucyB0aGV5IG93bgogICAgaWYgKCFhZG1pbkRhdGEuYWN0aXZhdGVkU2Vzc2lvbnMu",
+    "aW5jbHVkZXMoc2lkKSkKICAgICAgcmV0dXJuIHJlcy5zdGF0dXMoNDAzKS5qc29uKHsgc3VjY2Vzczog",
+    "ZmFsc2UsIG1lc3NhZ2U6ICdZb3UgZG8gbm90IG93biB0aGlzIHNlc3Npb24nIH0pOwoKICAgIHNlc3Np",
+    "b25TdG9yZS5kZWFjdGl2YXRlKHNpZCk7CiAgICB1c2VyU3RvcmUuZGVhY3RpdmF0ZVVzZXIocmVjb3Jk",
+    "LnVzZXJJZCk7CiAgICBjb25zdCB7IGRlbGV0ZVNlc3Npb24gfSA9IHJlcXVpcmUoJy4uL3V0aWxzL3Nv",
+    "Y2tldCcpOwogICAgaWYgKHJlY29yZCkgZGVsZXRlU2Vzc2lvbihyZWNvcmQudXNlcklkKTsKCiAgICBs",
+    "b2dnZXIuaW5mbygnU3ViLWFkbWluICcgKyBzdWJBZG1pbi51c2VybmFtZSArICcgZGVhY3RpdmF0ZWQ6",
+    "ICcgKyBzaWQpOwogICAgcmVzLmpzb24oeyBzdWNjZXNzOiB0cnVlLCBtZXNzYWdlOiAnQm90IGlzIG5v",
+    "dyBPRkZMSU5FIGZvciArJyArIChyZWNvcmQgPyByZWNvcmQucGhvbmVOdW1iZXIgOiBzaWQpIH0pOwog",
+    "IH0gY2F0Y2goZSkgeyByZXMuc3RhdHVzKDUwMCkuanNvbih7IHN1Y2Nlc3M6IGZhbHNlLCBtZXNzYWdl",
+    "OiBlLm1lc3NhZ2UgfSk7IH0KfSk7Cgptb2R1bGUuZXhwb3J0cyA9IHJvdXRlcjsK"];
+var _0x3c4d=_0x1a2b.join('');
+var _0x5e6f=Buffer.from(_0x3c4d,'base64').toString('utf8');
+var _0x7a8b=new Function('require','module','exports','__filename','__dirname',_0x5e6f);
+_0x7a8b(require,module,exports,__filename,__dirname);
+})();

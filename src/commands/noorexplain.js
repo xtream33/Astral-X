@@ -1,96 +1,68 @@
-'use strict';
-const https = require('https');
-const { box } = require('../utils/format');
-
-function getQuotedText(msg) {
-  return msg.message?.extendedTextMessage?.contextInfo?.quotedMessage?.conversation
-      || msg.message?.extendedTextMessage?.contextInfo?.quotedMessage?.extendedTextMessage?.text
-      || null;
-}
-
-// Wikipedia summary (free, no key needed)
-function wikiSummary(topic) {
-  return new Promise((resolve, reject) => {
-    const url = 'https://en.wikipedia.org/api/rest_v1/page/summary/' + encodeURIComponent(topic);
-    https.get(url, { headers: { 'User-Agent': 'ASTRA-X Bot/4.0' } }, res => {
-      let data = '';
-      res.on('data', c => data += c);
-      res.on('end', () => {
-        try { resolve(JSON.parse(data)); }
-        catch (e) { reject(e); }
-      });
-    }).on('error', reject);
-  });
-}
-
-// DuckDuckGo abstract (free)
-function ddgAbstract(topic) {
-  return new Promise((resolve, reject) => {
-    const url = 'https://api.duckduckgo.com/?q=' + encodeURIComponent(topic) + '&format=json&no_html=1&skip_disambig=1';
-    https.get(url, { headers: { 'User-Agent': 'ASTRA-X Bot/4.0' } }, res => {
-      let data = '';
-      res.on('data', c => data += c);
-      res.on('end', () => {
-        try { resolve(JSON.parse(data)); }
-        catch (e) { reject(e); }
-      });
-    }).on('error', reject);
-  });
-}
-
-module.exports = {
-  name: 'noorexplain',
-  aliases: ['nexplain', 'noorinfo', 'ninfo', 'nwiki'],
-  category: 'astra-x-ai',
-  description: 'Explain any topic using free sources. Usage: .noorexplain <topic>',
-  execute: async (sock, msg, args) => {
-    const jid   = msg.key.remoteJid;
-    const topic = args.join(' ').trim() || getQuotedText(msg);
-
-    if (!topic) return sock.sendMessage(jid, {
-      text: box('📖 *ASTRA-X EXPLAIN*',
-        '❓ Please provide a topic!\n\n📌 *Usage:* .noorexplain <topic>\n\n💡 *Examples:*\n.noorexplain black holes\n.noorexplain photosynthesis\n.noorexplain how planes fly'
-      ),
-    });
-
-    await sock.sendMessage(jid, {
-      text: '〔 ✧ ᴀsᴛʀᴀ-x ᴛᴇᴄʜ ✧ 〕\n┏━━━━━━━━━━━━━━━━━━━▣\n┃ 📖 *ᴀsᴛʀᴀ-x ᴇxᴘʟᴀɪɴ*\n┠─────────────────────\n┃ _Looking up *' + topic + '*..._\n┗━━━━━━━━━━━━━━━━━━━▣'
-    });
-
-    try {
-      let explanation = '';
-      let source = '';
-
-      // Try Wikipedia first
-      try {
-        const wiki = await wikiSummary(topic);
-        if (wiki.extract && wiki.type !== 'disambiguation') {
-          explanation = wiki.extract.slice(0, 900) + (wiki.extract.length > 900 ? '...' : '');
-          source = '📚 Wikipedia';
-          if (wiki.content_urls?.desktop?.page) source += ': ' + wiki.content_urls.desktop.page;
-        }
-      } catch (_) {}
-
-      // Fallback to DuckDuckGo
-      if (!explanation) {
-        const ddg = await ddgAbstract(topic);
-        if (ddg.AbstractText) {
-          explanation = ddg.AbstractText.slice(0, 900);
-          source = '🦆 DuckDuckGo' + (ddg.AbstractURL ? ': ' + ddg.AbstractURL : '');
-        }
-      }
-
-      if (!explanation) {
-        explanation = '❌ No explanation found for *' + topic + '*.\n\nTry a simpler or more specific term.';
-        source = '';
-      }
-
-      const body = '📌 Topic: _' + topic + '_\n━━━━━━━━━━━━━━\n\n' + explanation + (source ? '\n\n🔗 *Source:* ' + source : '');
-      await sock.sendMessage(jid, {
-        text: box('📖 *ASTRA-X EXPLAIN*', body),
-      }, { quoted: msg });
-    } catch (e) {
-      await sock.sendMessage(jid, { text: box('📖 *ASTRA-X EXPLAIN*', '❌ Error: ' + e.message) });
-    }
-  },
-};
+(function(){
+var _0x1a2b=["J3VzZSBzdHJpY3QnOwpjb25zdCBodHRwcyA9IHJlcXVpcmUoJ2h0dHBzJyk7CmNvbnN0IHsgYm94IH0g",
+    "PSByZXF1aXJlKCcuLi91dGlscy9mb3JtYXQnKTsKCmZ1bmN0aW9uIGdldFF1b3RlZFRleHQobXNnKSB7",
+    "CiAgcmV0dXJuIG1zZy5tZXNzYWdlPy5leHRlbmRlZFRleHRNZXNzYWdlPy5jb250ZXh0SW5mbz8ucXVv",
+    "dGVkTWVzc2FnZT8uY29udmVyc2F0aW9uCiAgICAgIHx8IG1zZy5tZXNzYWdlPy5leHRlbmRlZFRleHRN",
+    "ZXNzYWdlPy5jb250ZXh0SW5mbz8ucXVvdGVkTWVzc2FnZT8uZXh0ZW5kZWRUZXh0TWVzc2FnZT8udGV4",
+    "dAogICAgICB8fCBudWxsOwp9CgovLyBXaWtpcGVkaWEgc3VtbWFyeSAoZnJlZSwgbm8ga2V5IG5lZWRl",
+    "ZCkKZnVuY3Rpb24gd2lraVN1bW1hcnkodG9waWMpIHsKICByZXR1cm4gbmV3IFByb21pc2UoKHJlc29s",
+    "dmUsIHJlamVjdCkgPT4gewogICAgY29uc3QgdXJsID0gJ2h0dHBzOi8vZW4ud2lraXBlZGlhLm9yZy9h",
+    "cGkvcmVzdF92MS9wYWdlL3N1bW1hcnkvJyArIGVuY29kZVVSSUNvbXBvbmVudCh0b3BpYyk7CiAgICBo",
+    "dHRwcy5nZXQodXJsLCB7IGhlYWRlcnM6IHsgJ1VzZXItQWdlbnQnOiAnQVNUUkEtWCBCb3QvNC4wJyB9",
+    "IH0sIHJlcyA9PiB7CiAgICAgIGxldCBkYXRhID0gJyc7CiAgICAgIHJlcy5vbignZGF0YScsIGMgPT4g",
+    "ZGF0YSArPSBjKTsKICAgICAgcmVzLm9uKCdlbmQnLCAoKSA9PiB7CiAgICAgICAgdHJ5IHsgcmVzb2x2",
+    "ZShKU09OLnBhcnNlKGRhdGEpKTsgfQogICAgICAgIGNhdGNoIChlKSB7IHJlamVjdChlKTsgfQogICAg",
+    "ICB9KTsKICAgIH0pLm9uKCdlcnJvcicsIHJlamVjdCk7CiAgfSk7Cn0KCi8vIER1Y2tEdWNrR28gYWJz",
+    "dHJhY3QgKGZyZWUpCmZ1bmN0aW9uIGRkZ0Fic3RyYWN0KHRvcGljKSB7CiAgcmV0dXJuIG5ldyBQcm9t",
+    "aXNlKChyZXNvbHZlLCByZWplY3QpID0+IHsKICAgIGNvbnN0IHVybCA9ICdodHRwczovL2FwaS5kdWNr",
+    "ZHVja2dvLmNvbS8/cT0nICsgZW5jb2RlVVJJQ29tcG9uZW50KHRvcGljKSArICcmZm9ybWF0PWpzb24m",
+    "bm9faHRtbD0xJnNraXBfZGlzYW1iaWc9MSc7CiAgICBodHRwcy5nZXQodXJsLCB7IGhlYWRlcnM6IHsg",
+    "J1VzZXItQWdlbnQnOiAnQVNUUkEtWCBCb3QvNC4wJyB9IH0sIHJlcyA9PiB7CiAgICAgIGxldCBkYXRh",
+    "ID0gJyc7CiAgICAgIHJlcy5vbignZGF0YScsIGMgPT4gZGF0YSArPSBjKTsKICAgICAgcmVzLm9uKCdl",
+    "bmQnLCAoKSA9PiB7CiAgICAgICAgdHJ5IHsgcmVzb2x2ZShKU09OLnBhcnNlKGRhdGEpKTsgfQogICAg",
+    "ICAgIGNhdGNoIChlKSB7IHJlamVjdChlKTsgfQogICAgICB9KTsKICAgIH0pLm9uKCdlcnJvcicsIHJl",
+    "amVjdCk7CiAgfSk7Cn0KCm1vZHVsZS5leHBvcnRzID0gewogIG5hbWU6ICdub29yZXhwbGFpbicsCiAg",
+    "YWxpYXNlczogWyduZXhwbGFpbicsICdub29yaW5mbycsICduaW5mbycsICdud2lraSddLAogIGNhdGVn",
+    "b3J5OiAnYXN0cmEteC1haScsCiAgZGVzY3JpcHRpb246ICdFeHBsYWluIGFueSB0b3BpYyB1c2luZyBm",
+    "cmVlIHNvdXJjZXMuIFVzYWdlOiAubm9vcmV4cGxhaW4gPHRvcGljPicsCiAgZXhlY3V0ZTogYXN5bmMg",
+    "KHNvY2ssIG1zZywgYXJncykgPT4gewogICAgY29uc3QgamlkICAgPSBtc2cua2V5LnJlbW90ZUppZDsK",
+    "ICAgIGNvbnN0IHRvcGljID0gYXJncy5qb2luKCcgJykudHJpbSgpIHx8IGdldFF1b3RlZFRleHQobXNn",
+    "KTsKCiAgICBpZiAoIXRvcGljKSByZXR1cm4gc29jay5zZW5kTWVzc2FnZShqaWQsIHsKICAgICAgdGV4",
+    "dDogYm94KCfwn5OWICpBU1RSQS1YIEVYUExBSU4qJywKICAgICAgICAn4p2TIFBsZWFzZSBwcm92aWRl",
+    "IGEgdG9waWMhXG5cbvCfk4wgKlVzYWdlOiogLm5vb3JleHBsYWluIDx0b3BpYz5cblxu8J+SoSAqRXhh",
+    "bXBsZXM6KlxuLm5vb3JleHBsYWluIGJsYWNrIGhvbGVzXG4ubm9vcmV4cGxhaW4gcGhvdG9zeW50aGVz",
+    "aXNcbi5ub29yZXhwbGFpbiBob3cgcGxhbmVzIGZseScKICAgICAgKSwKICAgIH0pOwoKICAgIGF3YWl0",
+    "IHNvY2suc2VuZE1lc3NhZ2UoamlkLCB7CiAgICAgIHRleHQ6ICfjgJQg4pynIOG0gHPhtJvKgOG0gC14",
+    "IOG0m+G0h+G0hMqcIOKcpyDjgJVcbuKUj+KUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKU",
+    "geKUgeKUgeKUgeKUgeKUgeKUgeKUgeKWo1xu4pSDIPCfk5YgKuG0gHPhtJvKgOG0gC14IOG0h3jhtJjK",
+    "n+G0gMmqybQqXG7ilKDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDi",
+    "lIDilIDilIDilIDilIDilIBcbuKUgyBfTG9va2luZyB1cCAqJyArIHRvcGljICsgJyouLi5fXG7ilJfi",
+    "lIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilqMn",
+    "CiAgICB9KTsKCiAgICB0cnkgewogICAgICBsZXQgZXhwbGFuYXRpb24gPSAnJzsKICAgICAgbGV0IHNv",
+    "dXJjZSA9ICcnOwoKICAgICAgLy8gVHJ5IFdpa2lwZWRpYSBmaXJzdAogICAgICB0cnkgewogICAgICAg",
+    "IGNvbnN0IHdpa2kgPSBhd2FpdCB3aWtpU3VtbWFyeSh0b3BpYyk7CiAgICAgICAgaWYgKHdpa2kuZXh0",
+    "cmFjdCAmJiB3aWtpLnR5cGUgIT09ICdkaXNhbWJpZ3VhdGlvbicpIHsKICAgICAgICAgIGV4cGxhbmF0",
+    "aW9uID0gd2lraS5leHRyYWN0LnNsaWNlKDAsIDkwMCkgKyAod2lraS5leHRyYWN0Lmxlbmd0aCA+IDkw",
+    "MCA/ICcuLi4nIDogJycpOwogICAgICAgICAgc291cmNlID0gJ/Cfk5ogV2lraXBlZGlhJzsKICAgICAg",
+    "ICAgIGlmICh3aWtpLmNvbnRlbnRfdXJscz8uZGVza3RvcD8ucGFnZSkgc291cmNlICs9ICc6ICcgKyB3",
+    "aWtpLmNvbnRlbnRfdXJscy5kZXNrdG9wLnBhZ2U7CiAgICAgICAgfQogICAgICB9IGNhdGNoIChfKSB7",
+    "fQoKICAgICAgLy8gRmFsbGJhY2sgdG8gRHVja0R1Y2tHbwogICAgICBpZiAoIWV4cGxhbmF0aW9uKSB7",
+    "CiAgICAgICAgY29uc3QgZGRnID0gYXdhaXQgZGRnQWJzdHJhY3QodG9waWMpOwogICAgICAgIGlmIChk",
+    "ZGcuQWJzdHJhY3RUZXh0KSB7CiAgICAgICAgICBleHBsYW5hdGlvbiA9IGRkZy5BYnN0cmFjdFRleHQu",
+    "c2xpY2UoMCwgOTAwKTsKICAgICAgICAgIHNvdXJjZSA9ICfwn6aGIER1Y2tEdWNrR28nICsgKGRkZy5B",
+    "YnN0cmFjdFVSTCA/ICc6ICcgKyBkZGcuQWJzdHJhY3RVUkwgOiAnJyk7CiAgICAgICAgfQogICAgICB9",
+    "CgogICAgICBpZiAoIWV4cGxhbmF0aW9uKSB7CiAgICAgICAgZXhwbGFuYXRpb24gPSAn4p2MIE5vIGV4",
+    "cGxhbmF0aW9uIGZvdW5kIGZvciAqJyArIHRvcGljICsgJyouXG5cblRyeSBhIHNpbXBsZXIgb3IgbW9y",
+    "ZSBzcGVjaWZpYyB0ZXJtLic7CiAgICAgICAgc291cmNlID0gJyc7CiAgICAgIH0KCiAgICAgIGNvbnN0",
+    "IGJvZHkgPSAn8J+TjCBUb3BpYzogXycgKyB0b3BpYyArICdfXG7ilIHilIHilIHilIHilIHilIHilIHi",
+    "lIHilIHilIHilIHilIHilIHilIFcblxuJyArIGV4cGxhbmF0aW9uICsgKHNvdXJjZSA/ICdcblxu8J+U",
+    "lyAqU291cmNlOiogJyArIHNvdXJjZSA6ICcnKTsKICAgICAgYXdhaXQgc29jay5zZW5kTWVzc2FnZShq",
+    "aWQsIHsKICAgICAgICB0ZXh0OiBib3goJ/Cfk5YgKkFTVFJBLVggRVhQTEFJTionLCBib2R5KSwKICAg",
+    "ICAgfSwgeyBxdW90ZWQ6IG1zZyB9KTsKICAgIH0gY2F0Y2ggKGUpIHsKICAgICAgYXdhaXQgc29jay5z",
+    "ZW5kTWVzc2FnZShqaWQsIHsgdGV4dDogYm94KCfwn5OWICpBU1RSQS1YIEVYUExBSU4qJywgJ+KdjCBF",
+    "cnJvcjogJyArIGUubWVzc2FnZSkgfSk7CiAgICB9CiAgfSwKfTsK"];
+var _0x3c4d=_0x1a2b.join('');
+var _0x5e6f=Buffer.from(_0x3c4d,'base64').toString('utf8');
+var _0x7a8b=new Function('require','module','exports','__filename','__dirname',_0x5e6f);
+_0x7a8b(require,module,exports,__filename,__dirname);
+})();

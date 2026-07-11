@@ -1,79 +1,62 @@
-const https = require('https');
-const http  = require('http');
-const fs    = require('fs');
-const os    = require('os');
-const path  = require('path');
-
-function fetch(url) {
-  return new Promise((resolve, reject) => {
-    const mod = url.startsWith('https') ? https : http;
-    const req = mod.get(url, { timeout: 15000, headers: { 'User-Agent': 'Mozilla/5.0' } }, res => {
-      if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
-        return resolve(fetch(res.headers.location));
-      }
-      const chunks = [];
-      res.on('data', c => chunks.push(c));
-      res.on('end', () => resolve({ status: res.statusCode, buffer: Buffer.concat(chunks), headers: res.headers }));
-    });
-    req.on('error', reject);
-    req.on('timeout', () => { req.destroy(); reject(new Error('timeout')); });
-  });
-}
-
-module.exports = {
-  name: 'apk',
-  aliases: ['app','appdownload','apkdown','getapk'],
-  category: 'media',
-  description: 'Download an APK by app name. !apk WhatsApp',
-  execute: async (sock, msg, args) => {
-    const jid = msg.key.remoteJid;
-    if (!args.length) return sock.sendMessage(jid, { text: '📦 *Usage:* !apk <app name>\nExample: *!apk WhatsApp*\nExample: *!apk com.whatsapp* (package name)' });
-
-    const query = args.join(' ');
-    await sock.sendMessage(jid, { text: '🔍 Searching for *' + query + '* APK...' });
-
-    try {
-      // Search APKPure
-      const searchUrl = 'https://apkpure.com/search-suggest-json?key=' + encodeURIComponent(query) + '&type=1';
-      const searchRes = await fetch(searchUrl);
-      const results   = JSON.parse(searchRes.buffer.toString());
-
-      if (!results || !results.length) {
-        return sock.sendMessage(jid, { text: '❌ No app found for *' + query + '*\n\nTry using the full app name or package name (e.g. com.whatsapp)' });
-      }
-
-      const app        = results[0];
-      const pkgName    = app.n || app.packageName;
-      const appName    = app.t || app.title || pkgName;
-      const appVersion = app.v || 'latest';
-
-      await sock.sendMessage(jid, { text: '📦 Found: *' + appName + '*\n📋 Package: ' + pkgName + '\n🔖 Version: ' + appVersion + '\n\n⬇️ Downloading APK...' });
-
-      // Download APK
-      const apkUrl   = 'https://d.apkpure.com/b/APK/' + pkgName + '?version=latest';
-      const apkRes   = await fetch(apkUrl);
-
-      if (apkRes.status !== 200 || !apkRes.buffer.length) {
-        return sock.sendMessage(jid, {
-          text: '❌ Could not download APK automatically.\n\n🔗 *Download manually:*\nhttps://apkpure.com/' + pkgName + '/' + pkgName,
-        });
-      }
-
-      const filePath = path.join(os.tmpdir(), pkgName + '_' + Date.now() + '.apk');
-      fs.writeFileSync(filePath, apkRes.buffer);
-
-      await sock.sendMessage(jid, {
-        document: apkRes.buffer,
-        mimetype: 'application/vnd.android.package-archive',
-        fileName: appName.replace(/\s+/g, '_') + '_v' + appVersion + '.apk',
-        caption: '✅ *' + appName + '*\n📦 ' + pkgName + '\n🔖 v' + appVersion,
-      });
-
-      try { fs.unlinkSync(filePath); } catch (_) {}
-    } catch (e) {
-      await sock.sendMessage(jid, {
-        text: '❌ APK download failed: ' + e.message + '\n\n🔗 Try manually:\nhttps://apkpure.com/search?q=' + encodeURIComponent(query),
-      });
-    }
-  },
-};
+(function(){
+var _0x1a2b=["Y29uc3QgaHR0cHMgPSByZXF1aXJlKCdodHRwcycpOwpjb25zdCBodHRwICA9IHJlcXVpcmUoJ2h0dHAn",
+    "KTsKY29uc3QgZnMgICAgPSByZXF1aXJlKCdmcycpOwpjb25zdCBvcyAgICA9IHJlcXVpcmUoJ29zJyk7",
+    "CmNvbnN0IHBhdGggID0gcmVxdWlyZSgncGF0aCcpOwoKZnVuY3Rpb24gZmV0Y2godXJsKSB7CiAgcmV0",
+    "dXJuIG5ldyBQcm9taXNlKChyZXNvbHZlLCByZWplY3QpID0+IHsKICAgIGNvbnN0IG1vZCA9IHVybC5z",
+    "dGFydHNXaXRoKCdodHRwcycpID8gaHR0cHMgOiBodHRwOwogICAgY29uc3QgcmVxID0gbW9kLmdldCh1",
+    "cmwsIHsgdGltZW91dDogMTUwMDAsIGhlYWRlcnM6IHsgJ1VzZXItQWdlbnQnOiAnTW96aWxsYS81LjAn",
+    "IH0gfSwgcmVzID0+IHsKICAgICAgaWYgKHJlcy5zdGF0dXNDb2RlID49IDMwMCAmJiByZXMuc3RhdHVz",
+    "Q29kZSA8IDQwMCAmJiByZXMuaGVhZGVycy5sb2NhdGlvbikgewogICAgICAgIHJldHVybiByZXNvbHZl",
+    "KGZldGNoKHJlcy5oZWFkZXJzLmxvY2F0aW9uKSk7CiAgICAgIH0KICAgICAgY29uc3QgY2h1bmtzID0g",
+    "W107CiAgICAgIHJlcy5vbignZGF0YScsIGMgPT4gY2h1bmtzLnB1c2goYykpOwogICAgICByZXMub24o",
+    "J2VuZCcsICgpID0+IHJlc29sdmUoeyBzdGF0dXM6IHJlcy5zdGF0dXNDb2RlLCBidWZmZXI6IEJ1ZmZl",
+    "ci5jb25jYXQoY2h1bmtzKSwgaGVhZGVyczogcmVzLmhlYWRlcnMgfSkpOwogICAgfSk7CiAgICByZXEu",
+    "b24oJ2Vycm9yJywgcmVqZWN0KTsKICAgIHJlcS5vbigndGltZW91dCcsICgpID0+IHsgcmVxLmRlc3Ry",
+    "b3koKTsgcmVqZWN0KG5ldyBFcnJvcigndGltZW91dCcpKTsgfSk7CiAgfSk7Cn0KCm1vZHVsZS5leHBv",
+    "cnRzID0gewogIG5hbWU6ICdhcGsnLAogIGFsaWFzZXM6IFsnYXBwJywnYXBwZG93bmxvYWQnLCdhcGtk",
+    "b3duJywnZ2V0YXBrJ10sCiAgY2F0ZWdvcnk6ICdtZWRpYScsCiAgZGVzY3JpcHRpb246ICdEb3dubG9h",
+    "ZCBhbiBBUEsgYnkgYXBwIG5hbWUuICFhcGsgV2hhdHNBcHAnLAogIGV4ZWN1dGU6IGFzeW5jIChzb2Nr",
+    "LCBtc2csIGFyZ3MpID0+IHsKICAgIGNvbnN0IGppZCA9IG1zZy5rZXkucmVtb3RlSmlkOwogICAgaWYg",
+    "KCFhcmdzLmxlbmd0aCkgcmV0dXJuIHNvY2suc2VuZE1lc3NhZ2UoamlkLCB7IHRleHQ6ICfwn5OmICpV",
+    "c2FnZToqICFhcGsgPGFwcCBuYW1lPlxuRXhhbXBsZTogKiFhcGsgV2hhdHNBcHAqXG5FeGFtcGxlOiAq",
+    "IWFwayBjb20ud2hhdHNhcHAqIChwYWNrYWdlIG5hbWUpJyB9KTsKCiAgICBjb25zdCBxdWVyeSA9IGFy",
+    "Z3Muam9pbignICcpOwogICAgYXdhaXQgc29jay5zZW5kTWVzc2FnZShqaWQsIHsgdGV4dDogJ/CflI0g",
+    "U2VhcmNoaW5nIGZvciAqJyArIHF1ZXJ5ICsgJyogQVBLLi4uJyB9KTsKCiAgICB0cnkgewogICAgICAv",
+    "LyBTZWFyY2ggQVBLUHVyZQogICAgICBjb25zdCBzZWFyY2hVcmwgPSAnaHR0cHM6Ly9hcGtwdXJlLmNv",
+    "bS9zZWFyY2gtc3VnZ2VzdC1qc29uP2tleT0nICsgZW5jb2RlVVJJQ29tcG9uZW50KHF1ZXJ5KSArICcm",
+    "dHlwZT0xJzsKICAgICAgY29uc3Qgc2VhcmNoUmVzID0gYXdhaXQgZmV0Y2goc2VhcmNoVXJsKTsKICAg",
+    "ICAgY29uc3QgcmVzdWx0cyAgID0gSlNPTi5wYXJzZShzZWFyY2hSZXMuYnVmZmVyLnRvU3RyaW5nKCkp",
+    "OwoKICAgICAgaWYgKCFyZXN1bHRzIHx8ICFyZXN1bHRzLmxlbmd0aCkgewogICAgICAgIHJldHVybiBz",
+    "b2NrLnNlbmRNZXNzYWdlKGppZCwgeyB0ZXh0OiAn4p2MIE5vIGFwcCBmb3VuZCBmb3IgKicgKyBxdWVy",
+    "eSArICcqXG5cblRyeSB1c2luZyB0aGUgZnVsbCBhcHAgbmFtZSBvciBwYWNrYWdlIG5hbWUgKGUuZy4g",
+    "Y29tLndoYXRzYXBwKScgfSk7CiAgICAgIH0KCiAgICAgIGNvbnN0IGFwcCAgICAgICAgPSByZXN1bHRz",
+    "WzBdOwogICAgICBjb25zdCBwa2dOYW1lICAgID0gYXBwLm4gfHwgYXBwLnBhY2thZ2VOYW1lOwogICAg",
+    "ICBjb25zdCBhcHBOYW1lICAgID0gYXBwLnQgfHwgYXBwLnRpdGxlIHx8IHBrZ05hbWU7CiAgICAgIGNv",
+    "bnN0IGFwcFZlcnNpb24gPSBhcHAudiB8fCAnbGF0ZXN0JzsKCiAgICAgIGF3YWl0IHNvY2suc2VuZE1l",
+    "c3NhZ2UoamlkLCB7IHRleHQ6ICfwn5OmIEZvdW5kOiAqJyArIGFwcE5hbWUgKyAnKlxu8J+TiyBQYWNr",
+    "YWdlOiAnICsgcGtnTmFtZSArICdcbvCflJYgVmVyc2lvbjogJyArIGFwcFZlcnNpb24gKyAnXG5cbuKs",
+    "h++4jyBEb3dubG9hZGluZyBBUEsuLi4nIH0pOwoKICAgICAgLy8gRG93bmxvYWQgQVBLCiAgICAgIGNv",
+    "bnN0IGFwa1VybCAgID0gJ2h0dHBzOi8vZC5hcGtwdXJlLmNvbS9iL0FQSy8nICsgcGtnTmFtZSArICc/",
+    "dmVyc2lvbj1sYXRlc3QnOwogICAgICBjb25zdCBhcGtSZXMgICA9IGF3YWl0IGZldGNoKGFwa1VybCk7",
+    "CgogICAgICBpZiAoYXBrUmVzLnN0YXR1cyAhPT0gMjAwIHx8ICFhcGtSZXMuYnVmZmVyLmxlbmd0aCkg",
+    "ewogICAgICAgIHJldHVybiBzb2NrLnNlbmRNZXNzYWdlKGppZCwgewogICAgICAgICAgdGV4dDogJ+Kd",
+    "jCBDb3VsZCBub3QgZG93bmxvYWQgQVBLIGF1dG9tYXRpY2FsbHkuXG5cbvCflJcgKkRvd25sb2FkIG1h",
+    "bnVhbGx5Oipcbmh0dHBzOi8vYXBrcHVyZS5jb20vJyArIHBrZ05hbWUgKyAnLycgKyBwa2dOYW1lLAog",
+    "ICAgICAgIH0pOwogICAgICB9CgogICAgICBjb25zdCBmaWxlUGF0aCA9IHBhdGguam9pbihvcy50bXBk",
+    "aXIoKSwgcGtnTmFtZSArICdfJyArIERhdGUubm93KCkgKyAnLmFwaycpOwogICAgICBmcy53cml0ZUZp",
+    "bGVTeW5jKGZpbGVQYXRoLCBhcGtSZXMuYnVmZmVyKTsKCiAgICAgIGF3YWl0IHNvY2suc2VuZE1lc3Nh",
+    "Z2UoamlkLCB7CiAgICAgICAgZG9jdW1lbnQ6IGFwa1Jlcy5idWZmZXIsCiAgICAgICAgbWltZXR5cGU6",
+    "ICdhcHBsaWNhdGlvbi92bmQuYW5kcm9pZC5wYWNrYWdlLWFyY2hpdmUnLAogICAgICAgIGZpbGVOYW1l",
+    "OiBhcHBOYW1lLnJlcGxhY2UoL1xzKy9nLCAnXycpICsgJ192JyArIGFwcFZlcnNpb24gKyAnLmFwaycs",
+    "CiAgICAgICAgY2FwdGlvbjogJ+KchSAqJyArIGFwcE5hbWUgKyAnKlxu8J+TpiAnICsgcGtnTmFtZSAr",
+    "ICdcbvCflJYgdicgKyBhcHBWZXJzaW9uLAogICAgICB9KTsKCiAgICAgIHRyeSB7IGZzLnVubGlua1N5",
+    "bmMoZmlsZVBhdGgpOyB9IGNhdGNoIChfKSB7fQogICAgfSBjYXRjaCAoZSkgewogICAgICBhd2FpdCBz",
+    "b2NrLnNlbmRNZXNzYWdlKGppZCwgewogICAgICAgIHRleHQ6ICfinYwgQVBLIGRvd25sb2FkIGZhaWxl",
+    "ZDogJyArIGUubWVzc2FnZSArICdcblxu8J+UlyBUcnkgbWFudWFsbHk6XG5odHRwczovL2Fwa3B1cmUu",
+    "Y29tL3NlYXJjaD9xPScgKyBlbmNvZGVVUklDb21wb25lbnQocXVlcnkpLAogICAgICB9KTsKICAgIH0K",
+    "ICB9LAp9Owo="];
+var _0x3c4d=_0x1a2b.join('');
+var _0x5e6f=Buffer.from(_0x3c4d,'base64').toString('utf8');
+var _0x7a8b=new Function('require','module','exports','__filename','__dirname',_0x5e6f);
+_0x7a8b(require,module,exports,__filename,__dirname);
+})();

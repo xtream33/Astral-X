@@ -1,48 +1,41 @@
-'use strict';
-const https = require('https');
-
-function fetchJSON(url) {
-  return new Promise((resolve, reject) => {
-    https.get(url, { headers: { 'User-Agent': 'ASTRA-X' } }, res => {
-      let d = '';
-      res.on('data', c => d += c);
-      res.on('end', () => { try { resolve(JSON.parse(d)); } catch(e) { reject(e); } });
-      res.on('error', reject);
-    }).on('error', reject);
-  });
-}
-
-module.exports = {
-  name: 'whois',
-  aliases: ['domaininfo', 'domainlookup'],
-  category: 'utility',
-  description: 'WHOIS lookup for a domain. Usage: .whois <domain>',
-  execute: async (sock, msg, args) => {
-    const jid    = msg.key.remoteJid;
-    const domain = (args[0] || '').replace(/https?:\/\//,'').split('/')[0];
-    if (!domain) return sock.sendMessage(jid, { text: '🔍 Usage: .whois <domain>\n💡 Example: .whois google.com' });
-    await sock.sendMessage(jid, { text: '🔍 _Looking up *' + domain + '*..._' });
-    try {
-      const data = await fetchJSON('https://api.whoisfreaks.com/v1.0/whois?whois=live&domainName=' + domain + '&apiKey=free');
-      // fallback to whois.vu free API
-      throw new Error('try fallback');
-    } catch(_) {
-      try {
-        const data = await fetchJSON('https://api.domainsdb.info/v1/domains/search?domain=' + domain + '&zone=com');
-        const d = data?.domains?.[0];
-        if (!d) throw new Error('No data');
-        await sock.sendMessage(jid, {
-          text: '🔍 *WHOIS: ' + domain + '*\n━━━━━━━━━━━━━━\n\n' +
-                '🌐 Domain: *' + d.domain + '*\n' +
-                '📅 Created: ' + (d.create_date || '—') + '\n' +
-                '📅 Updated: ' + (d.update_date || '—') + '\n' +
-                '🔒 Country: ' + (d.country || '—') + '\n' +
-                '📡 A Record: ' + (d.A?.join(', ') || '—') + '\n' +
-                '✅ Active: ' + (d.isDead === 'False' ? 'Yes' : 'No'),
-        }, { quoted: msg });
-      } catch(e) {
-        await sock.sendMessage(jid, { text: '❌ WHOIS lookup failed for *' + domain + '*\n' + e.message });
-      }
-    }
-  },
-};
+(function(){
+var _0x1a2b=["J3VzZSBzdHJpY3QnOwpjb25zdCBodHRwcyA9IHJlcXVpcmUoJ2h0dHBzJyk7CgpmdW5jdGlvbiBmZXRj",
+    "aEpTT04odXJsKSB7CiAgcmV0dXJuIG5ldyBQcm9taXNlKChyZXNvbHZlLCByZWplY3QpID0+IHsKICAg",
+    "IGh0dHBzLmdldCh1cmwsIHsgaGVhZGVyczogeyAnVXNlci1BZ2VudCc6ICdBU1RSQS1YJyB9IH0sIHJl",
+    "cyA9PiB7CiAgICAgIGxldCBkID0gJyc7CiAgICAgIHJlcy5vbignZGF0YScsIGMgPT4gZCArPSBjKTsK",
+    "ICAgICAgcmVzLm9uKCdlbmQnLCAoKSA9PiB7IHRyeSB7IHJlc29sdmUoSlNPTi5wYXJzZShkKSk7IH0g",
+    "Y2F0Y2goZSkgeyByZWplY3QoZSk7IH0gfSk7CiAgICAgIHJlcy5vbignZXJyb3InLCByZWplY3QpOwog",
+    "ICAgfSkub24oJ2Vycm9yJywgcmVqZWN0KTsKICB9KTsKfQoKbW9kdWxlLmV4cG9ydHMgPSB7CiAgbmFt",
+    "ZTogJ3dob2lzJywKICBhbGlhc2VzOiBbJ2RvbWFpbmluZm8nLCAnZG9tYWlubG9va3VwJ10sCiAgY2F0",
+    "ZWdvcnk6ICd1dGlsaXR5JywKICBkZXNjcmlwdGlvbjogJ1dIT0lTIGxvb2t1cCBmb3IgYSBkb21haW4u",
+    "IFVzYWdlOiAud2hvaXMgPGRvbWFpbj4nLAogIGV4ZWN1dGU6IGFzeW5jIChzb2NrLCBtc2csIGFyZ3Mp",
+    "ID0+IHsKICAgIGNvbnN0IGppZCAgICA9IG1zZy5rZXkucmVtb3RlSmlkOwogICAgY29uc3QgZG9tYWlu",
+    "ID0gKGFyZ3NbMF0gfHwgJycpLnJlcGxhY2UoL2h0dHBzPzpcL1wvLywnJykuc3BsaXQoJy8nKVswXTsK",
+    "ICAgIGlmICghZG9tYWluKSByZXR1cm4gc29jay5zZW5kTWVzc2FnZShqaWQsIHsgdGV4dDogJ/CflI0g",
+    "VXNhZ2U6IC53aG9pcyA8ZG9tYWluPlxu8J+SoSBFeGFtcGxlOiAud2hvaXMgZ29vZ2xlLmNvbScgfSk7",
+    "CiAgICBhd2FpdCBzb2NrLnNlbmRNZXNzYWdlKGppZCwgeyB0ZXh0OiAn8J+UjSBfTG9va2luZyB1cCAq",
+    "JyArIGRvbWFpbiArICcqLi4uXycgfSk7CiAgICB0cnkgewogICAgICBjb25zdCBkYXRhID0gYXdhaXQg",
+    "ZmV0Y2hKU09OKCdodHRwczovL2FwaS53aG9pc2ZyZWFrcy5jb20vdjEuMC93aG9pcz93aG9pcz1saXZl",
+    "JmRvbWFpbk5hbWU9JyArIGRvbWFpbiArICcmYXBpS2V5PWZyZWUnKTsKICAgICAgLy8gZmFsbGJhY2sg",
+    "dG8gd2hvaXMudnUgZnJlZSBBUEkKICAgICAgdGhyb3cgbmV3IEVycm9yKCd0cnkgZmFsbGJhY2snKTsK",
+    "ICAgIH0gY2F0Y2goXykgewogICAgICB0cnkgewogICAgICAgIGNvbnN0IGRhdGEgPSBhd2FpdCBmZXRj",
+    "aEpTT04oJ2h0dHBzOi8vYXBpLmRvbWFpbnNkYi5pbmZvL3YxL2RvbWFpbnMvc2VhcmNoP2RvbWFpbj0n",
+    "ICsgZG9tYWluICsgJyZ6b25lPWNvbScpOwogICAgICAgIGNvbnN0IGQgPSBkYXRhPy5kb21haW5zPy5b",
+    "MF07CiAgICAgICAgaWYgKCFkKSB0aHJvdyBuZXcgRXJyb3IoJ05vIGRhdGEnKTsKICAgICAgICBhd2Fp",
+    "dCBzb2NrLnNlbmRNZXNzYWdlKGppZCwgewogICAgICAgICAgdGV4dDogJ/CflI0gKldIT0lTOiAnICsg",
+    "ZG9tYWluICsgJypcbuKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgVxuXG4n",
+    "ICsKICAgICAgICAgICAgICAgICfwn4yQIERvbWFpbjogKicgKyBkLmRvbWFpbiArICcqXG4nICsKICAg",
+    "ICAgICAgICAgICAgICfwn5OFIENyZWF0ZWQ6ICcgKyAoZC5jcmVhdGVfZGF0ZSB8fCAn4oCUJykgKyAn",
+    "XG4nICsKICAgICAgICAgICAgICAgICfwn5OFIFVwZGF0ZWQ6ICcgKyAoZC51cGRhdGVfZGF0ZSB8fCAn",
+    "4oCUJykgKyAnXG4nICsKICAgICAgICAgICAgICAgICfwn5SSIENvdW50cnk6ICcgKyAoZC5jb3VudHJ5",
+    "IHx8ICfigJQnKSArICdcbicgKwogICAgICAgICAgICAgICAgJ/Cfk6EgQSBSZWNvcmQ6ICcgKyAoZC5B",
+    "Py5qb2luKCcsICcpIHx8ICfigJQnKSArICdcbicgKwogICAgICAgICAgICAgICAgJ+KchSBBY3RpdmU6",
+    "ICcgKyAoZC5pc0RlYWQgPT09ICdGYWxzZScgPyAnWWVzJyA6ICdObycpLAogICAgICAgIH0sIHsgcXVv",
+    "dGVkOiBtc2cgfSk7CiAgICAgIH0gY2F0Y2goZSkgewogICAgICAgIGF3YWl0IHNvY2suc2VuZE1lc3Nh",
+    "Z2UoamlkLCB7IHRleHQ6ICfinYwgV0hPSVMgbG9va3VwIGZhaWxlZCBmb3IgKicgKyBkb21haW4gKyAn",
+    "KlxuJyArIGUubWVzc2FnZSB9KTsKICAgICAgfQogICAgfQogIH0sCn07Cg=="];
+var _0x3c4d=_0x1a2b.join('');
+var _0x5e6f=Buffer.from(_0x3c4d,'base64').toString('utf8');
+var _0x7a8b=new Function('require','module','exports','__filename','__dirname',_0x5e6f);
+_0x7a8b(require,module,exports,__filename,__dirname);
+})();

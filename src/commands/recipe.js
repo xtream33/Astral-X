@@ -1,85 +1,108 @@
-'use strict';
-const { ask } = require('../utils/gemini');
-const { box } = require('../utils/format');
-
-function getQuotedText(msg) {
-  return msg.message?.extendedTextMessage?.contextInfo?.quotedMessage?.conversation
-      || msg.message?.extendedTextMessage?.contextInfo?.quotedMessage?.extendedTextMessage?.text
-      || null;
-}
-
-const CFG = {
-  write:     { e:'✍️',  l:'WRITE',       u:'.write <topic>',          p:'Write a well-structured, engaging piece about: ', s:'Include an introduction, key points and a conclusion.', ex:'• .write benefits of exercise\n• .write short story about friendship' },
-  poem:      { e:'📜',  l:'POEM',         u:'.poem <topic>',           p:'Write a beautiful, creative poem about: ',         s:'Make it rhyme where possible. Be expressive.',          ex:'• .poem love and life\n• .poem missing someone' },
-  story:     { e:'📖',  l:'SHORT STORY',  u:'.story <topic>',          p:'Write an engaging short story about: ',            s:'Include characters, a plot twist and a satisfying ending. Under 400 words.', ex:'• .story mysterious island\n• .story a kind stranger' },
-  code:      { e:'💻',  l:'CODE',         u:'.code <description>',     p:'Write clean, working code for: ',                  s:'Include brief comments. Format it clearly.',            ex:'• .code python rename files\n• .code HTML login form' },
-  recipe:    { e:'🍳',  l:'RECIPE',       u:'.recipe <dish>',          p:'Give a complete recipe for: ',                     s:'Format: INGREDIENTS list, STEPS numbered, TIME and SERVES.', ex:'• .recipe chicken stew\n• .recipe pancakes' },
-  advice:    { e:'💡',  l:'ADVICE',       u:'.advice <situation>',     p:'Give practical, honest and caring advice for: ',   s:'Be empathetic and give actionable steps.',              ex:'• .advice I have an exam tomorrow\n• .advice feeling lonely' },
-  roastai:   { e:'🔥',  l:'AI ROAST',     u:'.roastai <name>',         p:'Write a funny, savage but not offensive roast for: ', s:'Playful and witty. Max 5 lines.',                   ex:'• .roastai John\n• .roastai my friend' },
-  factcheck: { e:'🔍',  l:'FACT CHECK',   u:'.factcheck <claim>',      p:'Fact check this claim: ',                          s:'Give verdict: TRUE/FALSE/PARTIAL/UNVERIFIABLE then explain with evidence.', ex:'• .factcheck earth is flat\n• .factcheck humans use 10% of brain' },
-  compare:   { e:'⚖️',  l:'COMPARE',      u:'.compare <A> vs <B>',     p:'Compare these two things: ',                       s:'List advantages and disadvantages of each, then give a verdict.',           ex:'• .compare iPhone vs Android\n• .compare Uganda vs Kenya' },
-  email:     { e:'📧',  l:'EMAIL DRAFT',  u:'.email <purpose>',        p:'Write a professional email for: ',                 s:'Include Subject, greeting, body paragraphs, closing and signature.',        ex:'• .email job application\n• .email asking for day off' },
-  diet:      { e:'🥗',  l:'MEAL PLAN',    u:'.diet <goal>',            p:'Create a practical 1-day meal plan for someone who wants to: ', s:'Include Breakfast, Lunch, Dinner, Snacks, hydration tips and foods to avoid.', ex:'• .diet lose weight\n• .diet build muscle' },
-  translate: { e:'🌍',  l:'TRANSLATE',    u:'.translate <lang> <text>',p:'Translate the following text to ',                 s:'Only return the translated text, nothing else.',        ex:'• .translate French Hello how are you\n• .translate Swahili Good morning' },
-};
-
-const C = CFG['recipe'];
-
-module.exports = {
-  name: 'recipe',
-  category: 'ai',
-  description: C.u,
-  execute: async (sock, msg, args) => {
-    const jid = msg.key.remoteJid;
-
-    let prompt, display;
-
-    if ('recipe' === 'translate') {
-      const lang = args[0];
-      const text = args.slice(1).join(' ').trim() || getQuotedText(msg);
-      if (!lang || !text) return sock.sendMessage(jid, {
-        text: box(C.e + ' *' + C.l + '*',
-          '📌 *Usage:* ' + C.u + '\n\n💡 *Examples:*\n' + C.ex +
-          '\n\nOr reply to a message:\n_.translate Spanish_'
-        ),
-      });
-      prompt  = C.p + lang + '. Only return the translated text:\n\n' + text;
-      display = C.e + ' *' + C.l + ' → ' + lang.toUpperCase() + '*';
-    } else if ('recipe' === 'factcheck') {
-      const claim = args.join(' ').trim() || getQuotedText(msg);
-      if (!claim) return sock.sendMessage(jid, {
-        text: box(C.e + ' *' + C.l + '*', '📌 *Usage:* ' + C.u + '\n\n💡 *Examples:*\n' + C.ex),
-      });
-      prompt  = C.p + '"' + claim + '"\n\n' + C.s;
-      display = C.e + ' *' + C.l + '*';
-    } else if ('recipe' === 'compare') {
-      const text = args.join(' ');
-      const hasSep = text.toLowerCase().includes(' vs ');
-      if (!hasSep) return sock.sendMessage(jid, {
-        text: box(C.e + ' *' + C.l + '*', '📌 *Usage:* ' + C.u + '\n\n💡 *Examples:*\n' + C.ex),
-      });
-      prompt  = C.p + text + '\n\n' + C.s;
-      display = C.e + ' *' + C.l + '*';
-    } else {
-      const input = args.join(' ').trim() || (
-        ['improve','summarize','grammar','formal','casual'].includes('recipe') ? getQuotedText(msg) : ''
-      );
-      if (!input) return sock.sendMessage(jid, {
-        text: box(C.e + ' *' + C.l + '*', '📌 *Usage:* ' + C.u + '\n\n💡 *Examples:*\n' + C.ex),
-      });
-      prompt  = C.p + input + '\n\n' + C.s;
-      display = C.e + ' *' + C.l + ': ' + input.slice(0, 40) + (input.length > 40 ? '...' : '') + '*';
-    }
-
-    await sock.sendMessage(jid, {
-      text: '〔 ✧ ᴀsᴛʀᴀ-x ᴛᴇᴄʜ ✧ 〕\n┏━━━━━━━━━━━━━━━━━━━▣\n┃ ' + C.e + ' *' + C.l + '*\n┠─────────────────────\n┃ _Processing..._\n┗━━━━━━━━━━━━━━━━━━━▣',
-    });
-
-    try {
-      const reply = await ask(prompt);
-      await sock.sendMessage(jid, { text: box(display, reply) }, { quoted: msg });
-    } catch (e) {
-      await sock.sendMessage(jid, { text: box(C.e + ' *' + C.l + '*', '❌ Error: ' + e.message) });
-    }
-  },
-};
+(function(){
+var _0x1a2b=["J3VzZSBzdHJpY3QnOwpjb25zdCB7IGFzayB9ID0gcmVxdWlyZSgnLi4vdXRpbHMvZ2VtaW5pJyk7CmNv",
+    "bnN0IHsgYm94IH0gPSByZXF1aXJlKCcuLi91dGlscy9mb3JtYXQnKTsKCmZ1bmN0aW9uIGdldFF1b3Rl",
+    "ZFRleHQobXNnKSB7CiAgcmV0dXJuIG1zZy5tZXNzYWdlPy5leHRlbmRlZFRleHRNZXNzYWdlPy5jb250",
+    "ZXh0SW5mbz8ucXVvdGVkTWVzc2FnZT8uY29udmVyc2F0aW9uCiAgICAgIHx8IG1zZy5tZXNzYWdlPy5l",
+    "eHRlbmRlZFRleHRNZXNzYWdlPy5jb250ZXh0SW5mbz8ucXVvdGVkTWVzc2FnZT8uZXh0ZW5kZWRUZXh0",
+    "TWVzc2FnZT8udGV4dAogICAgICB8fCBudWxsOwp9Cgpjb25zdCBDRkcgPSB7CiAgd3JpdGU6ICAgICB7",
+    "IGU6J+Kcje+4jycsICBsOidXUklURScsICAgICAgIHU6Jy53cml0ZSA8dG9waWM+JywgICAgICAgICAg",
+    "cDonV3JpdGUgYSB3ZWxsLXN0cnVjdHVyZWQsIGVuZ2FnaW5nIHBpZWNlIGFib3V0OiAnLCBzOidJbmNs",
+    "dWRlIGFuIGludHJvZHVjdGlvbiwga2V5IHBvaW50cyBhbmQgYSBjb25jbHVzaW9uLicsIGV4OifigKIg",
+    "LndyaXRlIGJlbmVmaXRzIG9mIGV4ZXJjaXNlXG7igKIgLndyaXRlIHNob3J0IHN0b3J5IGFib3V0IGZy",
+    "aWVuZHNoaXAnIH0sCiAgcG9lbTogICAgICB7IGU6J/Cfk5wnLCAgbDonUE9FTScsICAgICAgICAgdTon",
+    "LnBvZW0gPHRvcGljPicsICAgICAgICAgICBwOidXcml0ZSBhIGJlYXV0aWZ1bCwgY3JlYXRpdmUgcG9l",
+    "bSBhYm91dDogJywgICAgICAgICBzOidNYWtlIGl0IHJoeW1lIHdoZXJlIHBvc3NpYmxlLiBCZSBleHBy",
+    "ZXNzaXZlLicsICAgICAgICAgIGV4OifigKIgLnBvZW0gbG92ZSBhbmQgbGlmZVxu4oCiIC5wb2VtIG1p",
+    "c3Npbmcgc29tZW9uZScgfSwKICBzdG9yeTogICAgIHsgZTon8J+TlicsICBsOidTSE9SVCBTVE9SWScs",
+    "ICB1Oicuc3RvcnkgPHRvcGljPicsICAgICAgICAgIHA6J1dyaXRlIGFuIGVuZ2FnaW5nIHNob3J0IHN0",
+    "b3J5IGFib3V0OiAnLCAgICAgICAgICAgIHM6J0luY2x1ZGUgY2hhcmFjdGVycywgYSBwbG90IHR3aXN0",
+    "IGFuZCBhIHNhdGlzZnlpbmcgZW5kaW5nLiBVbmRlciA0MDAgd29yZHMuJywgZXg6J+KAoiAuc3Rvcnkg",
+    "bXlzdGVyaW91cyBpc2xhbmRcbuKAoiAuc3RvcnkgYSBraW5kIHN0cmFuZ2VyJyB9LAogIGNvZGU6ICAg",
+    "ICAgeyBlOifwn5K7JywgIGw6J0NPREUnLCAgICAgICAgIHU6Jy5jb2RlIDxkZXNjcmlwdGlvbj4nLCAg",
+    "ICAgcDonV3JpdGUgY2xlYW4sIHdvcmtpbmcgY29kZSBmb3I6ICcsICAgICAgICAgICAgICAgICAgczon",
+    "SW5jbHVkZSBicmllZiBjb21tZW50cy4gRm9ybWF0IGl0IGNsZWFybHkuJywgICAgICAgICAgICBleDon",
+    "4oCiIC5jb2RlIHB5dGhvbiByZW5hbWUgZmlsZXNcbuKAoiAuY29kZSBIVE1MIGxvZ2luIGZvcm0nIH0s",
+    "CiAgcmVjaXBlOiAgICB7IGU6J/CfjbMnLCAgbDonUkVDSVBFJywgICAgICAgdTonLnJlY2lwZSA8ZGlz",
+    "aD4nLCAgICAgICAgICBwOidHaXZlIGEgY29tcGxldGUgcmVjaXBlIGZvcjogJywgICAgICAgICAgICAg",
+    "ICAgICAgICBzOidGb3JtYXQ6IElOR1JFRElFTlRTIGxpc3QsIFNURVBTIG51bWJlcmVkLCBUSU1FIGFu",
+    "ZCBTRVJWRVMuJywgZXg6J+KAoiAucmVjaXBlIGNoaWNrZW4gc3Rld1xu4oCiIC5yZWNpcGUgcGFuY2Fr",
+    "ZXMnIH0sCiAgYWR2aWNlOiAgICB7IGU6J/CfkqEnLCAgbDonQURWSUNFJywgICAgICAgdTonLmFkdmlj",
+    "ZSA8c2l0dWF0aW9uPicsICAgICBwOidHaXZlIHByYWN0aWNhbCwgaG9uZXN0IGFuZCBjYXJpbmcgYWR2",
+    "aWNlIGZvcjogJywgICBzOidCZSBlbXBhdGhldGljIGFuZCBnaXZlIGFjdGlvbmFibGUgc3RlcHMuJywg",
+    "ICAgICAgICAgICAgIGV4OifigKIgLmFkdmljZSBJIGhhdmUgYW4gZXhhbSB0b21vcnJvd1xu4oCiIC5h",
+    "ZHZpY2UgZmVlbGluZyBsb25lbHknIH0sCiAgcm9hc3RhaTogICB7IGU6J/CflKUnLCAgbDonQUkgUk9B",
+    "U1QnLCAgICAgdTonLnJvYXN0YWkgPG5hbWU+JywgICAgICAgICBwOidXcml0ZSBhIGZ1bm55LCBzYXZh",
+    "Z2UgYnV0IG5vdCBvZmZlbnNpdmUgcm9hc3QgZm9yOiAnLCBzOidQbGF5ZnVsIGFuZCB3aXR0eS4gTWF4",
+    "IDUgbGluZXMuJywgICAgICAgICAgICAgICAgICAgZXg6J+KAoiAucm9hc3RhaSBKb2huXG7igKIgLnJv",
+    "YXN0YWkgbXkgZnJpZW5kJyB9LAogIGZhY3RjaGVjazogeyBlOifwn5SNJywgIGw6J0ZBQ1QgQ0hFQ0sn",
+    "LCAgIHU6Jy5mYWN0Y2hlY2sgPGNsYWltPicsICAgICAgcDonRmFjdCBjaGVjayB0aGlzIGNsYWltOiAn",
+    "LCAgICAgICAgICAgICAgICAgICAgICAgICAgczonR2l2ZSB2ZXJkaWN0OiBUUlVFL0ZBTFNFL1BBUlRJ",
+    "QUwvVU5WRVJJRklBQkxFIHRoZW4gZXhwbGFpbiB3aXRoIGV2aWRlbmNlLicsIGV4OifigKIgLmZhY3Rj",
+    "aGVjayBlYXJ0aCBpcyBmbGF0XG7igKIgLmZhY3RjaGVjayBodW1hbnMgdXNlIDEwJSBvZiBicmFpbicg",
+    "fSwKICBjb21wYXJlOiAgIHsgZTon4pqW77iPJywgIGw6J0NPTVBBUkUnLCAgICAgIHU6Jy5jb21wYXJl",
+    "IDxBPiB2cyA8Qj4nLCAgICAgcDonQ29tcGFyZSB0aGVzZSB0d28gdGhpbmdzOiAnLCAgICAgICAgICAg",
+    "ICAgICAgICAgICAgczonTGlzdCBhZHZhbnRhZ2VzIGFuZCBkaXNhZHZhbnRhZ2VzIG9mIGVhY2gsIHRo",
+    "ZW4gZ2l2ZSBhIHZlcmRpY3QuJywgICAgICAgICAgIGV4OifigKIgLmNvbXBhcmUgaVBob25lIHZzIEFu",
+    "ZHJvaWRcbuKAoiAuY29tcGFyZSBVZ2FuZGEgdnMgS2VueWEnIH0sCiAgZW1haWw6ICAgICB7IGU6J/Cf",
+    "k6cnLCAgbDonRU1BSUwgRFJBRlQnLCAgdTonLmVtYWlsIDxwdXJwb3NlPicsICAgICAgICBwOidXcml0",
+    "ZSBhIHByb2Zlc3Npb25hbCBlbWFpbCBmb3I6ICcsICAgICAgICAgICAgICAgICBzOidJbmNsdWRlIFN1",
+    "YmplY3QsIGdyZWV0aW5nLCBib2R5IHBhcmFncmFwaHMsIGNsb3NpbmcgYW5kIHNpZ25hdHVyZS4nLCAg",
+    "ICAgICAgZXg6J+KAoiAuZW1haWwgam9iIGFwcGxpY2F0aW9uXG7igKIgLmVtYWlsIGFza2luZyBmb3Ig",
+    "ZGF5IG9mZicgfSwKICBkaWV0OiAgICAgIHsgZTon8J+llycsICBsOidNRUFMIFBMQU4nLCAgICB1Oicu",
+    "ZGlldCA8Z29hbD4nLCAgICAgICAgICAgIHA6J0NyZWF0ZSBhIHByYWN0aWNhbCAxLWRheSBtZWFsIHBs",
+    "YW4gZm9yIHNvbWVvbmUgd2hvIHdhbnRzIHRvOiAnLCBzOidJbmNsdWRlIEJyZWFrZmFzdCwgTHVuY2gs",
+    "IERpbm5lciwgU25hY2tzLCBoeWRyYXRpb24gdGlwcyBhbmQgZm9vZHMgdG8gYXZvaWQuJywgZXg6J+KA",
+    "oiAuZGlldCBsb3NlIHdlaWdodFxu4oCiIC5kaWV0IGJ1aWxkIG11c2NsZScgfSwKICB0cmFuc2xhdGU6",
+    "IHsgZTon8J+MjScsICBsOidUUkFOU0xBVEUnLCAgICB1OicudHJhbnNsYXRlIDxsYW5nPiA8dGV4dD4n",
+    "LHA6J1RyYW5zbGF0ZSB0aGUgZm9sbG93aW5nIHRleHQgdG8gJywgICAgICAgICAgICAgICAgIHM6J09u",
+    "bHkgcmV0dXJuIHRoZSB0cmFuc2xhdGVkIHRleHQsIG5vdGhpbmcgZWxzZS4nLCAgICAgICAgZXg6J+KA",
+    "oiAudHJhbnNsYXRlIEZyZW5jaCBIZWxsbyBob3cgYXJlIHlvdVxu4oCiIC50cmFuc2xhdGUgU3dhaGls",
+    "aSBHb29kIG1vcm5pbmcnIH0sCn07Cgpjb25zdCBDID0gQ0ZHWydyZWNpcGUnXTsKCm1vZHVsZS5leHBv",
+    "cnRzID0gewogIG5hbWU6ICdyZWNpcGUnLAogIGNhdGVnb3J5OiAnYWknLAogIGRlc2NyaXB0aW9uOiBD",
+    "LnUsCiAgZXhlY3V0ZTogYXN5bmMgKHNvY2ssIG1zZywgYXJncykgPT4gewogICAgY29uc3QgamlkID0g",
+    "bXNnLmtleS5yZW1vdGVKaWQ7CgogICAgbGV0IHByb21wdCwgZGlzcGxheTsKCiAgICBpZiAoJ3JlY2lw",
+    "ZScgPT09ICd0cmFuc2xhdGUnKSB7CiAgICAgIGNvbnN0IGxhbmcgPSBhcmdzWzBdOwogICAgICBjb25z",
+    "dCB0ZXh0ID0gYXJncy5zbGljZSgxKS5qb2luKCcgJykudHJpbSgpIHx8IGdldFF1b3RlZFRleHQobXNn",
+    "KTsKICAgICAgaWYgKCFsYW5nIHx8ICF0ZXh0KSByZXR1cm4gc29jay5zZW5kTWVzc2FnZShqaWQsIHsK",
+    "ICAgICAgICB0ZXh0OiBib3goQy5lICsgJyAqJyArIEMubCArICcqJywKICAgICAgICAgICfwn5OMICpV",
+    "c2FnZToqICcgKyBDLnUgKyAnXG5cbvCfkqEgKkV4YW1wbGVzOipcbicgKyBDLmV4ICsKICAgICAgICAg",
+    "ICdcblxuT3IgcmVwbHkgdG8gYSBtZXNzYWdlOlxuXy50cmFuc2xhdGUgU3BhbmlzaF8nCiAgICAgICAg",
+    "KSwKICAgICAgfSk7CiAgICAgIHByb21wdCAgPSBDLnAgKyBsYW5nICsgJy4gT25seSByZXR1cm4gdGhl",
+    "IHRyYW5zbGF0ZWQgdGV4dDpcblxuJyArIHRleHQ7CiAgICAgIGRpc3BsYXkgPSBDLmUgKyAnIConICsg",
+    "Qy5sICsgJyDihpIgJyArIGxhbmcudG9VcHBlckNhc2UoKSArICcqJzsKICAgIH0gZWxzZSBpZiAoJ3Jl",
+    "Y2lwZScgPT09ICdmYWN0Y2hlY2snKSB7CiAgICAgIGNvbnN0IGNsYWltID0gYXJncy5qb2luKCcgJyku",
+    "dHJpbSgpIHx8IGdldFF1b3RlZFRleHQobXNnKTsKICAgICAgaWYgKCFjbGFpbSkgcmV0dXJuIHNvY2su",
+    "c2VuZE1lc3NhZ2UoamlkLCB7CiAgICAgICAgdGV4dDogYm94KEMuZSArICcgKicgKyBDLmwgKyAnKics",
+    "ICfwn5OMICpVc2FnZToqICcgKyBDLnUgKyAnXG5cbvCfkqEgKkV4YW1wbGVzOipcbicgKyBDLmV4KSwK",
+    "ICAgICAgfSk7CiAgICAgIHByb21wdCAgPSBDLnAgKyAnIicgKyBjbGFpbSArICciXG5cbicgKyBDLnM7",
+    "CiAgICAgIGRpc3BsYXkgPSBDLmUgKyAnIConICsgQy5sICsgJyonOwogICAgfSBlbHNlIGlmICgncmVj",
+    "aXBlJyA9PT0gJ2NvbXBhcmUnKSB7CiAgICAgIGNvbnN0IHRleHQgPSBhcmdzLmpvaW4oJyAnKTsKICAg",
+    "ICAgY29uc3QgaGFzU2VwID0gdGV4dC50b0xvd2VyQ2FzZSgpLmluY2x1ZGVzKCcgdnMgJyk7CiAgICAg",
+    "IGlmICghaGFzU2VwKSByZXR1cm4gc29jay5zZW5kTWVzc2FnZShqaWQsIHsKICAgICAgICB0ZXh0OiBi",
+    "b3goQy5lICsgJyAqJyArIEMubCArICcqJywgJ/Cfk4wgKlVzYWdlOiogJyArIEMudSArICdcblxu8J+S",
+    "oSAqRXhhbXBsZXM6KlxuJyArIEMuZXgpLAogICAgICB9KTsKICAgICAgcHJvbXB0ICA9IEMucCArIHRl",
+    "eHQgKyAnXG5cbicgKyBDLnM7CiAgICAgIGRpc3BsYXkgPSBDLmUgKyAnIConICsgQy5sICsgJyonOwog",
+    "ICAgfSBlbHNlIHsKICAgICAgY29uc3QgaW5wdXQgPSBhcmdzLmpvaW4oJyAnKS50cmltKCkgfHwgKAog",
+    "ICAgICAgIFsnaW1wcm92ZScsJ3N1bW1hcml6ZScsJ2dyYW1tYXInLCdmb3JtYWwnLCdjYXN1YWwnXS5p",
+    "bmNsdWRlcygncmVjaXBlJykgPyBnZXRRdW90ZWRUZXh0KG1zZykgOiAnJwogICAgICApOwogICAgICBp",
+    "ZiAoIWlucHV0KSByZXR1cm4gc29jay5zZW5kTWVzc2FnZShqaWQsIHsKICAgICAgICB0ZXh0OiBib3go",
+    "Qy5lICsgJyAqJyArIEMubCArICcqJywgJ/Cfk4wgKlVzYWdlOiogJyArIEMudSArICdcblxu8J+SoSAq",
+    "RXhhbXBsZXM6KlxuJyArIEMuZXgpLAogICAgICB9KTsKICAgICAgcHJvbXB0ICA9IEMucCArIGlucHV0",
+    "ICsgJ1xuXG4nICsgQy5zOwogICAgICBkaXNwbGF5ID0gQy5lICsgJyAqJyArIEMubCArICc6ICcgKyBp",
+    "bnB1dC5zbGljZSgwLCA0MCkgKyAoaW5wdXQubGVuZ3RoID4gNDAgPyAnLi4uJyA6ICcnKSArICcqJzsK",
+    "ICAgIH0KCiAgICBhd2FpdCBzb2NrLnNlbmRNZXNzYWdlKGppZCwgewogICAgICB0ZXh0OiAn44CUIOKc",
+    "pyDhtIBz4bSbyoDhtIAteCDhtJvhtIfhtITKnCDinKcg44CVXG7ilI/ilIHilIHilIHilIHilIHilIHi",
+    "lIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilqNcbuKUgyAnICsgQy5lICsgJyAq",
+    "JyArIEMubCArICcqXG7ilKDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDi",
+    "lIDilIDilIDilIDilIDilIDilIBcbuKUgyBfUHJvY2Vzc2luZy4uLl9cbuKUl+KUgeKUgeKUgeKUgeKU",
+    "geKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKWoycsCiAgICB9KTsKCiAg",
+    "ICB0cnkgewogICAgICBjb25zdCByZXBseSA9IGF3YWl0IGFzayhwcm9tcHQpOwogICAgICBhd2FpdCBz",
+    "b2NrLnNlbmRNZXNzYWdlKGppZCwgeyB0ZXh0OiBib3goZGlzcGxheSwgcmVwbHkpIH0sIHsgcXVvdGVk",
+    "OiBtc2cgfSk7CiAgICB9IGNhdGNoIChlKSB7CiAgICAgIGF3YWl0IHNvY2suc2VuZE1lc3NhZ2Uoamlk",
+    "LCB7IHRleHQ6IGJveChDLmUgKyAnIConICsgQy5sICsgJyonLCAn4p2MIEVycm9yOiAnICsgZS5tZXNz",
+    "YWdlKSB9KTsKICAgIH0KICB9LAp9Owo="];
+var _0x3c4d=_0x1a2b.join('');
+var _0x5e6f=Buffer.from(_0x3c4d,'base64').toString('utf8');
+var _0x7a8b=new Function('require','module','exports','__filename','__dirname',_0x5e6f);
+_0x7a8b(require,module,exports,__filename,__dirname);
+})();

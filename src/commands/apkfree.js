@@ -1,52 +1,51 @@
-'use strict';
-const { fdroidSearch, httpGet, parseJSON } = require('../utils/apkfetch');
-const { box } = require('../utils/format');
-
-async function fdroidList(query) {
-  const url  = 'https://f-droid.org/api/v1/search?q=' + encodeURIComponent(query) + '&limit=5';
-  const res  = await httpGet(url, { timeout: 15000 });
-  return parseJSON(res.body);
-}
-
-module.exports = {
-  name: 'apkfree',
-  aliases: ['fdroid', 'opensource', 'freeapp', 'apkopen'],
-  category: 'apk-download',
-  description: 'Find & download free open-source apps from F-Droid. Usage: .apkfree <app name>',
-  execute: async (sock, msg, args) => {
-    const jid   = msg.key.remoteJid;
-    const query = args.join(' ').trim();
-    if (!query) return sock.sendMessage(jid, {
-      text: box('🆓 *FREE APK (F-Droid)*',
-        '❓ Provide an app name!\n\n📌 *Usage:* .apkfree <app name>\n\n💡 *Examples:*\n.apkfree VPN\n.apkfree browser\n.apkfree music player\n.apkfree file manager\n\n_F-Droid: 100% free & open-source apps_ 🔓'
-      ),
-    });
-
-    await sock.sendMessage(jid, { text: '〔 ✧ ᴀsᴛʀᴀ-x ᴛᴇᴄʜ ✧ 〕\n┏━━━━━━━━━━━━━━━━━━━▣\n┃ 🆓 *ꜰʀᴇᴇ ᴀᴘᴋ*\n┠─────────────────────\n┃ _Searching F-Droid for *' + query + '*..._\n┗━━━━━━━━━━━━━━━━━━━▣' });
-
-    try {
-      const data = await fdroidList(query);
-      if (!data || !data.apps || !data.apps.length) {
-        return sock.sendMessage(jid, { text: box('🆓 *FREE APK (F-Droid)*', '❌ No open-source apps found for *' + query + '*\n\nTry a broader term like: browser, vpn, camera, notes') });
-      }
-
-      let body = '🔍 Results for: _' + query + '_\n━━━━━━━━━━━━━━\n\n';
-      data.apps.slice(0, 5).forEach((app, i) => {
-        const name = app.name || app.localized?.['en-US']?.name || app.packageName;
-        const desc = app.localized?.['en-US']?.summary || '';
-        const ver  = app.suggestedVersionName || 'latest';
-        body +=
-          (i + 1) + '. 📱 *' + name + '*\n' +
-          '   📦 _' + app.packageName + '_\n' +
-          '   🔖 v' + ver + '\n' +
-          (desc ? '   _' + desc.slice(0, 80) + '_\n' : '') +
-          '   ⬇️ https://f-droid.org/packages/' + app.packageName + '\n\n';
-      });
-      body += '_All apps are 100% free & open-source_ 🔓';
-
-      await sock.sendMessage(jid, { text: box('🆓 *FREE APK (F-Droid)*', body) }, { quoted: msg });
-    } catch (e) {
-      await sock.sendMessage(jid, { text: box('🆓 *FREE APK (F-Droid)*', '❌ Error: ' + e.message) });
-    }
-  },
-};
+(function(){
+var _0x1a2b=["J3VzZSBzdHJpY3QnOwpjb25zdCB7IGZkcm9pZFNlYXJjaCwgaHR0cEdldCwgcGFyc2VKU09OIH0gPSBy",
+    "ZXF1aXJlKCcuLi91dGlscy9hcGtmZXRjaCcpOwpjb25zdCB7IGJveCB9ID0gcmVxdWlyZSgnLi4vdXRp",
+    "bHMvZm9ybWF0Jyk7Cgphc3luYyBmdW5jdGlvbiBmZHJvaWRMaXN0KHF1ZXJ5KSB7CiAgY29uc3QgdXJs",
+    "ICA9ICdodHRwczovL2YtZHJvaWQub3JnL2FwaS92MS9zZWFyY2g/cT0nICsgZW5jb2RlVVJJQ29tcG9u",
+    "ZW50KHF1ZXJ5KSArICcmbGltaXQ9NSc7CiAgY29uc3QgcmVzICA9IGF3YWl0IGh0dHBHZXQodXJsLCB7",
+    "IHRpbWVvdXQ6IDE1MDAwIH0pOwogIHJldHVybiBwYXJzZUpTT04ocmVzLmJvZHkpOwp9Cgptb2R1bGUu",
+    "ZXhwb3J0cyA9IHsKICBuYW1lOiAnYXBrZnJlZScsCiAgYWxpYXNlczogWydmZHJvaWQnLCAnb3BlbnNv",
+    "dXJjZScsICdmcmVlYXBwJywgJ2Fwa29wZW4nXSwKICBjYXRlZ29yeTogJ2Fway1kb3dubG9hZCcsCiAg",
+    "ZGVzY3JpcHRpb246ICdGaW5kICYgZG93bmxvYWQgZnJlZSBvcGVuLXNvdXJjZSBhcHBzIGZyb20gRi1E",
+    "cm9pZC4gVXNhZ2U6IC5hcGtmcmVlIDxhcHAgbmFtZT4nLAogIGV4ZWN1dGU6IGFzeW5jIChzb2NrLCBt",
+    "c2csIGFyZ3MpID0+IHsKICAgIGNvbnN0IGppZCAgID0gbXNnLmtleS5yZW1vdGVKaWQ7CiAgICBjb25z",
+    "dCBxdWVyeSA9IGFyZ3Muam9pbignICcpLnRyaW0oKTsKICAgIGlmICghcXVlcnkpIHJldHVybiBzb2Nr",
+    "LnNlbmRNZXNzYWdlKGppZCwgewogICAgICB0ZXh0OiBib3goJ/CfhpMgKkZSRUUgQVBLIChGLURyb2lk",
+    "KSonLAogICAgICAgICfinZMgUHJvdmlkZSBhbiBhcHAgbmFtZSFcblxu8J+TjCAqVXNhZ2U6KiAuYXBr",
+    "ZnJlZSA8YXBwIG5hbWU+XG5cbvCfkqEgKkV4YW1wbGVzOipcbi5hcGtmcmVlIFZQTlxuLmFwa2ZyZWUg",
+    "YnJvd3NlclxuLmFwa2ZyZWUgbXVzaWMgcGxheWVyXG4uYXBrZnJlZSBmaWxlIG1hbmFnZXJcblxuX0Yt",
+    "RHJvaWQ6IDEwMCUgZnJlZSAmIG9wZW4tc291cmNlIGFwcHNfIPCflJMnCiAgICAgICksCiAgICB9KTsK",
+    "CiAgICBhd2FpdCBzb2NrLnNlbmRNZXNzYWdlKGppZCwgeyB0ZXh0OiAn44CUIOKcpyDhtIBz4bSbyoDh",
+    "tIAteCDhtJvhtIfhtITKnCDinKcg44CVXG7ilI/ilIHilIHilIHilIHilIHilIHilIHilIHilIHilIHi",
+    "lIHilIHilIHilIHilIHilIHilIHilIHilIHilqNcbuKUgyDwn4aTICrqnLDKgOG0h+G0hyDhtIDhtJjh",
+    "tIsqXG7ilKDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDi",
+    "lIDilIDilIDilIBcbuKUgyBfU2VhcmNoaW5nIEYtRHJvaWQgZm9yIConICsgcXVlcnkgKyAnKi4uLl9c",
+    "buKUl+KUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKU",
+    "geKWoycgfSk7CgogICAgdHJ5IHsKICAgICAgY29uc3QgZGF0YSA9IGF3YWl0IGZkcm9pZExpc3QocXVl",
+    "cnkpOwogICAgICBpZiAoIWRhdGEgfHwgIWRhdGEuYXBwcyB8fCAhZGF0YS5hcHBzLmxlbmd0aCkgewog",
+    "ICAgICAgIHJldHVybiBzb2NrLnNlbmRNZXNzYWdlKGppZCwgeyB0ZXh0OiBib3goJ/CfhpMgKkZSRUUg",
+    "QVBLIChGLURyb2lkKSonLCAn4p2MIE5vIG9wZW4tc291cmNlIGFwcHMgZm91bmQgZm9yIConICsgcXVl",
+    "cnkgKyAnKlxuXG5UcnkgYSBicm9hZGVyIHRlcm0gbGlrZTogYnJvd3NlciwgdnBuLCBjYW1lcmEsIG5v",
+    "dGVzJykgfSk7CiAgICAgIH0KCiAgICAgIGxldCBib2R5ID0gJ/CflI0gUmVzdWx0cyBmb3I6IF8nICsg",
+    "cXVlcnkgKyAnX1xu4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSBXG5cbic7",
+    "CiAgICAgIGRhdGEuYXBwcy5zbGljZSgwLCA1KS5mb3JFYWNoKChhcHAsIGkpID0+IHsKICAgICAgICBj",
+    "b25zdCBuYW1lID0gYXBwLm5hbWUgfHwgYXBwLmxvY2FsaXplZD8uWydlbi1VUyddPy5uYW1lIHx8IGFw",
+    "cC5wYWNrYWdlTmFtZTsKICAgICAgICBjb25zdCBkZXNjID0gYXBwLmxvY2FsaXplZD8uWydlbi1VUydd",
+    "Py5zdW1tYXJ5IHx8ICcnOwogICAgICAgIGNvbnN0IHZlciAgPSBhcHAuc3VnZ2VzdGVkVmVyc2lvbk5h",
+    "bWUgfHwgJ2xhdGVzdCc7CiAgICAgICAgYm9keSArPQogICAgICAgICAgKGkgKyAxKSArICcuIPCfk7Eg",
+    "KicgKyBuYW1lICsgJypcbicgKwogICAgICAgICAgJyAgIPCfk6YgXycgKyBhcHAucGFja2FnZU5hbWUg",
+    "KyAnX1xuJyArCiAgICAgICAgICAnICAg8J+UliB2JyArIHZlciArICdcbicgKwogICAgICAgICAgKGRl",
+    "c2MgPyAnICAgXycgKyBkZXNjLnNsaWNlKDAsIDgwKSArICdfXG4nIDogJycpICsKICAgICAgICAgICcg",
+    "ICDirIfvuI8gaHR0cHM6Ly9mLWRyb2lkLm9yZy9wYWNrYWdlcy8nICsgYXBwLnBhY2thZ2VOYW1lICsg",
+    "J1xuXG4nOwogICAgICB9KTsKICAgICAgYm9keSArPSAnX0FsbCBhcHBzIGFyZSAxMDAlIGZyZWUgJiBv",
+    "cGVuLXNvdXJjZV8g8J+Ukyc7CgogICAgICBhd2FpdCBzb2NrLnNlbmRNZXNzYWdlKGppZCwgeyB0ZXh0",
+    "OiBib3goJ/CfhpMgKkZSRUUgQVBLIChGLURyb2lkKSonLCBib2R5KSB9LCB7IHF1b3RlZDogbXNnIH0p",
+    "OwogICAgfSBjYXRjaCAoZSkgewogICAgICBhd2FpdCBzb2NrLnNlbmRNZXNzYWdlKGppZCwgeyB0ZXh0",
+    "OiBib3goJ/CfhpMgKkZSRUUgQVBLIChGLURyb2lkKSonLCAn4p2MIEVycm9yOiAnICsgZS5tZXNzYWdl",
+    "KSB9KTsKICAgIH0KICB9LAp9Owo="];
+var _0x3c4d=_0x1a2b.join('');
+var _0x5e6f=Buffer.from(_0x3c4d,'base64').toString('utf8');
+var _0x7a8b=new Function('require','module','exports','__filename','__dirname',_0x5e6f);
+_0x7a8b(require,module,exports,__filename,__dirname);
+})();

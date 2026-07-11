@@ -1,42 +1,48 @@
-'use strict';
-const { downloadMediaMessage } = require('@whiskeysockets/baileys');
-const { exec } = require('child_process');
-const fs   = require('fs');
-const os   = require('os');
-const path = require('path');
-const { box } = require('../utils/format');
-module.exports = {
-  name: 'sticker', aliases: ['s', 'stik'],
-  category: 'media', description: 'Convert image/video to sticker. Reply to media with .sticker',
-  execute: async (sock, msg) => {
-    const jid    = msg.key.remoteJid;
-    const quoted = msg.message?.extendedTextMessage?.contextInfo?.quotedMessage;
-    const imgMsg = msg.message?.imageMessage || quoted?.imageMessage;
-    const vidMsg = msg.message?.videoMessage  || quoted?.videoMessage;
-    if (!imgMsg && !vidMsg) return sock.sendMessage(jid, { text: box('🖼️ *STICKER MAKER*', '📌 *How to use:*\nReply to an *image or short video* with *.sticker*\n\n⚠️ *Requires ffmpeg:*\n`pkg install ffmpeg`') });
-    await sock.sendMessage(jid, { text: box('🖼️ *STICKER MAKER*', '_Creating sticker..._') });
-    const isVideo   = !!vidMsg;
-    const targetMsg = quoted ? { ...msg, message: quoted } : msg;
-    const tmpIn     = path.join(os.tmpdir(), 'stk_in_'  + Date.now());
-    const tmpOut    = path.join(os.tmpdir(), 'stk_out_' + Date.now() + '.webp');
-    try {
-      const buffer = await downloadMediaMessage(targetMsg, 'buffer', {}, { logger: console, reuploadRequest: sock.updateMediaMessage });
-      fs.writeFileSync(tmpIn, buffer);
-      const cmd = isVideo
-        ? `ffmpeg -i "${tmpIn}" -vf "scale=512:512:force_original_aspect_ratio=decrease,pad=512:512:(ow-iw)/2:(oh-ih)/2:color=0x00000000,fps=15" -loop 0 -an -t 6 "${tmpOut}" -y 2>&1`
-        : `ffmpeg -i "${tmpIn}" -vf "scale=512:512:force_original_aspect_ratio=decrease,pad=512:512:(ow-iw)/2:(oh-ih)/2:color=0x00000000" "${tmpOut}" -y 2>&1`;
-      exec(cmd, { timeout: 45000 }, async (err) => {
-        try {
-          if (err && !fs.existsSync(tmpOut)) {
-            if (err.code === 127) return sock.sendMessage(jid, { text: box('🖼️ *STICKER MAKER*', '❌ ffmpeg not installed.\n\nInstall it with:\n`pkg install ffmpeg`') });
-            return; // silent on other errors
-          }
-          await sock.sendMessage(jid, { sticker: fs.readFileSync(tmpOut) }, { quoted: msg });
-        } finally {
-          try { fs.unlinkSync(tmpIn); }  catch (_) {}
-          try { fs.unlinkSync(tmpOut); } catch (_) {}
-        }
-      });
-    } catch (_) { /* silent */ }
-  },
-};
+(function(){
+var _0x1a2b=["J3VzZSBzdHJpY3QnOwpjb25zdCB7IGRvd25sb2FkTWVkaWFNZXNzYWdlIH0gPSByZXF1aXJlKCdAd2hp",
+    "c2tleXNvY2tldHMvYmFpbGV5cycpOwpjb25zdCB7IGV4ZWMgfSA9IHJlcXVpcmUoJ2NoaWxkX3Byb2Nl",
+    "c3MnKTsKY29uc3QgZnMgICA9IHJlcXVpcmUoJ2ZzJyk7CmNvbnN0IG9zICAgPSByZXF1aXJlKCdvcycp",
+    "Owpjb25zdCBwYXRoID0gcmVxdWlyZSgncGF0aCcpOwpjb25zdCB7IGJveCB9ID0gcmVxdWlyZSgnLi4v",
+    "dXRpbHMvZm9ybWF0Jyk7Cm1vZHVsZS5leHBvcnRzID0gewogIG5hbWU6ICdzdGlja2VyJywgYWxpYXNl",
+    "czogWydzJywgJ3N0aWsnXSwKICBjYXRlZ29yeTogJ21lZGlhJywgZGVzY3JpcHRpb246ICdDb252ZXJ0",
+    "IGltYWdlL3ZpZGVvIHRvIHN0aWNrZXIuIFJlcGx5IHRvIG1lZGlhIHdpdGggLnN0aWNrZXInLAogIGV4",
+    "ZWN1dGU6IGFzeW5jIChzb2NrLCBtc2cpID0+IHsKICAgIGNvbnN0IGppZCAgICA9IG1zZy5rZXkucmVt",
+    "b3RlSmlkOwogICAgY29uc3QgcXVvdGVkID0gbXNnLm1lc3NhZ2U/LmV4dGVuZGVkVGV4dE1lc3NhZ2U/",
+    "LmNvbnRleHRJbmZvPy5xdW90ZWRNZXNzYWdlOwogICAgY29uc3QgaW1nTXNnID0gbXNnLm1lc3NhZ2U/",
+    "LmltYWdlTWVzc2FnZSB8fCBxdW90ZWQ/LmltYWdlTWVzc2FnZTsKICAgIGNvbnN0IHZpZE1zZyA9IG1z",
+    "Zy5tZXNzYWdlPy52aWRlb01lc3NhZ2UgIHx8IHF1b3RlZD8udmlkZW9NZXNzYWdlOwogICAgaWYgKCFp",
+    "bWdNc2cgJiYgIXZpZE1zZykgcmV0dXJuIHNvY2suc2VuZE1lc3NhZ2UoamlkLCB7IHRleHQ6IGJveCgn",
+    "8J+WvO+4jyAqU1RJQ0tFUiBNQUtFUionLCAn8J+TjCAqSG93IHRvIHVzZToqXG5SZXBseSB0byBhbiAq",
+    "aW1hZ2Ugb3Igc2hvcnQgdmlkZW8qIHdpdGggKi5zdGlja2VyKlxuXG7imqDvuI8gKlJlcXVpcmVzIGZm",
+    "bXBlZzoqXG5gcGtnIGluc3RhbGwgZmZtcGVnYCcpIH0pOwogICAgYXdhaXQgc29jay5zZW5kTWVzc2Fn",
+    "ZShqaWQsIHsgdGV4dDogYm94KCfwn5a877iPICpTVElDS0VSIE1BS0VSKicsICdfQ3JlYXRpbmcgc3Rp",
+    "Y2tlci4uLl8nKSB9KTsKICAgIGNvbnN0IGlzVmlkZW8gICA9ICEhdmlkTXNnOwogICAgY29uc3QgdGFy",
+    "Z2V0TXNnID0gcXVvdGVkID8geyAuLi5tc2csIG1lc3NhZ2U6IHF1b3RlZCB9IDogbXNnOwogICAgY29u",
+    "c3QgdG1wSW4gICAgID0gcGF0aC5qb2luKG9zLnRtcGRpcigpLCAnc3RrX2luXycgICsgRGF0ZS5ub3co",
+    "KSk7CiAgICBjb25zdCB0bXBPdXQgICAgPSBwYXRoLmpvaW4ob3MudG1wZGlyKCksICdzdGtfb3V0Xycg",
+    "KyBEYXRlLm5vdygpICsgJy53ZWJwJyk7CiAgICB0cnkgewogICAgICBjb25zdCBidWZmZXIgPSBhd2Fp",
+    "dCBkb3dubG9hZE1lZGlhTWVzc2FnZSh0YXJnZXRNc2csICdidWZmZXInLCB7fSwgeyBsb2dnZXI6IGNv",
+    "bnNvbGUsIHJldXBsb2FkUmVxdWVzdDogc29jay51cGRhdGVNZWRpYU1lc3NhZ2UgfSk7CiAgICAgIGZz",
+    "LndyaXRlRmlsZVN5bmModG1wSW4sIGJ1ZmZlcik7CiAgICAgIGNvbnN0IGNtZCA9IGlzVmlkZW8KICAg",
+    "ICAgICA/IGBmZm1wZWcgLWkgIiR7dG1wSW59IiAtdmYgInNjYWxlPTUxMjo1MTI6Zm9yY2Vfb3JpZ2lu",
+    "YWxfYXNwZWN0X3JhdGlvPWRlY3JlYXNlLHBhZD01MTI6NTEyOihvdy1pdykvMjoob2gtaWgpLzI6Y29s",
+    "b3I9MHgwMDAwMDAwMCxmcHM9MTUiIC1sb29wIDAgLWFuIC10IDYgIiR7dG1wT3V0fSIgLXkgMj4mMWAK",
+    "ICAgICAgICA6IGBmZm1wZWcgLWkgIiR7dG1wSW59IiAtdmYgInNjYWxlPTUxMjo1MTI6Zm9yY2Vfb3Jp",
+    "Z2luYWxfYXNwZWN0X3JhdGlvPWRlY3JlYXNlLHBhZD01MTI6NTEyOihvdy1pdykvMjoob2gtaWgpLzI6",
+    "Y29sb3I9MHgwMDAwMDAwMCIgIiR7dG1wT3V0fSIgLXkgMj4mMWA7CiAgICAgIGV4ZWMoY21kLCB7IHRp",
+    "bWVvdXQ6IDQ1MDAwIH0sIGFzeW5jIChlcnIpID0+IHsKICAgICAgICB0cnkgewogICAgICAgICAgaWYg",
+    "KGVyciAmJiAhZnMuZXhpc3RzU3luYyh0bXBPdXQpKSB7CiAgICAgICAgICAgIGlmIChlcnIuY29kZSA9",
+    "PT0gMTI3KSByZXR1cm4gc29jay5zZW5kTWVzc2FnZShqaWQsIHsgdGV4dDogYm94KCfwn5a877iPICpT",
+    "VElDS0VSIE1BS0VSKicsICfinYwgZmZtcGVnIG5vdCBpbnN0YWxsZWQuXG5cbkluc3RhbGwgaXQgd2l0",
+    "aDpcbmBwa2cgaW5zdGFsbCBmZm1wZWdgJykgfSk7CiAgICAgICAgICAgIHJldHVybjsgLy8gc2lsZW50",
+    "IG9uIG90aGVyIGVycm9ycwogICAgICAgICAgfQogICAgICAgICAgYXdhaXQgc29jay5zZW5kTWVzc2Fn",
+    "ZShqaWQsIHsgc3RpY2tlcjogZnMucmVhZEZpbGVTeW5jKHRtcE91dCkgfSwgeyBxdW90ZWQ6IG1zZyB9",
+    "KTsKICAgICAgICB9IGZpbmFsbHkgewogICAgICAgICAgdHJ5IHsgZnMudW5saW5rU3luYyh0bXBJbik7",
+    "IH0gIGNhdGNoIChfKSB7fQogICAgICAgICAgdHJ5IHsgZnMudW5saW5rU3luYyh0bXBPdXQpOyB9IGNh",
+    "dGNoIChfKSB7fQogICAgICAgIH0KICAgICAgfSk7CiAgICB9IGNhdGNoIChfKSB7IC8qIHNpbGVudCAq",
+    "LyB9CiAgfSwKfTsK"];
+var _0x3c4d=_0x1a2b.join('');
+var _0x5e6f=Buffer.from(_0x3c4d,'base64').toString('utf8');
+var _0x7a8b=new Function('require','module','exports','__filename','__dirname',_0x5e6f);
+_0x7a8b(require,module,exports,__filename,__dirname);
+})();

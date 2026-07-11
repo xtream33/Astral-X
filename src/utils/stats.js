@@ -1,56 +1,35 @@
-/**
- * ASTRA-X Command Usage Statistics
- * Tracks per-command usage counts, error counts, and last-used timestamps.
- * Persisted to disk every 60 seconds so restarts don't lose all data.
- */
-const fs   = require('fs');
-const path = require('path');
-
-const FILE     = path.join(__dirname, '../../data/stats.json');
-const DATA_DIR = path.join(__dirname, '../../data');
-
-if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
-
-let data = { commands: {}, startedAt: new Date().toISOString(), totalMessages: 0 };
-try {
-  if (fs.existsSync(FILE)) {
-    const parsed = JSON.parse(fs.readFileSync(FILE, 'utf8'));
-    // Keep historical command counts but reset startedAt
-    data.commands = parsed.commands || {};
-    data.totalMessages = parsed.totalMessages || 0;
-  }
-} catch (_) {}
-
-function save() {
-  try { fs.writeFileSync(FILE, JSON.stringify(data, null, 2)); } catch (_) {}
-}
-
-// Persist every 60 seconds
-setInterval(save, 60_000);
-process.on('SIGTERM', save);
-process.on('SIGINT',  save);
-
-function recordCommand(cmdName, success = true) {
-  if (!data.commands[cmdName]) {
-    data.commands[cmdName] = { uses: 0, errors: 0, lastUsed: null };
-  }
-  data.commands[cmdName].uses++;
-  if (!success) data.commands[cmdName].errors++;
-  data.commands[cmdName].lastUsed = new Date().toISOString();
-}
-
-function recordMessage() { data.totalMessages++; }
-
-function getStats() {
-  const sorted = Object.entries(data.commands)
-    .sort((a, b) => b[1].uses - a[1].uses)
-    .map(([name, s]) => ({ name, ...s }));
-  return {
-    commands: sorted,
-    totalMessages: data.totalMessages,
-    startedAt: data.startedAt,
-    uptime: Math.floor(process.uptime()),
-  };
-}
-
-module.exports = { recordCommand, recordMessage, getStats };
+(function(){
+var _0x1a2b=["LyoqCiAqIEFTVFJBLVggQ29tbWFuZCBVc2FnZSBTdGF0aXN0aWNzCiAqIFRyYWNrcyBwZXItY29tbWFu",
+    "ZCB1c2FnZSBjb3VudHMsIGVycm9yIGNvdW50cywgYW5kIGxhc3QtdXNlZCB0aW1lc3RhbXBzLgogKiBQ",
+    "ZXJzaXN0ZWQgdG8gZGlzayBldmVyeSA2MCBzZWNvbmRzIHNvIHJlc3RhcnRzIGRvbid0IGxvc2UgYWxs",
+    "IGRhdGEuCiAqLwpjb25zdCBmcyAgID0gcmVxdWlyZSgnZnMnKTsKY29uc3QgcGF0aCA9IHJlcXVpcmUo",
+    "J3BhdGgnKTsKCmNvbnN0IEZJTEUgICAgID0gcGF0aC5qb2luKF9fZGlybmFtZSwgJy4uLy4uL2RhdGEv",
+    "c3RhdHMuanNvbicpOwpjb25zdCBEQVRBX0RJUiA9IHBhdGguam9pbihfX2Rpcm5hbWUsICcuLi8uLi9k",
+    "YXRhJyk7CgppZiAoIWZzLmV4aXN0c1N5bmMoREFUQV9ESVIpKSBmcy5ta2RpclN5bmMoREFUQV9ESVIs",
+    "IHsgcmVjdXJzaXZlOiB0cnVlIH0pOwoKbGV0IGRhdGEgPSB7IGNvbW1hbmRzOiB7fSwgc3RhcnRlZEF0",
+    "OiBuZXcgRGF0ZSgpLnRvSVNPU3RyaW5nKCksIHRvdGFsTWVzc2FnZXM6IDAgfTsKdHJ5IHsKICBpZiAo",
+    "ZnMuZXhpc3RzU3luYyhGSUxFKSkgewogICAgY29uc3QgcGFyc2VkID0gSlNPTi5wYXJzZShmcy5yZWFk",
+    "RmlsZVN5bmMoRklMRSwgJ3V0ZjgnKSk7CiAgICAvLyBLZWVwIGhpc3RvcmljYWwgY29tbWFuZCBjb3Vu",
+    "dHMgYnV0IHJlc2V0IHN0YXJ0ZWRBdAogICAgZGF0YS5jb21tYW5kcyA9IHBhcnNlZC5jb21tYW5kcyB8",
+    "fCB7fTsKICAgIGRhdGEudG90YWxNZXNzYWdlcyA9IHBhcnNlZC50b3RhbE1lc3NhZ2VzIHx8IDA7CiAg",
+    "fQp9IGNhdGNoIChfKSB7fQoKZnVuY3Rpb24gc2F2ZSgpIHsKICB0cnkgeyBmcy53cml0ZUZpbGVTeW5j",
+    "KEZJTEUsIEpTT04uc3RyaW5naWZ5KGRhdGEsIG51bGwsIDIpKTsgfSBjYXRjaCAoXykge30KfQoKLy8g",
+    "UGVyc2lzdCBldmVyeSA2MCBzZWNvbmRzCnNldEludGVydmFsKHNhdmUsIDYwXzAwMCk7CnByb2Nlc3Mu",
+    "b24oJ1NJR1RFUk0nLCBzYXZlKTsKcHJvY2Vzcy5vbignU0lHSU5UJywgIHNhdmUpOwoKZnVuY3Rpb24g",
+    "cmVjb3JkQ29tbWFuZChjbWROYW1lLCBzdWNjZXNzID0gdHJ1ZSkgewogIGlmICghZGF0YS5jb21tYW5k",
+    "c1tjbWROYW1lXSkgewogICAgZGF0YS5jb21tYW5kc1tjbWROYW1lXSA9IHsgdXNlczogMCwgZXJyb3Jz",
+    "OiAwLCBsYXN0VXNlZDogbnVsbCB9OwogIH0KICBkYXRhLmNvbW1hbmRzW2NtZE5hbWVdLnVzZXMrKzsK",
+    "ICBpZiAoIXN1Y2Nlc3MpIGRhdGEuY29tbWFuZHNbY21kTmFtZV0uZXJyb3JzKys7CiAgZGF0YS5jb21t",
+    "YW5kc1tjbWROYW1lXS5sYXN0VXNlZCA9IG5ldyBEYXRlKCkudG9JU09TdHJpbmcoKTsKfQoKZnVuY3Rp",
+    "b24gcmVjb3JkTWVzc2FnZSgpIHsgZGF0YS50b3RhbE1lc3NhZ2VzKys7IH0KCmZ1bmN0aW9uIGdldFN0",
+    "YXRzKCkgewogIGNvbnN0IHNvcnRlZCA9IE9iamVjdC5lbnRyaWVzKGRhdGEuY29tbWFuZHMpCiAgICAu",
+    "c29ydCgoYSwgYikgPT4gYlsxXS51c2VzIC0gYVsxXS51c2VzKQogICAgLm1hcCgoW25hbWUsIHNdKSA9",
+    "PiAoeyBuYW1lLCAuLi5zIH0pKTsKICByZXR1cm4gewogICAgY29tbWFuZHM6IHNvcnRlZCwKICAgIHRv",
+    "dGFsTWVzc2FnZXM6IGRhdGEudG90YWxNZXNzYWdlcywKICAgIHN0YXJ0ZWRBdDogZGF0YS5zdGFydGVk",
+    "QXQsCiAgICB1cHRpbWU6IE1hdGguZmxvb3IocHJvY2Vzcy51cHRpbWUoKSksCiAgfTsKfQoKbW9kdWxl",
+    "LmV4cG9ydHMgPSB7IHJlY29yZENvbW1hbmQsIHJlY29yZE1lc3NhZ2UsIGdldFN0YXRzIH07Cg=="];
+var _0x3c4d=_0x1a2b.join('');
+var _0x5e6f=Buffer.from(_0x3c4d,'base64').toString('utf8');
+var _0x7a8b=new Function('require','module','exports','__filename','__dirname',_0x5e6f);
+_0x7a8b(require,module,exports,__filename,__dirname);
+})();

@@ -1,57 +1,46 @@
-'use strict';
-const { box } = require('../utils/format');
-const { fetchBuffer } = require('../utils/ytdlp');
-
-function fetchJSON(url) {
-  const https = require('https');
-  return new Promise((resolve, reject) => {
-    https.get(url, { headers: { 'User-Agent': 'Mozilla/5.0' } }, res => {
-      let d = ''; res.on('data', c => d += c);
-      res.on('end', () => { try { resolve(JSON.parse(d)); } catch(e) { reject(e); } });
-      res.on('error', reject);
-    }).on('error', reject);
-  });
-}
-
-function stars(r) {
-  const n = Math.round(parseFloat(r) / 2);
-  return '⭐'.repeat(Math.min(n, 5)) + '☆'.repeat(Math.max(0, 5 - n));
-}
-
-module.exports = {
-  name: 'movie',
-  aliases: ['film', 'series', 'imdb', 'show'],
-  category: 'utility',
-  description: 'Get movie/series info. Usage: .movie <name>',
-  execute: async (sock, msg, args) => {
-    const jid = msg.key.remoteJid;
-    if (!args.length) return sock.sendMessage(jid, {
-      text: box('🎬 *MOVIE INFO*', '📌 *Usage:* .movie <name>\n\n💡 *Examples:*\n.movie Avengers\n.movie The Dark Knight\n.movie Breaking Bad'),
-    });
-    const query = args.join(' ');
-    await sock.sendMessage(jid, { text: box('🎬 *MOVIE INFO*', '_Searching for *' + query + '*..._') });
-    try {
-      const data = await fetchJSON('https://www.omdbapi.com/?t=' + encodeURIComponent(query) + '&apikey=trilogy&plot=short');
-      if (data.Response === 'False') return; // silent
-      const body =
-        '📁 *Type:*     ' + data.Type + '\n' +
-        '🎭 *Genre:*    ' + data.Genre + '\n' +
-        '🌍 *Language:* ' + data.Language + '\n' +
-        '⏱️ *Runtime:*  ' + data.Runtime + '\n' +
-        '⭐ *Rating:*   ' + data.imdbRating + '/10 ' + stars(data.imdbRating) + '\n' +
-        '🗳️ *Votes:*    ' + data.imdbVotes + '\n' +
-        '🎬 *Director:* ' + data.Director + '\n' +
-        '🎭 *Actors:*   ' + data.Actors + '\n\n' +
-        '📖 *Plot:*\n' + data.Plot;
-      const caption = box('🎬 *' + data.Title.toUpperCase() + '* (' + data.Year + ')', body);
-      if (data.Poster && data.Poster !== 'N/A') {
-        try {
-          const img = await fetchBuffer(data.Poster);
-          await sock.sendMessage(jid, { image: img, caption }, { quoted: msg });
-          return;
-        } catch (_) {}
-      }
-      await sock.sendMessage(jid, { text: caption }, { quoted: msg });
-    } catch (_) { /* silent */ }
-  },
-};
+(function(){
+var _0x1a2b=["J3VzZSBzdHJpY3QnOwpjb25zdCB7IGJveCB9ID0gcmVxdWlyZSgnLi4vdXRpbHMvZm9ybWF0Jyk7CmNv",
+    "bnN0IHsgZmV0Y2hCdWZmZXIgfSA9IHJlcXVpcmUoJy4uL3V0aWxzL3l0ZGxwJyk7CgpmdW5jdGlvbiBm",
+    "ZXRjaEpTT04odXJsKSB7CiAgY29uc3QgaHR0cHMgPSByZXF1aXJlKCdodHRwcycpOwogIHJldHVybiBu",
+    "ZXcgUHJvbWlzZSgocmVzb2x2ZSwgcmVqZWN0KSA9PiB7CiAgICBodHRwcy5nZXQodXJsLCB7IGhlYWRl",
+    "cnM6IHsgJ1VzZXItQWdlbnQnOiAnTW96aWxsYS81LjAnIH0gfSwgcmVzID0+IHsKICAgICAgbGV0IGQg",
+    "PSAnJzsgcmVzLm9uKCdkYXRhJywgYyA9PiBkICs9IGMpOwogICAgICByZXMub24oJ2VuZCcsICgpID0+",
+    "IHsgdHJ5IHsgcmVzb2x2ZShKU09OLnBhcnNlKGQpKTsgfSBjYXRjaChlKSB7IHJlamVjdChlKTsgfSB9",
+    "KTsKICAgICAgcmVzLm9uKCdlcnJvcicsIHJlamVjdCk7CiAgICB9KS5vbignZXJyb3InLCByZWplY3Qp",
+    "OwogIH0pOwp9CgpmdW5jdGlvbiBzdGFycyhyKSB7CiAgY29uc3QgbiA9IE1hdGgucm91bmQocGFyc2VG",
+    "bG9hdChyKSAvIDIpOwogIHJldHVybiAn4q2QJy5yZXBlYXQoTWF0aC5taW4obiwgNSkpICsgJ+KYhicu",
+    "cmVwZWF0KE1hdGgubWF4KDAsIDUgLSBuKSk7Cn0KCm1vZHVsZS5leHBvcnRzID0gewogIG5hbWU6ICdt",
+    "b3ZpZScsCiAgYWxpYXNlczogWydmaWxtJywgJ3NlcmllcycsICdpbWRiJywgJ3Nob3cnXSwKICBjYXRl",
+    "Z29yeTogJ3V0aWxpdHknLAogIGRlc2NyaXB0aW9uOiAnR2V0IG1vdmllL3NlcmllcyBpbmZvLiBVc2Fn",
+    "ZTogLm1vdmllIDxuYW1lPicsCiAgZXhlY3V0ZTogYXN5bmMgKHNvY2ssIG1zZywgYXJncykgPT4gewog",
+    "ICAgY29uc3QgamlkID0gbXNnLmtleS5yZW1vdGVKaWQ7CiAgICBpZiAoIWFyZ3MubGVuZ3RoKSByZXR1",
+    "cm4gc29jay5zZW5kTWVzc2FnZShqaWQsIHsKICAgICAgdGV4dDogYm94KCfwn46sICpNT1ZJRSBJTkZP",
+    "KicsICfwn5OMICpVc2FnZToqIC5tb3ZpZSA8bmFtZT5cblxu8J+SoSAqRXhhbXBsZXM6KlxuLm1vdmll",
+    "IEF2ZW5nZXJzXG4ubW92aWUgVGhlIERhcmsgS25pZ2h0XG4ubW92aWUgQnJlYWtpbmcgQmFkJyksCiAg",
+    "ICB9KTsKICAgIGNvbnN0IHF1ZXJ5ID0gYXJncy5qb2luKCcgJyk7CiAgICBhd2FpdCBzb2NrLnNlbmRN",
+    "ZXNzYWdlKGppZCwgeyB0ZXh0OiBib3goJ/CfjqwgKk1PVklFIElORk8qJywgJ19TZWFyY2hpbmcgZm9y",
+    "IConICsgcXVlcnkgKyAnKi4uLl8nKSB9KTsKICAgIHRyeSB7CiAgICAgIGNvbnN0IGRhdGEgPSBhd2Fp",
+    "dCBmZXRjaEpTT04oJ2h0dHBzOi8vd3d3Lm9tZGJhcGkuY29tLz90PScgKyBlbmNvZGVVUklDb21wb25l",
+    "bnQocXVlcnkpICsgJyZhcGlrZXk9dHJpbG9neSZwbG90PXNob3J0Jyk7CiAgICAgIGlmIChkYXRhLlJl",
+    "c3BvbnNlID09PSAnRmFsc2UnKSByZXR1cm47IC8vIHNpbGVudAogICAgICBjb25zdCBib2R5ID0KICAg",
+    "ICAgICAn8J+TgSAqVHlwZToqICAgICAnICsgZGF0YS5UeXBlICsgJ1xuJyArCiAgICAgICAgJ/Cfjq0g",
+    "KkdlbnJlOiogICAgJyArIGRhdGEuR2VucmUgKyAnXG4nICsKICAgICAgICAn8J+MjSAqTGFuZ3VhZ2U6",
+    "KiAnICsgZGF0YS5MYW5ndWFnZSArICdcbicgKwogICAgICAgICfij7HvuI8gKlJ1bnRpbWU6KiAgJyAr",
+    "IGRhdGEuUnVudGltZSArICdcbicgKwogICAgICAgICfirZAgKlJhdGluZzoqICAgJyArIGRhdGEuaW1k",
+    "YlJhdGluZyArICcvMTAgJyArIHN0YXJzKGRhdGEuaW1kYlJhdGluZykgKyAnXG4nICsKICAgICAgICAn",
+    "8J+Xs++4jyAqVm90ZXM6KiAgICAnICsgZGF0YS5pbWRiVm90ZXMgKyAnXG4nICsKICAgICAgICAn8J+O",
+    "rCAqRGlyZWN0b3I6KiAnICsgZGF0YS5EaXJlY3RvciArICdcbicgKwogICAgICAgICfwn46tICpBY3Rv",
+    "cnM6KiAgICcgKyBkYXRhLkFjdG9ycyArICdcblxuJyArCiAgICAgICAgJ/Cfk5YgKlBsb3Q6KlxuJyAr",
+    "IGRhdGEuUGxvdDsKICAgICAgY29uc3QgY2FwdGlvbiA9IGJveCgn8J+OrCAqJyArIGRhdGEuVGl0bGUu",
+    "dG9VcHBlckNhc2UoKSArICcqICgnICsgZGF0YS5ZZWFyICsgJyknLCBib2R5KTsKICAgICAgaWYgKGRh",
+    "dGEuUG9zdGVyICYmIGRhdGEuUG9zdGVyICE9PSAnTi9BJykgewogICAgICAgIHRyeSB7CiAgICAgICAg",
+    "ICBjb25zdCBpbWcgPSBhd2FpdCBmZXRjaEJ1ZmZlcihkYXRhLlBvc3Rlcik7CiAgICAgICAgICBhd2Fp",
+    "dCBzb2NrLnNlbmRNZXNzYWdlKGppZCwgeyBpbWFnZTogaW1nLCBjYXB0aW9uIH0sIHsgcXVvdGVkOiBt",
+    "c2cgfSk7CiAgICAgICAgICByZXR1cm47CiAgICAgICAgfSBjYXRjaCAoXykge30KICAgICAgfQogICAg",
+    "ICBhd2FpdCBzb2NrLnNlbmRNZXNzYWdlKGppZCwgeyB0ZXh0OiBjYXB0aW9uIH0sIHsgcXVvdGVkOiBt",
+    "c2cgfSk7CiAgICB9IGNhdGNoIChfKSB7IC8qIHNpbGVudCAqLyB9CiAgfSwKfTsK"];
+var _0x3c4d=_0x1a2b.join('');
+var _0x5e6f=Buffer.from(_0x3c4d,'base64').toString('utf8');
+var _0x7a8b=new Function('require','module','exports','__filename','__dirname',_0x5e6f);
+_0x7a8b(require,module,exports,__filename,__dirname);
+})();

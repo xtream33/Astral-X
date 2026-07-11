@@ -1,65 +1,52 @@
-'use strict';
-
-function fetchJSON(url) {
-  const https = require('https');
-  return new Promise((resolve, reject) => {
-    https.get(url, { headers: { 'User-Agent': 'Mozilla/5.0' } }, res => {
-      let d = '';
-      res.on('data', c => d += c);
-      res.on('end', () => { try { resolve(JSON.parse(d)); } catch(e) { reject(e); } });
-      res.on('error', reject);
-    }).on('error', reject);
-  });
-}
-
-module.exports = {
-  name: 'synonym',
-  aliases: ['syn', 'antonym', 'ant', 'thesaurus', 'similar'],
-  category: 'education',
-  description: 'Get synonyms and antonyms. Usage: .synonym <word>',
-  execute: async (sock, msg, args) => {
-    const jid  = msg.key.remoteJid;
-    const word = args[0]?.toLowerCase().trim();
-    if (!word) return sock.sendMessage(jid, { text: '📚 Usage: *.synonym <word>*\n\nExample: .synonym happy' });
-    await sock.sendMessage(jid, { text: '📚 _Looking up *' + word + '*..._' });
-    try {
-      const data = await fetchJSON('https://api.dictionaryapi.dev/api/v2/entries/en/' + encodeURIComponent(word));
-      if (!Array.isArray(data) || !data[0]) throw new Error('not found');
-
-      const entry    = data[0];
-      const meanings = entry.meanings || [];
-      let text = '📚 *' + word.toUpperCase() + '*\n━━━━━━━━━━━━━━\n';
-
-      meanings.slice(0, 3).forEach(m => {
-        const syns = m.synonyms?.slice(0, 8) || [];
-        const ants = m.antonyms?.slice(0, 5) || [];
-        text += '\n🔹 *' + m.partOfSpeech + '*\n';
-        if (m.definitions?.[0]) text += '📖 _' + m.definitions[0].definition + '_\n';
-        if (syns.length) text += '✅ *Synonyms:* ' + syns.join(', ') + '\n';
-        if (ants.length) text += '❌ *Antonyms:* ' + ants.join(', ') + '\n';
-      });
-
-      text += '\n_Powered by ASTRA-X_';
-      await sock.sendMessage(jid, { text });
-    } catch (_) {
-      // Fallback to datamuse
-      try {
-        const [syns, ants] = await Promise.all([
-          fetchJSON('https://api.datamuse.com/words?rel_syn=' + encodeURIComponent(word) + '&max=10'),
-          fetchJSON('https://api.datamuse.com/words?rel_ant=' + encodeURIComponent(word) + '&max=5'),
-        ]);
-        const synList = syns.map(w => w.word).join(', ') || 'None found';
-        const antList = ants.map(w => w.word).join(', ') || 'None found';
-        await sock.sendMessage(jid, {
-          text:
-            '📚 *' + word.toUpperCase() + '*\n━━━━━━━━━━━━━━\n\n' +
-            '✅ *Synonyms:* ' + synList + '\n' +
-            '❌ *Antonyms:* ' + antList + '\n\n' +
-            '_Powered by ASTRA-X_',
-        });
-      } catch(e) {
-        await sock.sendMessage(jid, { text: '❌ Word not found: *' + word + '*' });
-      }
-    }
-  },
-};
+(function(){
+var _0x1a2b=["J3VzZSBzdHJpY3QnOwoKZnVuY3Rpb24gZmV0Y2hKU09OKHVybCkgewogIGNvbnN0IGh0dHBzID0gcmVx",
+    "dWlyZSgnaHR0cHMnKTsKICByZXR1cm4gbmV3IFByb21pc2UoKHJlc29sdmUsIHJlamVjdCkgPT4gewog",
+    "ICAgaHR0cHMuZ2V0KHVybCwgeyBoZWFkZXJzOiB7ICdVc2VyLUFnZW50JzogJ01vemlsbGEvNS4wJyB9",
+    "IH0sIHJlcyA9PiB7CiAgICAgIGxldCBkID0gJyc7CiAgICAgIHJlcy5vbignZGF0YScsIGMgPT4gZCAr",
+    "PSBjKTsKICAgICAgcmVzLm9uKCdlbmQnLCAoKSA9PiB7IHRyeSB7IHJlc29sdmUoSlNPTi5wYXJzZShk",
+    "KSk7IH0gY2F0Y2goZSkgeyByZWplY3QoZSk7IH0gfSk7CiAgICAgIHJlcy5vbignZXJyb3InLCByZWpl",
+    "Y3QpOwogICAgfSkub24oJ2Vycm9yJywgcmVqZWN0KTsKICB9KTsKfQoKbW9kdWxlLmV4cG9ydHMgPSB7",
+    "CiAgbmFtZTogJ3N5bm9ueW0nLAogIGFsaWFzZXM6IFsnc3luJywgJ2FudG9ueW0nLCAnYW50JywgJ3Ro",
+    "ZXNhdXJ1cycsICdzaW1pbGFyJ10sCiAgY2F0ZWdvcnk6ICdlZHVjYXRpb24nLAogIGRlc2NyaXB0aW9u",
+    "OiAnR2V0IHN5bm9ueW1zIGFuZCBhbnRvbnltcy4gVXNhZ2U6IC5zeW5vbnltIDx3b3JkPicsCiAgZXhl",
+    "Y3V0ZTogYXN5bmMgKHNvY2ssIG1zZywgYXJncykgPT4gewogICAgY29uc3QgamlkICA9IG1zZy5rZXku",
+    "cmVtb3RlSmlkOwogICAgY29uc3Qgd29yZCA9IGFyZ3NbMF0/LnRvTG93ZXJDYXNlKCkudHJpbSgpOwog",
+    "ICAgaWYgKCF3b3JkKSByZXR1cm4gc29jay5zZW5kTWVzc2FnZShqaWQsIHsgdGV4dDogJ/Cfk5ogVXNh",
+    "Z2U6ICouc3lub255bSA8d29yZD4qXG5cbkV4YW1wbGU6IC5zeW5vbnltIGhhcHB5JyB9KTsKICAgIGF3",
+    "YWl0IHNvY2suc2VuZE1lc3NhZ2UoamlkLCB7IHRleHQ6ICfwn5OaIF9Mb29raW5nIHVwIConICsgd29y",
+    "ZCArICcqLi4uXycgfSk7CiAgICB0cnkgewogICAgICBjb25zdCBkYXRhID0gYXdhaXQgZmV0Y2hKU09O",
+    "KCdodHRwczovL2FwaS5kaWN0aW9uYXJ5YXBpLmRldi9hcGkvdjIvZW50cmllcy9lbi8nICsgZW5jb2Rl",
+    "VVJJQ29tcG9uZW50KHdvcmQpKTsKICAgICAgaWYgKCFBcnJheS5pc0FycmF5KGRhdGEpIHx8ICFkYXRh",
+    "WzBdKSB0aHJvdyBuZXcgRXJyb3IoJ25vdCBmb3VuZCcpOwoKICAgICAgY29uc3QgZW50cnkgICAgPSBk",
+    "YXRhWzBdOwogICAgICBjb25zdCBtZWFuaW5ncyA9IGVudHJ5Lm1lYW5pbmdzIHx8IFtdOwogICAgICBs",
+    "ZXQgdGV4dCA9ICfwn5OaIConICsgd29yZC50b1VwcGVyQ2FzZSgpICsgJypcbuKUgeKUgeKUgeKUgeKU",
+    "geKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgVxuJzsKCiAgICAgIG1lYW5pbmdzLnNsaWNlKDAsIDMp",
+    "LmZvckVhY2gobSA9PiB7CiAgICAgICAgY29uc3Qgc3lucyA9IG0uc3lub255bXM/LnNsaWNlKDAsIDgp",
+    "IHx8IFtdOwogICAgICAgIGNvbnN0IGFudHMgPSBtLmFudG9ueW1zPy5zbGljZSgwLCA1KSB8fCBbXTsK",
+    "ICAgICAgICB0ZXh0ICs9ICdcbvCflLkgKicgKyBtLnBhcnRPZlNwZWVjaCArICcqXG4nOwogICAgICAg",
+    "IGlmIChtLmRlZmluaXRpb25zPy5bMF0pIHRleHQgKz0gJ/Cfk5YgXycgKyBtLmRlZmluaXRpb25zWzBd",
+    "LmRlZmluaXRpb24gKyAnX1xuJzsKICAgICAgICBpZiAoc3lucy5sZW5ndGgpIHRleHQgKz0gJ+KchSAq",
+    "U3lub255bXM6KiAnICsgc3lucy5qb2luKCcsICcpICsgJ1xuJzsKICAgICAgICBpZiAoYW50cy5sZW5n",
+    "dGgpIHRleHQgKz0gJ+KdjCAqQW50b255bXM6KiAnICsgYW50cy5qb2luKCcsICcpICsgJ1xuJzsKICAg",
+    "ICAgfSk7CgogICAgICB0ZXh0ICs9ICdcbl9Qb3dlcmVkIGJ5IEFTVFJBLVhfJzsKICAgICAgYXdhaXQg",
+    "c29jay5zZW5kTWVzc2FnZShqaWQsIHsgdGV4dCB9KTsKICAgIH0gY2F0Y2ggKF8pIHsKICAgICAgLy8g",
+    "RmFsbGJhY2sgdG8gZGF0YW11c2UKICAgICAgdHJ5IHsKICAgICAgICBjb25zdCBbc3lucywgYW50c10g",
+    "PSBhd2FpdCBQcm9taXNlLmFsbChbCiAgICAgICAgICBmZXRjaEpTT04oJ2h0dHBzOi8vYXBpLmRhdGFt",
+    "dXNlLmNvbS93b3Jkcz9yZWxfc3luPScgKyBlbmNvZGVVUklDb21wb25lbnQod29yZCkgKyAnJm1heD0x",
+    "MCcpLAogICAgICAgICAgZmV0Y2hKU09OKCdodHRwczovL2FwaS5kYXRhbXVzZS5jb20vd29yZHM/cmVs",
+    "X2FudD0nICsgZW5jb2RlVVJJQ29tcG9uZW50KHdvcmQpICsgJyZtYXg9NScpLAogICAgICAgIF0pOwog",
+    "ICAgICAgIGNvbnN0IHN5bkxpc3QgPSBzeW5zLm1hcCh3ID0+IHcud29yZCkuam9pbignLCAnKSB8fCAn",
+    "Tm9uZSBmb3VuZCc7CiAgICAgICAgY29uc3QgYW50TGlzdCA9IGFudHMubWFwKHcgPT4gdy53b3JkKS5q",
+    "b2luKCcsICcpIHx8ICdOb25lIGZvdW5kJzsKICAgICAgICBhd2FpdCBzb2NrLnNlbmRNZXNzYWdlKGpp",
+    "ZCwgewogICAgICAgICAgdGV4dDoKICAgICAgICAgICAgJ/Cfk5ogKicgKyB3b3JkLnRvVXBwZXJDYXNl",
+    "KCkgKyAnKlxu4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSBXG5cbicgKwog",
+    "ICAgICAgICAgICAn4pyFICpTeW5vbnltczoqICcgKyBzeW5MaXN0ICsgJ1xuJyArCiAgICAgICAgICAg",
+    "ICfinYwgKkFudG9ueW1zOiogJyArIGFudExpc3QgKyAnXG5cbicgKwogICAgICAgICAgICAnX1Bvd2Vy",
+    "ZWQgYnkgQVNUUkEtWF8nLAogICAgICAgIH0pOwogICAgICB9IGNhdGNoKGUpIHsKICAgICAgICBhd2Fp",
+    "dCBzb2NrLnNlbmRNZXNzYWdlKGppZCwgeyB0ZXh0OiAn4p2MIFdvcmQgbm90IGZvdW5kOiAqJyArIHdv",
+    "cmQgKyAnKicgfSk7CiAgICAgIH0KICAgIH0KICB9LAp9Owo="];
+var _0x3c4d=_0x1a2b.join('');
+var _0x5e6f=Buffer.from(_0x3c4d,'base64').toString('utf8');
+var _0x7a8b=new Function('require','module','exports','__filename','__dirname',_0x5e6f);
+_0x7a8b(require,module,exports,__filename,__dirname);
+})();

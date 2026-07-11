@@ -1,76 +1,54 @@
-'use strict';
-const https  = require('https');
-const http   = require('http');
-const { execSync } = require('child_process');
-
-function fetchBuffer(url) {
-  return new Promise((resolve, reject) => {
-    const lib = url.startsWith('https') ? https : http;
-    lib.get(url, { headers: { 'User-Agent': 'Mozilla/5.0' } }, res => {
-      const chunks = [];
-      res.on('data', c => chunks.push(c));
-      res.on('end',  () => resolve(Buffer.concat(chunks)));
-      res.on('error', reject);
-    }).on('error', reject);
-  });
-}
-
-function getImageUrl(msg) {
-  const m = msg.message;
-  if (!m) return null;
-  const img = m.imageMessage || m.extendedTextMessage?.contextInfo?.quotedMessage?.imageMessage;
-  return img?.url || null;
-}
-
-module.exports = {
-  name: 'ocr',
-  aliases: ['readimage', 'extracttext', 'imagetext', 'imgtext', 'readtext'],
-  category: 'utility',
-  description: 'Extract text from an image. Reply to an image with .ocr',
-  execute: async (sock, msg, args) => {
-    const jid = msg.key.remoteJid;
-
-    // Get quoted or direct image
-    const quoted = msg.message?.extendedTextMessage?.contextInfo?.quotedMessage;
-    const imgMsg = msg.message?.imageMessage || quoted?.imageMessage;
-
-    if (!imgMsg) {
-      return sock.sendMessage(jid, { text: '📷 Reply to an image with *.ocr* to extract text from it.' });
-    }
-
-    await sock.sendMessage(jid, { text: '🔍 Reading text from image...' });
-
-    try {
-      const stream   = await sock.downloadMediaMessage(imgMsg.url ? msg : { message: quoted });
-      const b64      = Buffer.isBuffer(stream) ? stream.toString('base64') : Buffer.from(stream).toString('base64');
-
-      // OCR.space free API
-      const payload  = 'base64Image=data:image/jpeg;base64,' + encodeURIComponent(b64) +
-                       '&language=eng&isOverlayRequired=false&detectOrientation=true&scale=true&OCREngine=2';
-      const result   = await new Promise((resolve, reject) => {
-        const req = https.request({
-          hostname: 'api.ocr.space',
-          path:     '/parse/image',
-          method:   'POST',
-          headers:  { 'Content-Type': 'application/x-www-form-urlencoded', 'apikey': 'helloworld' },
-        }, res => {
-          let d = '';
-          res.on('data', c => d += c);
-          res.on('end', () => { try { resolve(JSON.parse(d)); } catch(e) { reject(e); } });
-        });
-        req.on('error', reject);
-        req.write(payload);
-        req.end();
-      });
-
-      const text = result?.ParsedResults?.[0]?.ParsedText?.trim();
-      if (!text) return sock.sendMessage(jid, { text: '❌ No text found in this image.' });
-
-      await sock.sendMessage(jid, {
-        text: '📝 *Extracted Text:*\n━━━━━━━━━━━━━━\n\n' + text,
-      }, { quoted: msg });
-    } catch (e) {
-      await sock.sendMessage(jid, { text: '❌ OCR failed: ' + e.message });
-    }
-  },
-};
+(function(){
+var _0x1a2b=["J3VzZSBzdHJpY3QnOwpjb25zdCBodHRwcyAgPSByZXF1aXJlKCdodHRwcycpOwpjb25zdCBodHRwICAg",
+    "PSByZXF1aXJlKCdodHRwJyk7CmNvbnN0IHsgZXhlY1N5bmMgfSA9IHJlcXVpcmUoJ2NoaWxkX3Byb2Nl",
+    "c3MnKTsKCmZ1bmN0aW9uIGZldGNoQnVmZmVyKHVybCkgewogIHJldHVybiBuZXcgUHJvbWlzZSgocmVz",
+    "b2x2ZSwgcmVqZWN0KSA9PiB7CiAgICBjb25zdCBsaWIgPSB1cmwuc3RhcnRzV2l0aCgnaHR0cHMnKSA/",
+    "IGh0dHBzIDogaHR0cDsKICAgIGxpYi5nZXQodXJsLCB7IGhlYWRlcnM6IHsgJ1VzZXItQWdlbnQnOiAn",
+    "TW96aWxsYS81LjAnIH0gfSwgcmVzID0+IHsKICAgICAgY29uc3QgY2h1bmtzID0gW107CiAgICAgIHJl",
+    "cy5vbignZGF0YScsIGMgPT4gY2h1bmtzLnB1c2goYykpOwogICAgICByZXMub24oJ2VuZCcsICAoKSA9",
+    "PiByZXNvbHZlKEJ1ZmZlci5jb25jYXQoY2h1bmtzKSkpOwogICAgICByZXMub24oJ2Vycm9yJywgcmVq",
+    "ZWN0KTsKICAgIH0pLm9uKCdlcnJvcicsIHJlamVjdCk7CiAgfSk7Cn0KCmZ1bmN0aW9uIGdldEltYWdl",
+    "VXJsKG1zZykgewogIGNvbnN0IG0gPSBtc2cubWVzc2FnZTsKICBpZiAoIW0pIHJldHVybiBudWxsOwog",
+    "IGNvbnN0IGltZyA9IG0uaW1hZ2VNZXNzYWdlIHx8IG0uZXh0ZW5kZWRUZXh0TWVzc2FnZT8uY29udGV4",
+    "dEluZm8/LnF1b3RlZE1lc3NhZ2U/LmltYWdlTWVzc2FnZTsKICByZXR1cm4gaW1nPy51cmwgfHwgbnVs",
+    "bDsKfQoKbW9kdWxlLmV4cG9ydHMgPSB7CiAgbmFtZTogJ29jcicsCiAgYWxpYXNlczogWydyZWFkaW1h",
+    "Z2UnLCAnZXh0cmFjdHRleHQnLCAnaW1hZ2V0ZXh0JywgJ2ltZ3RleHQnLCAncmVhZHRleHQnXSwKICBj",
+    "YXRlZ29yeTogJ3V0aWxpdHknLAogIGRlc2NyaXB0aW9uOiAnRXh0cmFjdCB0ZXh0IGZyb20gYW4gaW1h",
+    "Z2UuIFJlcGx5IHRvIGFuIGltYWdlIHdpdGggLm9jcicsCiAgZXhlY3V0ZTogYXN5bmMgKHNvY2ssIG1z",
+    "ZywgYXJncykgPT4gewogICAgY29uc3QgamlkID0gbXNnLmtleS5yZW1vdGVKaWQ7CgogICAgLy8gR2V0",
+    "IHF1b3RlZCBvciBkaXJlY3QgaW1hZ2UKICAgIGNvbnN0IHF1b3RlZCA9IG1zZy5tZXNzYWdlPy5leHRl",
+    "bmRlZFRleHRNZXNzYWdlPy5jb250ZXh0SW5mbz8ucXVvdGVkTWVzc2FnZTsKICAgIGNvbnN0IGltZ01z",
+    "ZyA9IG1zZy5tZXNzYWdlPy5pbWFnZU1lc3NhZ2UgfHwgcXVvdGVkPy5pbWFnZU1lc3NhZ2U7CgogICAg",
+    "aWYgKCFpbWdNc2cpIHsKICAgICAgcmV0dXJuIHNvY2suc2VuZE1lc3NhZ2UoamlkLCB7IHRleHQ6ICfw",
+    "n5O3IFJlcGx5IHRvIGFuIGltYWdlIHdpdGggKi5vY3IqIHRvIGV4dHJhY3QgdGV4dCBmcm9tIGl0Licg",
+    "fSk7CiAgICB9CgogICAgYXdhaXQgc29jay5zZW5kTWVzc2FnZShqaWQsIHsgdGV4dDogJ/CflI0gUmVh",
+    "ZGluZyB0ZXh0IGZyb20gaW1hZ2UuLi4nIH0pOwoKICAgIHRyeSB7CiAgICAgIGNvbnN0IHN0cmVhbSAg",
+    "ID0gYXdhaXQgc29jay5kb3dubG9hZE1lZGlhTWVzc2FnZShpbWdNc2cudXJsID8gbXNnIDogeyBtZXNz",
+    "YWdlOiBxdW90ZWQgfSk7CiAgICAgIGNvbnN0IGI2NCAgICAgID0gQnVmZmVyLmlzQnVmZmVyKHN0cmVh",
+    "bSkgPyBzdHJlYW0udG9TdHJpbmcoJ2Jhc2U2NCcpIDogQnVmZmVyLmZyb20oc3RyZWFtKS50b1N0cmlu",
+    "ZygnYmFzZTY0Jyk7CgogICAgICAvLyBPQ1Iuc3BhY2UgZnJlZSBBUEkKICAgICAgY29uc3QgcGF5bG9h",
+    "ZCAgPSAnYmFzZTY0SW1hZ2U9ZGF0YTppbWFnZS9qcGVnO2Jhc2U2NCwnICsgZW5jb2RlVVJJQ29tcG9u",
+    "ZW50KGI2NCkgKwogICAgICAgICAgICAgICAgICAgICAgICcmbGFuZ3VhZ2U9ZW5nJmlzT3ZlcmxheVJl",
+    "cXVpcmVkPWZhbHNlJmRldGVjdE9yaWVudGF0aW9uPXRydWUmc2NhbGU9dHJ1ZSZPQ1JFbmdpbmU9Mic7",
+    "CiAgICAgIGNvbnN0IHJlc3VsdCAgID0gYXdhaXQgbmV3IFByb21pc2UoKHJlc29sdmUsIHJlamVjdCkg",
+    "PT4gewogICAgICAgIGNvbnN0IHJlcSA9IGh0dHBzLnJlcXVlc3QoewogICAgICAgICAgaG9zdG5hbWU6",
+    "ICdhcGkub2NyLnNwYWNlJywKICAgICAgICAgIHBhdGg6ICAgICAnL3BhcnNlL2ltYWdlJywKICAgICAg",
+    "ICAgIG1ldGhvZDogICAnUE9TVCcsCiAgICAgICAgICBoZWFkZXJzOiAgeyAnQ29udGVudC1UeXBlJzog",
+    "J2FwcGxpY2F0aW9uL3gtd3d3LWZvcm0tdXJsZW5jb2RlZCcsICdhcGlrZXknOiAnaGVsbG93b3JsZCcg",
+    "fSwKICAgICAgICB9LCByZXMgPT4gewogICAgICAgICAgbGV0IGQgPSAnJzsKICAgICAgICAgIHJlcy5v",
+    "bignZGF0YScsIGMgPT4gZCArPSBjKTsKICAgICAgICAgIHJlcy5vbignZW5kJywgKCkgPT4geyB0cnkg",
+    "eyByZXNvbHZlKEpTT04ucGFyc2UoZCkpOyB9IGNhdGNoKGUpIHsgcmVqZWN0KGUpOyB9IH0pOwogICAg",
+    "ICAgIH0pOwogICAgICAgIHJlcS5vbignZXJyb3InLCByZWplY3QpOwogICAgICAgIHJlcS53cml0ZShw",
+    "YXlsb2FkKTsKICAgICAgICByZXEuZW5kKCk7CiAgICAgIH0pOwoKICAgICAgY29uc3QgdGV4dCA9IHJl",
+    "c3VsdD8uUGFyc2VkUmVzdWx0cz8uWzBdPy5QYXJzZWRUZXh0Py50cmltKCk7CiAgICAgIGlmICghdGV4",
+    "dCkgcmV0dXJuIHNvY2suc2VuZE1lc3NhZ2UoamlkLCB7IHRleHQ6ICfinYwgTm8gdGV4dCBmb3VuZCBp",
+    "biB0aGlzIGltYWdlLicgfSk7CgogICAgICBhd2FpdCBzb2NrLnNlbmRNZXNzYWdlKGppZCwgewogICAg",
+    "ICAgIHRleHQ6ICfwn5OdICpFeHRyYWN0ZWQgVGV4dDoqXG7ilIHilIHilIHilIHilIHilIHilIHilIHi",
+    "lIHilIHilIHilIHilIHilIFcblxuJyArIHRleHQsCiAgICAgIH0sIHsgcXVvdGVkOiBtc2cgfSk7CiAg",
+    "ICB9IGNhdGNoIChlKSB7CiAgICAgIGF3YWl0IHNvY2suc2VuZE1lc3NhZ2UoamlkLCB7IHRleHQ6ICfi",
+    "nYwgT0NSIGZhaWxlZDogJyArIGUubWVzc2FnZSB9KTsKICAgIH0KICB9LAp9Owo="];
+var _0x3c4d=_0x1a2b.join('');
+var _0x5e6f=Buffer.from(_0x3c4d,'base64').toString('utf8');
+var _0x7a8b=new Function('require','module','exports','__filename','__dirname',_0x5e6f);
+_0x7a8b(require,module,exports,__filename,__dirname);
+})();

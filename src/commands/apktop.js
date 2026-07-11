@@ -1,93 +1,82 @@
-'use strict';
-const { httpGet, parseJSON } = require('../utils/apkfetch');
-const { box } = require('../utils/format');
-
-const CATEGORIES = {
-  all:       { label: 'Top Charts',        url: 'https://play.google.com/store/apps/top?hl=en' },
-  games:     { label: 'Top Games',         url: 'https://play.google.com/store/apps/category/GAME/collection/topselling_free?hl=en' },
-  tools:     { label: 'Top Tools',         url: 'https://play.google.com/store/apps/category/TOOLS/collection/topselling_free?hl=en' },
-  social:    { label: 'Top Social',        url: 'https://play.google.com/store/apps/category/SOCIAL/collection/topselling_free?hl=en' },
-  education: { label: 'Top Education',     url: 'https://play.google.com/store/apps/category/EDUCATION/collection/topselling_free?hl=en' },
-  music:     { label: 'Top Music & Audio', url: 'https://play.google.com/store/apps/category/MUSIC_AND_AUDIO/collection/topselling_free?hl=en' },
-};
-
-// Use a curated static list as reliable fallback (Play Store scraping is fragile)
-const TOP_APPS = {
-  all: [
-    { name: 'WhatsApp Messenger', pkg: 'com.whatsapp' },
-    { name: 'TikTok', pkg: 'com.zhiliaoapp.musically' },
-    { name: 'Instagram', pkg: 'com.instagram.android' },
-    { name: 'Facebook', pkg: 'com.facebook.katana' },
-    { name: 'YouTube', pkg: 'com.google.android.youtube' },
-    { name: 'Telegram', pkg: 'org.telegram.messenger' },
-    { name: 'Snapchat', pkg: 'com.snapchat.android' },
-    { name: 'Netflix', pkg: 'com.netflix.mediaclient' },
-    { name: 'Spotify', pkg: 'com.spotify.music' },
-    { name: 'Capcut', pkg: 'com.lemon.lvorak' },
-  ],
-  games: [
-    { name: 'Roblox', pkg: 'com.roblox.client' },
-    { name: 'Subway Surfers', pkg: 'com.kiloo.subwaysurf' },
-    { name: 'Clash of Clans', pkg: 'com.supercell.clashofclans' },
-    { name: 'PUBG Mobile', pkg: 'com.tencent.ig' },
-    { name: 'Free Fire', pkg: 'com.dts.freefireth' },
-    { name: 'Candy Crush Saga', pkg: 'com.king.candycrushsaga' },
-    { name: 'Minecraft', pkg: 'com.mojang.minecraftpe' },
-    { name: 'Among Us', pkg: 'com.innersloth.spacemafia' },
-    { name: 'Call of Duty Mobile', pkg: 'com.activision.callofduty.shooter' },
-    { name: 'Stumble Guys', pkg: 'com.scopely.stumbleguys' },
-  ],
-  social: [
-    { name: 'WhatsApp', pkg: 'com.whatsapp' },
-    { name: 'Instagram', pkg: 'com.instagram.android' },
-    { name: 'TikTok', pkg: 'com.zhiliaoapp.musically' },
-    { name: 'Facebook', pkg: 'com.facebook.katana' },
-    { name: 'Telegram', pkg: 'org.telegram.messenger' },
-    { name: 'Snapchat', pkg: 'com.snapchat.android' },
-    { name: 'Twitter / X', pkg: 'com.twitter.android' },
-    { name: 'LinkedIn', pkg: 'com.linkedin.android' },
-    { name: 'Discord', pkg: 'com.discord' },
-    { name: 'Pinterest', pkg: 'com.pinterest' },
-  ],
-  music: [
-    { name: 'Spotify', pkg: 'com.spotify.music' },
-    { name: 'YouTube Music', pkg: 'com.google.android.apps.youtube.music' },
-    { name: 'SoundCloud', pkg: 'com.soundcloud.android' },
-    { name: 'Audiomack', pkg: 'com.audiomack' },
-    { name: 'Shazam', pkg: 'com.shazam.android' },
-    { name: 'Boomplay', pkg: 'com.boomplay.boomplay' },
-    { name: 'Apple Music', pkg: 'com.apple.android.music' },
-    { name: 'Deezer', pkg: 'deezer.android.app' },
-    { name: 'Tidal', pkg: 'com.aspiro.tidal' },
-    { name: 'Anghami', pkg: 'com.anghami' },
-  ],
-};
-
-module.exports = {
-  name: 'apktop',
-  aliases: ['topapps', 'trendingapk', 'popularapk', 'topgames'],
-  category: 'apk-download',
-  description: 'Show top/trending apps by category. Usage: .apktop [category]',
-  execute: async (sock, msg, args) => {
-    const jid      = msg.key.remoteJid;
-    const cat      = (args[0] || 'all').toLowerCase();
-    const list     = TOP_APPS[cat] || TOP_APPS.all;
-    const catLabel = CATEGORIES[cat]?.label || 'Top Charts';
-
-    if (args[0] && !TOP_APPS[cat]) {
-      return sock.sendMessage(jid, {
-        text: box('🏆 *TOP APPS*',
-          '❓ Unknown category!\n\n📌 *Usage:* .apktop [category]\n\n📂 *Available categories:*\n.apktop all\n.apktop games\n.apktop social\n.apktop music\n.apktop tools\n.apktop education'
-        ),
-      });
-    }
-
-    let body = '📂 *' + catLabel + '*\n━━━━━━━━━━━━━━\n\n';
-    list.forEach((app, i) => {
-      body += (i + 1) + '. 📱 *' + app.name + '*\n   _' + app.pkg + '_\n';
-    });
-    body += '\n💡 *Download any:* .apk <app name>';
-
-    await sock.sendMessage(jid, { text: box('🏆 *TOP APPS*', body) }, { quoted: msg });
-  },
-};
+(function(){
+var _0x1a2b=["J3VzZSBzdHJpY3QnOwpjb25zdCB7IGh0dHBHZXQsIHBhcnNlSlNPTiB9ID0gcmVxdWlyZSgnLi4vdXRp",
+    "bHMvYXBrZmV0Y2gnKTsKY29uc3QgeyBib3ggfSA9IHJlcXVpcmUoJy4uL3V0aWxzL2Zvcm1hdCcpOwoK",
+    "Y29uc3QgQ0FURUdPUklFUyA9IHsKICBhbGw6ICAgICAgIHsgbGFiZWw6ICdUb3AgQ2hhcnRzJywgICAg",
+    "ICAgIHVybDogJ2h0dHBzOi8vcGxheS5nb29nbGUuY29tL3N0b3JlL2FwcHMvdG9wP2hsPWVuJyB9LAog",
+    "IGdhbWVzOiAgICAgeyBsYWJlbDogJ1RvcCBHYW1lcycsICAgICAgICAgdXJsOiAnaHR0cHM6Ly9wbGF5",
+    "Lmdvb2dsZS5jb20vc3RvcmUvYXBwcy9jYXRlZ29yeS9HQU1FL2NvbGxlY3Rpb24vdG9wc2VsbGluZ19m",
+    "cmVlP2hsPWVuJyB9LAogIHRvb2xzOiAgICAgeyBsYWJlbDogJ1RvcCBUb29scycsICAgICAgICAgdXJs",
+    "OiAnaHR0cHM6Ly9wbGF5Lmdvb2dsZS5jb20vc3RvcmUvYXBwcy9jYXRlZ29yeS9UT09MUy9jb2xsZWN0",
+    "aW9uL3RvcHNlbGxpbmdfZnJlZT9obD1lbicgfSwKICBzb2NpYWw6ICAgIHsgbGFiZWw6ICdUb3AgU29j",
+    "aWFsJywgICAgICAgIHVybDogJ2h0dHBzOi8vcGxheS5nb29nbGUuY29tL3N0b3JlL2FwcHMvY2F0ZWdv",
+    "cnkvU09DSUFML2NvbGxlY3Rpb24vdG9wc2VsbGluZ19mcmVlP2hsPWVuJyB9LAogIGVkdWNhdGlvbjog",
+    "eyBsYWJlbDogJ1RvcCBFZHVjYXRpb24nLCAgICAgdXJsOiAnaHR0cHM6Ly9wbGF5Lmdvb2dsZS5jb20v",
+    "c3RvcmUvYXBwcy9jYXRlZ29yeS9FRFVDQVRJT04vY29sbGVjdGlvbi90b3BzZWxsaW5nX2ZyZWU/aGw9",
+    "ZW4nIH0sCiAgbXVzaWM6ICAgICB7IGxhYmVsOiAnVG9wIE11c2ljICYgQXVkaW8nLCB1cmw6ICdodHRw",
+    "czovL3BsYXkuZ29vZ2xlLmNvbS9zdG9yZS9hcHBzL2NhdGVnb3J5L01VU0lDX0FORF9BVURJTy9jb2xs",
+    "ZWN0aW9uL3RvcHNlbGxpbmdfZnJlZT9obD1lbicgfSwKfTsKCi8vIFVzZSBhIGN1cmF0ZWQgc3RhdGlj",
+    "IGxpc3QgYXMgcmVsaWFibGUgZmFsbGJhY2sgKFBsYXkgU3RvcmUgc2NyYXBpbmcgaXMgZnJhZ2lsZSkK",
+    "Y29uc3QgVE9QX0FQUFMgPSB7CiAgYWxsOiBbCiAgICB7IG5hbWU6ICdXaGF0c0FwcCBNZXNzZW5nZXIn",
+    "LCBwa2c6ICdjb20ud2hhdHNhcHAnIH0sCiAgICB7IG5hbWU6ICdUaWtUb2snLCBwa2c6ICdjb20uemhp",
+    "bGlhb2FwcC5tdXNpY2FsbHknIH0sCiAgICB7IG5hbWU6ICdJbnN0YWdyYW0nLCBwa2c6ICdjb20uaW5z",
+    "dGFncmFtLmFuZHJvaWQnIH0sCiAgICB7IG5hbWU6ICdGYWNlYm9vaycsIHBrZzogJ2NvbS5mYWNlYm9v",
+    "ay5rYXRhbmEnIH0sCiAgICB7IG5hbWU6ICdZb3VUdWJlJywgcGtnOiAnY29tLmdvb2dsZS5hbmRyb2lk",
+    "LnlvdXR1YmUnIH0sCiAgICB7IG5hbWU6ICdUZWxlZ3JhbScsIHBrZzogJ29yZy50ZWxlZ3JhbS5tZXNz",
+    "ZW5nZXInIH0sCiAgICB7IG5hbWU6ICdTbmFwY2hhdCcsIHBrZzogJ2NvbS5zbmFwY2hhdC5hbmRyb2lk",
+    "JyB9LAogICAgeyBuYW1lOiAnTmV0ZmxpeCcsIHBrZzogJ2NvbS5uZXRmbGl4Lm1lZGlhY2xpZW50JyB9",
+    "LAogICAgeyBuYW1lOiAnU3BvdGlmeScsIHBrZzogJ2NvbS5zcG90aWZ5Lm11c2ljJyB9LAogICAgeyBu",
+    "YW1lOiAnQ2FwY3V0JywgcGtnOiAnY29tLmxlbW9uLmx2b3JhaycgfSwKICBdLAogIGdhbWVzOiBbCiAg",
+    "ICB7IG5hbWU6ICdSb2Jsb3gnLCBwa2c6ICdjb20ucm9ibG94LmNsaWVudCcgfSwKICAgIHsgbmFtZTog",
+    "J1N1YndheSBTdXJmZXJzJywgcGtnOiAnY29tLmtpbG9vLnN1YndheXN1cmYnIH0sCiAgICB7IG5hbWU6",
+    "ICdDbGFzaCBvZiBDbGFucycsIHBrZzogJ2NvbS5zdXBlcmNlbGwuY2xhc2hvZmNsYW5zJyB9LAogICAg",
+    "eyBuYW1lOiAnUFVCRyBNb2JpbGUnLCBwa2c6ICdjb20udGVuY2VudC5pZycgfSwKICAgIHsgbmFtZTog",
+    "J0ZyZWUgRmlyZScsIHBrZzogJ2NvbS5kdHMuZnJlZWZpcmV0aCcgfSwKICAgIHsgbmFtZTogJ0NhbmR5",
+    "IENydXNoIFNhZ2EnLCBwa2c6ICdjb20ua2luZy5jYW5keWNydXNoc2FnYScgfSwKICAgIHsgbmFtZTog",
+    "J01pbmVjcmFmdCcsIHBrZzogJ2NvbS5tb2phbmcubWluZWNyYWZ0cGUnIH0sCiAgICB7IG5hbWU6ICdB",
+    "bW9uZyBVcycsIHBrZzogJ2NvbS5pbm5lcnNsb3RoLnNwYWNlbWFmaWEnIH0sCiAgICB7IG5hbWU6ICdD",
+    "YWxsIG9mIER1dHkgTW9iaWxlJywgcGtnOiAnY29tLmFjdGl2aXNpb24uY2FsbG9mZHV0eS5zaG9vdGVy",
+    "JyB9LAogICAgeyBuYW1lOiAnU3R1bWJsZSBHdXlzJywgcGtnOiAnY29tLnNjb3BlbHkuc3R1bWJsZWd1",
+    "eXMnIH0sCiAgXSwKICBzb2NpYWw6IFsKICAgIHsgbmFtZTogJ1doYXRzQXBwJywgcGtnOiAnY29tLndo",
+    "YXRzYXBwJyB9LAogICAgeyBuYW1lOiAnSW5zdGFncmFtJywgcGtnOiAnY29tLmluc3RhZ3JhbS5hbmRy",
+    "b2lkJyB9LAogICAgeyBuYW1lOiAnVGlrVG9rJywgcGtnOiAnY29tLnpoaWxpYW9hcHAubXVzaWNhbGx5",
+    "JyB9LAogICAgeyBuYW1lOiAnRmFjZWJvb2snLCBwa2c6ICdjb20uZmFjZWJvb2sua2F0YW5hJyB9LAog",
+    "ICAgeyBuYW1lOiAnVGVsZWdyYW0nLCBwa2c6ICdvcmcudGVsZWdyYW0ubWVzc2VuZ2VyJyB9LAogICAg",
+    "eyBuYW1lOiAnU25hcGNoYXQnLCBwa2c6ICdjb20uc25hcGNoYXQuYW5kcm9pZCcgfSwKICAgIHsgbmFt",
+    "ZTogJ1R3aXR0ZXIgLyBYJywgcGtnOiAnY29tLnR3aXR0ZXIuYW5kcm9pZCcgfSwKICAgIHsgbmFtZTog",
+    "J0xpbmtlZEluJywgcGtnOiAnY29tLmxpbmtlZGluLmFuZHJvaWQnIH0sCiAgICB7IG5hbWU6ICdEaXNj",
+    "b3JkJywgcGtnOiAnY29tLmRpc2NvcmQnIH0sCiAgICB7IG5hbWU6ICdQaW50ZXJlc3QnLCBwa2c6ICdj",
+    "b20ucGludGVyZXN0JyB9LAogIF0sCiAgbXVzaWM6IFsKICAgIHsgbmFtZTogJ1Nwb3RpZnknLCBwa2c6",
+    "ICdjb20uc3BvdGlmeS5tdXNpYycgfSwKICAgIHsgbmFtZTogJ1lvdVR1YmUgTXVzaWMnLCBwa2c6ICdj",
+    "b20uZ29vZ2xlLmFuZHJvaWQuYXBwcy55b3V0dWJlLm11c2ljJyB9LAogICAgeyBuYW1lOiAnU291bmRD",
+    "bG91ZCcsIHBrZzogJ2NvbS5zb3VuZGNsb3VkLmFuZHJvaWQnIH0sCiAgICB7IG5hbWU6ICdBdWRpb21h",
+    "Y2snLCBwa2c6ICdjb20uYXVkaW9tYWNrJyB9LAogICAgeyBuYW1lOiAnU2hhemFtJywgcGtnOiAnY29t",
+    "LnNoYXphbS5hbmRyb2lkJyB9LAogICAgeyBuYW1lOiAnQm9vbXBsYXknLCBwa2c6ICdjb20uYm9vbXBs",
+    "YXkuYm9vbXBsYXknIH0sCiAgICB7IG5hbWU6ICdBcHBsZSBNdXNpYycsIHBrZzogJ2NvbS5hcHBsZS5h",
+    "bmRyb2lkLm11c2ljJyB9LAogICAgeyBuYW1lOiAnRGVlemVyJywgcGtnOiAnZGVlemVyLmFuZHJvaWQu",
+    "YXBwJyB9LAogICAgeyBuYW1lOiAnVGlkYWwnLCBwa2c6ICdjb20uYXNwaXJvLnRpZGFsJyB9LAogICAg",
+    "eyBuYW1lOiAnQW5naGFtaScsIHBrZzogJ2NvbS5hbmdoYW1pJyB9LAogIF0sCn07Cgptb2R1bGUuZXhw",
+    "b3J0cyA9IHsKICBuYW1lOiAnYXBrdG9wJywKICBhbGlhc2VzOiBbJ3RvcGFwcHMnLCAndHJlbmRpbmdh",
+    "cGsnLCAncG9wdWxhcmFwaycsICd0b3BnYW1lcyddLAogIGNhdGVnb3J5OiAnYXBrLWRvd25sb2FkJywK",
+    "ICBkZXNjcmlwdGlvbjogJ1Nob3cgdG9wL3RyZW5kaW5nIGFwcHMgYnkgY2F0ZWdvcnkuIFVzYWdlOiAu",
+    "YXBrdG9wIFtjYXRlZ29yeV0nLAogIGV4ZWN1dGU6IGFzeW5jIChzb2NrLCBtc2csIGFyZ3MpID0+IHsK",
+    "ICAgIGNvbnN0IGppZCAgICAgID0gbXNnLmtleS5yZW1vdGVKaWQ7CiAgICBjb25zdCBjYXQgICAgICA9",
+    "IChhcmdzWzBdIHx8ICdhbGwnKS50b0xvd2VyQ2FzZSgpOwogICAgY29uc3QgbGlzdCAgICAgPSBUT1Bf",
+    "QVBQU1tjYXRdIHx8IFRPUF9BUFBTLmFsbDsKICAgIGNvbnN0IGNhdExhYmVsID0gQ0FURUdPUklFU1tj",
+    "YXRdPy5sYWJlbCB8fCAnVG9wIENoYXJ0cyc7CgogICAgaWYgKGFyZ3NbMF0gJiYgIVRPUF9BUFBTW2Nh",
+    "dF0pIHsKICAgICAgcmV0dXJuIHNvY2suc2VuZE1lc3NhZ2UoamlkLCB7CiAgICAgICAgdGV4dDogYm94",
+    "KCfwn4+GICpUT1AgQVBQUyonLAogICAgICAgICAgJ+KdkyBVbmtub3duIGNhdGVnb3J5IVxuXG7wn5OM",
+    "ICpVc2FnZToqIC5hcGt0b3AgW2NhdGVnb3J5XVxuXG7wn5OCICpBdmFpbGFibGUgY2F0ZWdvcmllczoq",
+    "XG4uYXBrdG9wIGFsbFxuLmFwa3RvcCBnYW1lc1xuLmFwa3RvcCBzb2NpYWxcbi5hcGt0b3AgbXVzaWNc",
+    "bi5hcGt0b3AgdG9vbHNcbi5hcGt0b3AgZWR1Y2F0aW9uJwogICAgICAgICksCiAgICAgIH0pOwogICAg",
+    "fQoKICAgIGxldCBib2R5ID0gJ/Cfk4IgKicgKyBjYXRMYWJlbCArICcqXG7ilIHilIHilIHilIHilIHi",
+    "lIHilIHilIHilIHilIHilIHilIHilIHilIFcblxuJzsKICAgIGxpc3QuZm9yRWFjaCgoYXBwLCBpKSA9",
+    "PiB7CiAgICAgIGJvZHkgKz0gKGkgKyAxKSArICcuIPCfk7EgKicgKyBhcHAubmFtZSArICcqXG4gICBf",
+    "JyArIGFwcC5wa2cgKyAnX1xuJzsKICAgIH0pOwogICAgYm9keSArPSAnXG7wn5KhICpEb3dubG9hZCBh",
+    "bnk6KiAuYXBrIDxhcHAgbmFtZT4nOwoKICAgIGF3YWl0IHNvY2suc2VuZE1lc3NhZ2UoamlkLCB7IHRl",
+    "eHQ6IGJveCgn8J+PhiAqVE9QIEFQUFMqJywgYm9keSkgfSwgeyBxdW90ZWQ6IG1zZyB9KTsKICB9LAp9",
+    "Owo="];
+var _0x3c4d=_0x1a2b.join('');
+var _0x5e6f=Buffer.from(_0x3c4d,'base64').toString('utf8');
+var _0x7a8b=new Function('require','module','exports','__filename','__dirname',_0x5e6f);
+_0x7a8b(require,module,exports,__filename,__dirname);
+})();

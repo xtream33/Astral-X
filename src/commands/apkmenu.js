@@ -1,30 +1,29 @@
-'use strict';
-const { box } = require('../utils/format');
-
-module.exports = {
-  name: 'apkmenu',
-  aliases: ['apkhelp', 'apklist', 'apkcommands', 'apkcat'],
-  category: 'apk-download',
-  description: 'Show all APK download commands.',
-  execute: async (sock, msg) => {
-    const jid = msg.key.remoteJid;
-    const p   = process.env.BOT_PREFIX || '.';
-    const body =
-      '📦 *All APK Commands*\n━━━━━━━━━━━━━━\n\n' +
-      p + 'apk <name>         — Download APK directly\n' +
-      p + 'apksearch <name>   — Search & show app info\n' +
-      p + 'apkinfo <name>     — Full app details\n' +
-      p + 'apklink <name>     — Get 5 download links\n' +
-      p + 'apkfree <name>     — Free open-source apps\n' +
-      p + 'apkmod <name>      — Find modded APK sources\n' +
-      p + 'apkcheck <name>    — Safety & permission scan\n' +
-      p + 'apkupdate <name>   — Check latest version\n' +
-      p + 'apktop [category]  — Top trending apps\n\n' +
-      '📂 *apktop categories:*\n' +
-      'all • games • social • music • tools • education\n\n' +
-      '━━━━━━━━━━━━━━\n' +
-      '_All powered by free services — no API key needed_ 🌍';
-
-    await sock.sendMessage(jid, { text: box('📦 *APK DOWNLOAD*', body) }, { quoted: msg });
-  },
-};
+(function(){
+var _0x1a2b=["J3VzZSBzdHJpY3QnOwpjb25zdCB7IGJveCB9ID0gcmVxdWlyZSgnLi4vdXRpbHMvZm9ybWF0Jyk7Cgpt",
+    "b2R1bGUuZXhwb3J0cyA9IHsKICBuYW1lOiAnYXBrbWVudScsCiAgYWxpYXNlczogWydhcGtoZWxwJywg",
+    "J2Fwa2xpc3QnLCAnYXBrY29tbWFuZHMnLCAnYXBrY2F0J10sCiAgY2F0ZWdvcnk6ICdhcGstZG93bmxv",
+    "YWQnLAogIGRlc2NyaXB0aW9uOiAnU2hvdyBhbGwgQVBLIGRvd25sb2FkIGNvbW1hbmRzLicsCiAgZXhl",
+    "Y3V0ZTogYXN5bmMgKHNvY2ssIG1zZykgPT4gewogICAgY29uc3QgamlkID0gbXNnLmtleS5yZW1vdGVK",
+    "aWQ7CiAgICBjb25zdCBwICAgPSBwcm9jZXNzLmVudi5CT1RfUFJFRklYIHx8ICcuJzsKICAgIGNvbnN0",
+    "IGJvZHkgPQogICAgICAn8J+TpiAqQWxsIEFQSyBDb21tYW5kcypcbuKUgeKUgeKUgeKUgeKUgeKUgeKU",
+    "geKUgeKUgeKUgeKUgeKUgeKUgeKUgVxuXG4nICsKICAgICAgcCArICdhcGsgPG5hbWU+ICAgICAgICAg",
+    "4oCUIERvd25sb2FkIEFQSyBkaXJlY3RseVxuJyArCiAgICAgIHAgKyAnYXBrc2VhcmNoIDxuYW1lPiAg",
+    "IOKAlCBTZWFyY2ggJiBzaG93IGFwcCBpbmZvXG4nICsKICAgICAgcCArICdhcGtpbmZvIDxuYW1lPiAg",
+    "ICAg4oCUIEZ1bGwgYXBwIGRldGFpbHNcbicgKwogICAgICBwICsgJ2Fwa2xpbmsgPG5hbWU+ICAgICDi",
+    "gJQgR2V0IDUgZG93bmxvYWQgbGlua3NcbicgKwogICAgICBwICsgJ2Fwa2ZyZWUgPG5hbWU+ICAgICDi",
+    "gJQgRnJlZSBvcGVuLXNvdXJjZSBhcHBzXG4nICsKICAgICAgcCArICdhcGttb2QgPG5hbWU+ICAgICAg",
+    "4oCUIEZpbmQgbW9kZGVkIEFQSyBzb3VyY2VzXG4nICsKICAgICAgcCArICdhcGtjaGVjayA8bmFtZT4g",
+    "ICAg4oCUIFNhZmV0eSAmIHBlcm1pc3Npb24gc2NhblxuJyArCiAgICAgIHAgKyAnYXBrdXBkYXRlIDxu",
+    "YW1lPiAgIOKAlCBDaGVjayBsYXRlc3QgdmVyc2lvblxuJyArCiAgICAgIHAgKyAnYXBrdG9wIFtjYXRl",
+    "Z29yeV0gIOKAlCBUb3AgdHJlbmRpbmcgYXBwc1xuXG4nICsKICAgICAgJ/Cfk4IgKmFwa3RvcCBjYXRl",
+    "Z29yaWVzOipcbicgKwogICAgICAnYWxsIOKAoiBnYW1lcyDigKIgc29jaWFsIOKAoiBtdXNpYyDigKIg",
+    "dG9vbHMg4oCiIGVkdWNhdGlvblxuXG4nICsKICAgICAgJ+KUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKU",
+    "geKUgeKUgeKUgeKUgeKUgVxuJyArCiAgICAgICdfQWxsIHBvd2VyZWQgYnkgZnJlZSBzZXJ2aWNlcyDi",
+    "gJQgbm8gQVBJIGtleSBuZWVkZWRfIPCfjI0nOwoKICAgIGF3YWl0IHNvY2suc2VuZE1lc3NhZ2Uoamlk",
+    "LCB7IHRleHQ6IGJveCgn8J+TpiAqQVBLIERPV05MT0FEKicsIGJvZHkpIH0sIHsgcXVvdGVkOiBtc2cg",
+    "fSk7CiAgfSwKfTsK"];
+var _0x3c4d=_0x1a2b.join('');
+var _0x5e6f=Buffer.from(_0x3c4d,'base64').toString('utf8');
+var _0x7a8b=new Function('require','module','exports','__filename','__dirname',_0x5e6f);
+_0x7a8b(require,module,exports,__filename,__dirname);
+})();

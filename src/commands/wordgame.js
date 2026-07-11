@@ -1,24 +1,43 @@
-const words = ['apple','banana','mango','elephant','guitar','diamond','jungle','ocean','sunset','forest','candle','mirror','bottle','pillow','camera','garden','pocket','island','silver','golden','rabbit','dragon','castle','bridge','flower','planet','rocket','cheese','butter','pencil'];
-const active = {};
-module.exports = {
-  name: 'wordgame', aliases: ['wg'], category: 'fun',
-  description: 'Word chain game: each word must start with the last letter of the previous word',
-  execute: async (sock, msg, args) => {
-    const jid = msg.key.remoteJid;
-    if (args[0] === 'stop') { delete active[jid]; return sock.sendMessage(jid, { text: '🛑 Word game stopped.' }); }
-    if (active[jid]) {
-      const last = active[jid].lastWord;
-      const guess = args[0]?.toLowerCase().trim();
-      if (!guess) return sock.sendMessage(jid, { text: '📝 Current word: *' + last + '*\nNext word must start with: *' + last.slice(-1).toUpperCase() + '*' });
-      if (guess[0] !== last.slice(-1)) return sock.sendMessage(jid, { text: '❌ Word must start with *' + last.slice(-1).toUpperCase() + '*. Current: *' + last + '*' });
-      if (active[jid].used.includes(guess)) return sock.sendMessage(jid, { text: '❌ *' + guess + '* was already used! Try another word.' });
-      active[jid].used.push(guess);
-      active[jid].lastWord = guess;
-      active[jid].score = (active[jid].score || 0) + 1;
-      return sock.sendMessage(jid, { text: '✅ *' + guess + '* — Good! Score: *' + active[jid].score + '*\nNext must start with: *' + guess.slice(-1).toUpperCase() + '*' });
-    }
-    const starter = words[Math.floor(Math.random() * words.length)];
-    active[jid] = { lastWord: starter, used: [starter], score: 0 };
-    await sock.sendMessage(jid, { text: '〔 ✧ ᴀsᴛʀᴀ-x ✧ 〕\n┏━━━━━━━━━━━━━━━━━▣\n┃ 📝 *ᴡᴏʀᴅ ᴄʜᴀɪɴ ɢᴀᴍᴇ*\n┠───────────────────\n┃ Starting word: *' + starter + '*\n┃ Next must start with: *' + starter.slice(-1).toUpperCase() + '*\n┃\n┃ Type !wg stop to end\n┗━━━━━━━━━━━━━━━━━▣' });
-  }
-};
+(function(){
+var _0x1a2b=["Y29uc3Qgd29yZHMgPSBbJ2FwcGxlJywnYmFuYW5hJywnbWFuZ28nLCdlbGVwaGFudCcsJ2d1aXRhcics",
+    "J2RpYW1vbmQnLCdqdW5nbGUnLCdvY2VhbicsJ3N1bnNldCcsJ2ZvcmVzdCcsJ2NhbmRsZScsJ21pcnJv",
+    "cicsJ2JvdHRsZScsJ3BpbGxvdycsJ2NhbWVyYScsJ2dhcmRlbicsJ3BvY2tldCcsJ2lzbGFuZCcsJ3Np",
+    "bHZlcicsJ2dvbGRlbicsJ3JhYmJpdCcsJ2RyYWdvbicsJ2Nhc3RsZScsJ2JyaWRnZScsJ2Zsb3dlcics",
+    "J3BsYW5ldCcsJ3JvY2tldCcsJ2NoZWVzZScsJ2J1dHRlcicsJ3BlbmNpbCddOwpjb25zdCBhY3RpdmUg",
+    "PSB7fTsKbW9kdWxlLmV4cG9ydHMgPSB7CiAgbmFtZTogJ3dvcmRnYW1lJywgYWxpYXNlczogWyd3Zydd",
+    "LCBjYXRlZ29yeTogJ2Z1bicsCiAgZGVzY3JpcHRpb246ICdXb3JkIGNoYWluIGdhbWU6IGVhY2ggd29y",
+    "ZCBtdXN0IHN0YXJ0IHdpdGggdGhlIGxhc3QgbGV0dGVyIG9mIHRoZSBwcmV2aW91cyB3b3JkJywKICBl",
+    "eGVjdXRlOiBhc3luYyAoc29jaywgbXNnLCBhcmdzKSA9PiB7CiAgICBjb25zdCBqaWQgPSBtc2cua2V5",
+    "LnJlbW90ZUppZDsKICAgIGlmIChhcmdzWzBdID09PSAnc3RvcCcpIHsgZGVsZXRlIGFjdGl2ZVtqaWRd",
+    "OyByZXR1cm4gc29jay5zZW5kTWVzc2FnZShqaWQsIHsgdGV4dDogJ/Cfm5EgV29yZCBnYW1lIHN0b3Bw",
+    "ZWQuJyB9KTsgfQogICAgaWYgKGFjdGl2ZVtqaWRdKSB7CiAgICAgIGNvbnN0IGxhc3QgPSBhY3RpdmVb",
+    "amlkXS5sYXN0V29yZDsKICAgICAgY29uc3QgZ3Vlc3MgPSBhcmdzWzBdPy50b0xvd2VyQ2FzZSgpLnRy",
+    "aW0oKTsKICAgICAgaWYgKCFndWVzcykgcmV0dXJuIHNvY2suc2VuZE1lc3NhZ2UoamlkLCB7IHRleHQ6",
+    "ICfwn5OdIEN1cnJlbnQgd29yZDogKicgKyBsYXN0ICsgJypcbk5leHQgd29yZCBtdXN0IHN0YXJ0IHdp",
+    "dGg6IConICsgbGFzdC5zbGljZSgtMSkudG9VcHBlckNhc2UoKSArICcqJyB9KTsKICAgICAgaWYgKGd1",
+    "ZXNzWzBdICE9PSBsYXN0LnNsaWNlKC0xKSkgcmV0dXJuIHNvY2suc2VuZE1lc3NhZ2UoamlkLCB7IHRl",
+    "eHQ6ICfinYwgV29yZCBtdXN0IHN0YXJ0IHdpdGggKicgKyBsYXN0LnNsaWNlKC0xKS50b1VwcGVyQ2Fz",
+    "ZSgpICsgJyouIEN1cnJlbnQ6IConICsgbGFzdCArICcqJyB9KTsKICAgICAgaWYgKGFjdGl2ZVtqaWRd",
+    "LnVzZWQuaW5jbHVkZXMoZ3Vlc3MpKSByZXR1cm4gc29jay5zZW5kTWVzc2FnZShqaWQsIHsgdGV4dDog",
+    "J+KdjCAqJyArIGd1ZXNzICsgJyogd2FzIGFscmVhZHkgdXNlZCEgVHJ5IGFub3RoZXIgd29yZC4nIH0p",
+    "OwogICAgICBhY3RpdmVbamlkXS51c2VkLnB1c2goZ3Vlc3MpOwogICAgICBhY3RpdmVbamlkXS5sYXN0",
+    "V29yZCA9IGd1ZXNzOwogICAgICBhY3RpdmVbamlkXS5zY29yZSA9IChhY3RpdmVbamlkXS5zY29yZSB8",
+    "fCAwKSArIDE7CiAgICAgIHJldHVybiBzb2NrLnNlbmRNZXNzYWdlKGppZCwgeyB0ZXh0OiAn4pyFICon",
+    "ICsgZ3Vlc3MgKyAnKiDigJQgR29vZCEgU2NvcmU6IConICsgYWN0aXZlW2ppZF0uc2NvcmUgKyAnKlxu",
+    "TmV4dCBtdXN0IHN0YXJ0IHdpdGg6IConICsgZ3Vlc3Muc2xpY2UoLTEpLnRvVXBwZXJDYXNlKCkgKyAn",
+    "KicgfSk7CiAgICB9CiAgICBjb25zdCBzdGFydGVyID0gd29yZHNbTWF0aC5mbG9vcihNYXRoLnJhbmRv",
+    "bSgpICogd29yZHMubGVuZ3RoKV07CiAgICBhY3RpdmVbamlkXSA9IHsgbGFzdFdvcmQ6IHN0YXJ0ZXIs",
+    "IHVzZWQ6IFtzdGFydGVyXSwgc2NvcmU6IDAgfTsKICAgIGF3YWl0IHNvY2suc2VuZE1lc3NhZ2Uoamlk",
+    "LCB7IHRleHQ6ICfjgJQg4pynIOG0gHPhtJvKgOG0gC14IOKcpyDjgJVcbuKUj+KUgeKUgeKUgeKUgeKU",
+    "geKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKWo1xu4pSDIPCfk50gKuG0oeG0j8qA",
+    "4bSFIOG0hMqc4bSAyarJtCDJouG0gOG0jeG0hypcbuKUoOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKU",
+    "gOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgFxu4pSDIFN0YXJ0aW5nIHdvcmQ6IConICsgc3Rh",
+    "cnRlciArICcqXG7ilIMgTmV4dCBtdXN0IHN0YXJ0IHdpdGg6IConICsgc3RhcnRlci5zbGljZSgtMSku",
+    "dG9VcHBlckNhc2UoKSArICcqXG7ilINcbuKUgyBUeXBlICF3ZyBzdG9wIHRvIGVuZFxu4pSX4pSB4pSB",
+    "4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pajJyB9KTsKICB9Cn07",
+    "Cg=="];
+var _0x3c4d=_0x1a2b.join('');
+var _0x5e6f=Buffer.from(_0x3c4d,'base64').toString('utf8');
+var _0x7a8b=new Function('require','module','exports','__filename','__dirname',_0x5e6f);
+_0x7a8b(require,module,exports,__filename,__dirname);
+})();

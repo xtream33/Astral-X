@@ -1,54 +1,44 @@
-'use strict';
-const os  = require('os');
-const { box } = require('../utils/format');
-const { sessions } = require('../utils/socket');
-
-function fmtBytes(b) {
-  if (b < 1024) return b + ' B';
-  if (b < 1024 * 1024) return (b / 1024).toFixed(1) + ' KB';
-  if (b < 1024 * 1024 * 1024) return (b / 1024 / 1024).toFixed(1) + ' MB';
-  return (b / 1024 / 1024 / 1024).toFixed(2) + ' GB';
-}
-function fmtUptime(s) {
-  const d = Math.floor(s / 86400), h = Math.floor((s % 86400) / 3600), m = Math.floor((s % 3600) / 60);
-  return (d ? d + 'd ' : '') + (h ? h + 'h ' : '') + m + 'm';
-}
-
-module.exports = {
-  name: 'botinfo',
-  aliases: ['bot', 'botstatus', 'status2', 'sysinfo'],
-  category: 'utility',
-  description: 'Show bot and system information',
-  execute: async (sock, msg) => {
-    const jid      = msg.key.remoteJid;
-    const mem      = process.memoryUsage();
-    const totalMem = os.totalmem();
-    const freeMem  = os.freemem();
-    const usedMem  = totalMem - freeMem;
-    const cpus     = os.cpus();
-    const uptime   = process.uptime();
-    const active   = Object.values(sessions || {}).filter(s => s?.sock?.user).length;
-    const total    = Object.keys(sessions || {}).length;
-    const ramPct   = Math.round((usedMem / totalMem) * 100);
-    const ramBar   = '█'.repeat(Math.round(ramPct / 10)) + '░'.repeat(10 - Math.round(ramPct / 10));
-    await sock.sendMessage(jid, {
-      text: box('🤖 *ASTRA-X BOT INFO*',
-        '⚙️ *System*\n' +
-        '• OS:       ' + os.type() + ' ' + os.arch() + '\n' +
-        '• CPU:      ' + (cpus[0]?.model || 'Unknown').slice(0, 28) + '\n' +
-        '• Cores:    ' + cpus.length + '\n\n' +
-        '💾 *Memory*\n' +
-        '• ' + ramBar + ' ' + ramPct + '%\n' +
-        '• Total:    ' + fmtBytes(totalMem) + '\n' +
-        '• Used:     ' + fmtBytes(usedMem) + '\n' +
-        '• Free:     ' + fmtBytes(freeMem) + '\n' +
-        '• Bot RAM:  ' + fmtBytes(mem.rss) + '\n\n' +
-        '📊 *Bot Stats*\n' +
-        '• Uptime:   ' + fmtUptime(Math.floor(uptime)) + '\n' +
-        '• Sessions: ' + active + '/' + total + ' online\n' +
-        '• Node.js:  ' + process.version + '\n' +
-        '• Bot Ver:  v6.6.6\n' +
-        '• Platform: ' + process.platform),
-    }, { quoted: msg });
-  },
-};
+(function(){
+var _0x1a2b=["J3VzZSBzdHJpY3QnOwpjb25zdCBvcyAgPSByZXF1aXJlKCdvcycpOwpjb25zdCB7IGJveCB9ID0gcmVx",
+    "dWlyZSgnLi4vdXRpbHMvZm9ybWF0Jyk7CmNvbnN0IHsgc2Vzc2lvbnMgfSA9IHJlcXVpcmUoJy4uL3V0",
+    "aWxzL3NvY2tldCcpOwoKZnVuY3Rpb24gZm10Qnl0ZXMoYikgewogIGlmIChiIDwgMTAyNCkgcmV0dXJu",
+    "IGIgKyAnIEInOwogIGlmIChiIDwgMTAyNCAqIDEwMjQpIHJldHVybiAoYiAvIDEwMjQpLnRvRml4ZWQo",
+    "MSkgKyAnIEtCJzsKICBpZiAoYiA8IDEwMjQgKiAxMDI0ICogMTAyNCkgcmV0dXJuIChiIC8gMTAyNCAv",
+    "IDEwMjQpLnRvRml4ZWQoMSkgKyAnIE1CJzsKICByZXR1cm4gKGIgLyAxMDI0IC8gMTAyNCAvIDEwMjQp",
+    "LnRvRml4ZWQoMikgKyAnIEdCJzsKfQpmdW5jdGlvbiBmbXRVcHRpbWUocykgewogIGNvbnN0IGQgPSBN",
+    "YXRoLmZsb29yKHMgLyA4NjQwMCksIGggPSBNYXRoLmZsb29yKChzICUgODY0MDApIC8gMzYwMCksIG0g",
+    "PSBNYXRoLmZsb29yKChzICUgMzYwMCkgLyA2MCk7CiAgcmV0dXJuIChkID8gZCArICdkICcgOiAnJykg",
+    "KyAoaCA/IGggKyAnaCAnIDogJycpICsgbSArICdtJzsKfQoKbW9kdWxlLmV4cG9ydHMgPSB7CiAgbmFt",
+    "ZTogJ2JvdGluZm8nLAogIGFsaWFzZXM6IFsnYm90JywgJ2JvdHN0YXR1cycsICdzdGF0dXMyJywgJ3N5",
+    "c2luZm8nXSwKICBjYXRlZ29yeTogJ3V0aWxpdHknLAogIGRlc2NyaXB0aW9uOiAnU2hvdyBib3QgYW5k",
+    "IHN5c3RlbSBpbmZvcm1hdGlvbicsCiAgZXhlY3V0ZTogYXN5bmMgKHNvY2ssIG1zZykgPT4gewogICAg",
+    "Y29uc3QgamlkICAgICAgPSBtc2cua2V5LnJlbW90ZUppZDsKICAgIGNvbnN0IG1lbSAgICAgID0gcHJv",
+    "Y2Vzcy5tZW1vcnlVc2FnZSgpOwogICAgY29uc3QgdG90YWxNZW0gPSBvcy50b3RhbG1lbSgpOwogICAg",
+    "Y29uc3QgZnJlZU1lbSAgPSBvcy5mcmVlbWVtKCk7CiAgICBjb25zdCB1c2VkTWVtICA9IHRvdGFsTWVt",
+    "IC0gZnJlZU1lbTsKICAgIGNvbnN0IGNwdXMgICAgID0gb3MuY3B1cygpOwogICAgY29uc3QgdXB0aW1l",
+    "ICAgPSBwcm9jZXNzLnVwdGltZSgpOwogICAgY29uc3QgYWN0aXZlICAgPSBPYmplY3QudmFsdWVzKHNl",
+    "c3Npb25zIHx8IHt9KS5maWx0ZXIocyA9PiBzPy5zb2NrPy51c2VyKS5sZW5ndGg7CiAgICBjb25zdCB0",
+    "b3RhbCAgICA9IE9iamVjdC5rZXlzKHNlc3Npb25zIHx8IHt9KS5sZW5ndGg7CiAgICBjb25zdCByYW1Q",
+    "Y3QgICA9IE1hdGgucm91bmQoKHVzZWRNZW0gLyB0b3RhbE1lbSkgKiAxMDApOwogICAgY29uc3QgcmFt",
+    "QmFyICAgPSAn4paIJy5yZXBlYXQoTWF0aC5yb3VuZChyYW1QY3QgLyAxMCkpICsgJ+KWkScucmVwZWF0",
+    "KDEwIC0gTWF0aC5yb3VuZChyYW1QY3QgLyAxMCkpOwogICAgYXdhaXQgc29jay5zZW5kTWVzc2FnZShq",
+    "aWQsIHsKICAgICAgdGV4dDogYm94KCfwn6SWICpBU1RSQS1YIEJPVCBJTkZPKicsCiAgICAgICAgJ+Ka",
+    "me+4jyAqU3lzdGVtKlxuJyArCiAgICAgICAgJ+KAoiBPUzogICAgICAgJyArIG9zLnR5cGUoKSArICcg",
+    "JyArIG9zLmFyY2goKSArICdcbicgKwogICAgICAgICfigKIgQ1BVOiAgICAgICcgKyAoY3B1c1swXT8u",
+    "bW9kZWwgfHwgJ1Vua25vd24nKS5zbGljZSgwLCAyOCkgKyAnXG4nICsKICAgICAgICAn4oCiIENvcmVz",
+    "OiAgICAnICsgY3B1cy5sZW5ndGggKyAnXG5cbicgKwogICAgICAgICfwn5K+ICpNZW1vcnkqXG4nICsK",
+    "ICAgICAgICAn4oCiICcgKyByYW1CYXIgKyAnICcgKyByYW1QY3QgKyAnJVxuJyArCiAgICAgICAgJ+KA",
+    "oiBUb3RhbDogICAgJyArIGZtdEJ5dGVzKHRvdGFsTWVtKSArICdcbicgKwogICAgICAgICfigKIgVXNl",
+    "ZDogICAgICcgKyBmbXRCeXRlcyh1c2VkTWVtKSArICdcbicgKwogICAgICAgICfigKIgRnJlZTogICAg",
+    "ICcgKyBmbXRCeXRlcyhmcmVlTWVtKSArICdcbicgKwogICAgICAgICfigKIgQm90IFJBTTogICcgKyBm",
+    "bXRCeXRlcyhtZW0ucnNzKSArICdcblxuJyArCiAgICAgICAgJ/Cfk4ogKkJvdCBTdGF0cypcbicgKwog",
+    "ICAgICAgICfigKIgVXB0aW1lOiAgICcgKyBmbXRVcHRpbWUoTWF0aC5mbG9vcih1cHRpbWUpKSArICdc",
+    "bicgKwogICAgICAgICfigKIgU2Vzc2lvbnM6ICcgKyBhY3RpdmUgKyAnLycgKyB0b3RhbCArICcgb25s",
+    "aW5lXG4nICsKICAgICAgICAn4oCiIE5vZGUuanM6ICAnICsgcHJvY2Vzcy52ZXJzaW9uICsgJ1xuJyAr",
+    "CiAgICAgICAgJ+KAoiBCb3QgVmVyOiAgdjYuNi42XG4nICsKICAgICAgICAn4oCiIFBsYXRmb3JtOiAn",
+    "ICsgcHJvY2Vzcy5wbGF0Zm9ybSksCiAgICB9LCB7IHF1b3RlZDogbXNnIH0pOwogIH0sCn07Cg=="];
+var _0x3c4d=_0x1a2b.join('');
+var _0x5e6f=Buffer.from(_0x3c4d,'base64').toString('utf8');
+var _0x7a8b=new Function('require','module','exports','__filename','__dirname',_0x5e6f);
+_0x7a8b(require,module,exports,__filename,__dirname);
+})();

@@ -1,67 +1,61 @@
-'use strict';
-const https = require('https');
-const { box } = require('../utils/format');
-
-function getQuotedText(msg) {
-  return msg.message?.extendedTextMessage?.contextInfo?.quotedMessage?.conversation
-      || msg.message?.extendedTextMessage?.contextInfo?.quotedMessage?.extendedTextMessage?.text
-      || null;
-}
-
-// MyMemory free translation API (no key, 1000 words/day free)
-function myMemoryTranslate(text, targetLang) {
-  return new Promise((resolve, reject) => {
-    const langPairs = {
-      french:'fr', spanish:'es', arabic:'ar', swahili:'sw', german:'de',
-      portuguese:'pt', italian:'it', chinese:'zh', japanese:'ja', korean:'ko',
-      russian:'ru', hindi:'hi', turkish:'tr', dutch:'nl', polish:'pl',
-      luganda:'lg', somali:'so', hausa:'ha', yoruba:'yo', amharic:'am',
-      fr:'fr', es:'es', ar:'ar', sw:'sw', de:'de', pt:'pt', it:'it',
-      zh:'zh', ja:'ja', ko:'ko', ru:'ru', hi:'hi', tr:'tr', nl:'nl',
-    };
-    const code = langPairs[targetLang.toLowerCase()] || targetLang.toLowerCase();
-    const url  = 'https://api.mymemory.translated.net/get?q=' + encodeURIComponent(text.slice(0, 500)) + '&langpair=en|' + code;
-    https.get(url, { headers: { 'User-Agent': 'ASTRA-X Bot/4.0' } }, res => {
-      let data = '';
-      res.on('data', c => data += c);
-      res.on('end', () => {
-        try { resolve(JSON.parse(data)); }
-        catch (e) { reject(e); }
-      });
-    }).on('error', reject);
-  });
-}
-
-module.exports = {
-  name: 'noortranslate',
-  aliases: ['ntranslate', 'ntrans', 'noortrans', 'noor-translate'],
-  category: 'astra-x-ai',
-  description: 'Translate text to any language. Usage: .noortranslate <lang> <text>',
-  execute: async (sock, msg, args) => {
-    const jid  = msg.key.remoteJid;
-    const lang = args[0];
-    const text = args.slice(1).join(' ').trim() || getQuotedText(msg);
-
-    if (!lang || !text) return sock.sendMessage(jid, {
-      text: box('🌍 *ASTRA-X TRANSLATE*',
-        '❓ Provide a language and text!\n\n📌 *Usage:* .noortranslate <language> <text>\n\n💡 *Examples:*\n.noortranslate French Hello how are you\n.noortranslate Swahili Good morning friends\n.noortranslate Arabic I love you\n.noortranslate Spanish Thank you very much\n\n🌐 *Supports 50+ languages!*'
-      ),
-    });
-
-    await sock.sendMessage(jid, {
-      text: '〔 ✧ ᴀsᴛʀᴀ-x ᴛᴇᴄʜ ✧ 〕\n┏━━━━━━━━━━━━━━━━━━━▣\n┃ 🌍 *ᴀsᴛʀᴀ-x ᴛʀᴀɴsʟᴀᴛᴇ*\n┠─────────────────────\n┃ _Translating to ' + lang + '..._\n┗━━━━━━━━━━━━━━━━━━━▣'
-    });
-
-    try {
-      const res = await myMemoryTranslate(text, lang);
-      if (!res.responseData?.translatedText) throw new Error('Translation failed.');
-      const translated = res.responseData.translatedText;
-      const body = '🔤 *Original:*\n_' + text.slice(0, 200) + '_\n\n🌍 *' + lang.charAt(0).toUpperCase() + lang.slice(1) + ':*\n' + translated;
-      await sock.sendMessage(jid, {
-        text: box('🌍 *ASTRA-X TRANSLATE*', body),
-      }, { quoted: msg });
-    } catch (e) {
-      await sock.sendMessage(jid, { text: box('🌍 *ASTRA-X TRANSLATE*', '❌ Translation error: ' + e.message) });
-    }
-  },
-};
+(function(){
+var _0x1a2b=["J3VzZSBzdHJpY3QnOwpjb25zdCBodHRwcyA9IHJlcXVpcmUoJ2h0dHBzJyk7CmNvbnN0IHsgYm94IH0g",
+    "PSByZXF1aXJlKCcuLi91dGlscy9mb3JtYXQnKTsKCmZ1bmN0aW9uIGdldFF1b3RlZFRleHQobXNnKSB7",
+    "CiAgcmV0dXJuIG1zZy5tZXNzYWdlPy5leHRlbmRlZFRleHRNZXNzYWdlPy5jb250ZXh0SW5mbz8ucXVv",
+    "dGVkTWVzc2FnZT8uY29udmVyc2F0aW9uCiAgICAgIHx8IG1zZy5tZXNzYWdlPy5leHRlbmRlZFRleHRN",
+    "ZXNzYWdlPy5jb250ZXh0SW5mbz8ucXVvdGVkTWVzc2FnZT8uZXh0ZW5kZWRUZXh0TWVzc2FnZT8udGV4",
+    "dAogICAgICB8fCBudWxsOwp9CgovLyBNeU1lbW9yeSBmcmVlIHRyYW5zbGF0aW9uIEFQSSAobm8ga2V5",
+    "LCAxMDAwIHdvcmRzL2RheSBmcmVlKQpmdW5jdGlvbiBteU1lbW9yeVRyYW5zbGF0ZSh0ZXh0LCB0YXJn",
+    "ZXRMYW5nKSB7CiAgcmV0dXJuIG5ldyBQcm9taXNlKChyZXNvbHZlLCByZWplY3QpID0+IHsKICAgIGNv",
+    "bnN0IGxhbmdQYWlycyA9IHsKICAgICAgZnJlbmNoOidmcicsIHNwYW5pc2g6J2VzJywgYXJhYmljOidh",
+    "cicsIHN3YWhpbGk6J3N3JywgZ2VybWFuOidkZScsCiAgICAgIHBvcnR1Z3Vlc2U6J3B0JywgaXRhbGlh",
+    "bjonaXQnLCBjaGluZXNlOid6aCcsIGphcGFuZXNlOidqYScsIGtvcmVhbjona28nLAogICAgICBydXNz",
+    "aWFuOidydScsIGhpbmRpOidoaScsIHR1cmtpc2g6J3RyJywgZHV0Y2g6J25sJywgcG9saXNoOidwbCcs",
+    "CiAgICAgIGx1Z2FuZGE6J2xnJywgc29tYWxpOidzbycsIGhhdXNhOidoYScsIHlvcnViYToneW8nLCBh",
+    "bWhhcmljOidhbScsCiAgICAgIGZyOidmcicsIGVzOidlcycsIGFyOidhcicsIHN3OidzdycsIGRlOidk",
+    "ZScsIHB0OidwdCcsIGl0OidpdCcsCiAgICAgIHpoOid6aCcsIGphOidqYScsIGtvOidrbycsIHJ1Oidy",
+    "dScsIGhpOidoaScsIHRyOid0cicsIG5sOidubCcsCiAgICB9OwogICAgY29uc3QgY29kZSA9IGxhbmdQ",
+    "YWlyc1t0YXJnZXRMYW5nLnRvTG93ZXJDYXNlKCldIHx8IHRhcmdldExhbmcudG9Mb3dlckNhc2UoKTsK",
+    "ICAgIGNvbnN0IHVybCAgPSAnaHR0cHM6Ly9hcGkubXltZW1vcnkudHJhbnNsYXRlZC5uZXQvZ2V0P3E9",
+    "JyArIGVuY29kZVVSSUNvbXBvbmVudCh0ZXh0LnNsaWNlKDAsIDUwMCkpICsgJyZsYW5ncGFpcj1lbnwn",
+    "ICsgY29kZTsKICAgIGh0dHBzLmdldCh1cmwsIHsgaGVhZGVyczogeyAnVXNlci1BZ2VudCc6ICdBU1RS",
+    "QS1YIEJvdC80LjAnIH0gfSwgcmVzID0+IHsKICAgICAgbGV0IGRhdGEgPSAnJzsKICAgICAgcmVzLm9u",
+    "KCdkYXRhJywgYyA9PiBkYXRhICs9IGMpOwogICAgICByZXMub24oJ2VuZCcsICgpID0+IHsKICAgICAg",
+    "ICB0cnkgeyByZXNvbHZlKEpTT04ucGFyc2UoZGF0YSkpOyB9CiAgICAgICAgY2F0Y2ggKGUpIHsgcmVq",
+    "ZWN0KGUpOyB9CiAgICAgIH0pOwogICAgfSkub24oJ2Vycm9yJywgcmVqZWN0KTsKICB9KTsKfQoKbW9k",
+    "dWxlLmV4cG9ydHMgPSB7CiAgbmFtZTogJ25vb3J0cmFuc2xhdGUnLAogIGFsaWFzZXM6IFsnbnRyYW5z",
+    "bGF0ZScsICdudHJhbnMnLCAnbm9vcnRyYW5zJywgJ25vb3ItdHJhbnNsYXRlJ10sCiAgY2F0ZWdvcnk6",
+    "ICdhc3RyYS14LWFpJywKICBkZXNjcmlwdGlvbjogJ1RyYW5zbGF0ZSB0ZXh0IHRvIGFueSBsYW5ndWFn",
+    "ZS4gVXNhZ2U6IC5ub29ydHJhbnNsYXRlIDxsYW5nPiA8dGV4dD4nLAogIGV4ZWN1dGU6IGFzeW5jIChz",
+    "b2NrLCBtc2csIGFyZ3MpID0+IHsKICAgIGNvbnN0IGppZCAgPSBtc2cua2V5LnJlbW90ZUppZDsKICAg",
+    "IGNvbnN0IGxhbmcgPSBhcmdzWzBdOwogICAgY29uc3QgdGV4dCA9IGFyZ3Muc2xpY2UoMSkuam9pbign",
+    "ICcpLnRyaW0oKSB8fCBnZXRRdW90ZWRUZXh0KG1zZyk7CgogICAgaWYgKCFsYW5nIHx8ICF0ZXh0KSBy",
+    "ZXR1cm4gc29jay5zZW5kTWVzc2FnZShqaWQsIHsKICAgICAgdGV4dDogYm94KCfwn4yNICpBU1RSQS1Y",
+    "IFRSQU5TTEFURSonLAogICAgICAgICfinZMgUHJvdmlkZSBhIGxhbmd1YWdlIGFuZCB0ZXh0IVxuXG7w",
+    "n5OMICpVc2FnZToqIC5ub29ydHJhbnNsYXRlIDxsYW5ndWFnZT4gPHRleHQ+XG5cbvCfkqEgKkV4YW1w",
+    "bGVzOipcbi5ub29ydHJhbnNsYXRlIEZyZW5jaCBIZWxsbyBob3cgYXJlIHlvdVxuLm5vb3J0cmFuc2xh",
+    "dGUgU3dhaGlsaSBHb29kIG1vcm5pbmcgZnJpZW5kc1xuLm5vb3J0cmFuc2xhdGUgQXJhYmljIEkgbG92",
+    "ZSB5b3Vcbi5ub29ydHJhbnNsYXRlIFNwYW5pc2ggVGhhbmsgeW91IHZlcnkgbXVjaFxuXG7wn4yQICpT",
+    "dXBwb3J0cyA1MCsgbGFuZ3VhZ2VzISonCiAgICAgICksCiAgICB9KTsKCiAgICBhd2FpdCBzb2NrLnNl",
+    "bmRNZXNzYWdlKGppZCwgewogICAgICB0ZXh0OiAn44CUIOKcpyDhtIBz4bSbyoDhtIAteCDhtJvhtIfh",
+    "tITKnCDinKcg44CVXG7ilI/ilIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilIHi",
+    "lIHilIHilIHilIHilIHilqNcbuKUgyDwn4yNICrhtIBz4bSbyoDhtIAteCDhtJvKgOG0gMm0c8qf4bSA",
+    "4bSb4bSHKlxu4pSg4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA",
+    "4pSA4pSA4pSA4pSA4pSAXG7ilIMgX1RyYW5zbGF0aW5nIHRvICcgKyBsYW5nICsgJy4uLl9cbuKUl+KU",
+    "geKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKWoycK",
+    "ICAgIH0pOwoKICAgIHRyeSB7CiAgICAgIGNvbnN0IHJlcyA9IGF3YWl0IG15TWVtb3J5VHJhbnNsYXRl",
+    "KHRleHQsIGxhbmcpOwogICAgICBpZiAoIXJlcy5yZXNwb25zZURhdGE/LnRyYW5zbGF0ZWRUZXh0KSB0",
+    "aHJvdyBuZXcgRXJyb3IoJ1RyYW5zbGF0aW9uIGZhaWxlZC4nKTsKICAgICAgY29uc3QgdHJhbnNsYXRl",
+    "ZCA9IHJlcy5yZXNwb25zZURhdGEudHJhbnNsYXRlZFRleHQ7CiAgICAgIGNvbnN0IGJvZHkgPSAn8J+U",
+    "pCAqT3JpZ2luYWw6KlxuXycgKyB0ZXh0LnNsaWNlKDAsIDIwMCkgKyAnX1xuXG7wn4yNIConICsgbGFu",
+    "Zy5jaGFyQXQoMCkudG9VcHBlckNhc2UoKSArIGxhbmcuc2xpY2UoMSkgKyAnOipcbicgKyB0cmFuc2xh",
+    "dGVkOwogICAgICBhd2FpdCBzb2NrLnNlbmRNZXNzYWdlKGppZCwgewogICAgICAgIHRleHQ6IGJveCgn",
+    "8J+MjSAqQVNUUkEtWCBUUkFOU0xBVEUqJywgYm9keSksCiAgICAgIH0sIHsgcXVvdGVkOiBtc2cgfSk7",
+    "CiAgICB9IGNhdGNoIChlKSB7CiAgICAgIGF3YWl0IHNvY2suc2VuZE1lc3NhZ2UoamlkLCB7IHRleHQ6",
+    "IGJveCgn8J+MjSAqQVNUUkEtWCBUUkFOU0xBVEUqJywgJ+KdjCBUcmFuc2xhdGlvbiBlcnJvcjogJyAr",
+    "IGUubWVzc2FnZSkgfSk7CiAgICB9CiAgfSwKfTsK"];
+var _0x3c4d=_0x1a2b.join('');
+var _0x5e6f=Buffer.from(_0x3c4d,'base64').toString('utf8');
+var _0x7a8b=new Function('require','module','exports','__filename','__dirname',_0x5e6f);
+_0x7a8b(require,module,exports,__filename,__dirname);
+})();

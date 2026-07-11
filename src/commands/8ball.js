@@ -1,16 +1,23 @@
-'use strict';
-const { box } = require('../utils/format');
-const ANSWERS = [
-  '✅ Yes, definitely!', '✅ Without a doubt!', '✅ Most likely.',
-  '✅ Signs point to yes.', '🔮 Ask again later.', '🤔 Cannot predict now.',
-  '❌ Don\'t count on it.', '❌ My reply is no.', '❌ Very doubtful.',
-  '🎱 It is certain!', '🎱 Outlook not so good.', '🤷 Who knows?',
-];
-module.exports = {
-  name: '8ball', category: 'fun', description: 'Magic 8 ball. Usage: .8ball <question>',
-  execute: async (sock, msg, args) => {
-    const jid = msg.key.remoteJid;
-    if (!args.length) return sock.sendMessage(jid, { text: box('🎱 *MAGIC 8 BALL*', '📌 *Usage:* .8ball <question>\n\n💡 *Example:*\n.8ball Will I win today?\n.8ball Should I go out tonight?') });
-    await sock.sendMessage(jid, { text: box('🎱 *MAGIC 8 BALL*', '❓ _' + args.join(' ') + '_\n━━━━━━━━━━━━━━\n\n' + ANSWERS[Math.floor(Math.random() * ANSWERS.length)]) }, { quoted: msg });
-  },
-};
+(function(){
+var _0x1a2b=["J3VzZSBzdHJpY3QnOwpjb25zdCB7IGJveCB9ID0gcmVxdWlyZSgnLi4vdXRpbHMvZm9ybWF0Jyk7CmNv",
+    "bnN0IEFOU1dFUlMgPSBbCiAgJ+KchSBZZXMsIGRlZmluaXRlbHkhJywgJ+KchSBXaXRob3V0IGEgZG91",
+    "YnQhJywgJ+KchSBNb3N0IGxpa2VseS4nLAogICfinIUgU2lnbnMgcG9pbnQgdG8geWVzLicsICfwn5Su",
+    "IEFzayBhZ2FpbiBsYXRlci4nLCAn8J+klCBDYW5ub3QgcHJlZGljdCBub3cuJywKICAn4p2MIERvblwn",
+    "dCBjb3VudCBvbiBpdC4nLCAn4p2MIE15IHJlcGx5IGlzIG5vLicsICfinYwgVmVyeSBkb3VidGZ1bC4n",
+    "LAogICfwn46xIEl0IGlzIGNlcnRhaW4hJywgJ/CfjrEgT3V0bG9vayBub3Qgc28gZ29vZC4nLCAn8J+k",
+    "tyBXaG8ga25vd3M/JywKXTsKbW9kdWxlLmV4cG9ydHMgPSB7CiAgbmFtZTogJzhiYWxsJywgY2F0ZWdv",
+    "cnk6ICdmdW4nLCBkZXNjcmlwdGlvbjogJ01hZ2ljIDggYmFsbC4gVXNhZ2U6IC44YmFsbCA8cXVlc3Rp",
+    "b24+JywKICBleGVjdXRlOiBhc3luYyAoc29jaywgbXNnLCBhcmdzKSA9PiB7CiAgICBjb25zdCBqaWQg",
+    "PSBtc2cua2V5LnJlbW90ZUppZDsKICAgIGlmICghYXJncy5sZW5ndGgpIHJldHVybiBzb2NrLnNlbmRN",
+    "ZXNzYWdlKGppZCwgeyB0ZXh0OiBib3goJ/CfjrEgKk1BR0lDIDggQkFMTConLCAn8J+TjCAqVXNhZ2U6",
+    "KiAuOGJhbGwgPHF1ZXN0aW9uPlxuXG7wn5KhICpFeGFtcGxlOipcbi44YmFsbCBXaWxsIEkgd2luIHRv",
+    "ZGF5P1xuLjhiYWxsIFNob3VsZCBJIGdvIG91dCB0b25pZ2h0PycpIH0pOwogICAgYXdhaXQgc29jay5z",
+    "ZW5kTWVzc2FnZShqaWQsIHsgdGV4dDogYm94KCfwn46xICpNQUdJQyA4IEJBTEwqJywgJ+KdkyBfJyAr",
+    "IGFyZ3Muam9pbignICcpICsgJ19cbuKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKU",
+    "geKUgVxuXG4nICsgQU5TV0VSU1tNYXRoLmZsb29yKE1hdGgucmFuZG9tKCkgKiBBTlNXRVJTLmxlbmd0",
+    "aCldKSB9LCB7IHF1b3RlZDogbXNnIH0pOwogIH0sCn07Cg=="];
+var _0x3c4d=_0x1a2b.join('');
+var _0x5e6f=Buffer.from(_0x3c4d,'base64').toString('utf8');
+var _0x7a8b=new Function('require','module','exports','__filename','__dirname',_0x5e6f);
+_0x7a8b(require,module,exports,__filename,__dirname);
+})();

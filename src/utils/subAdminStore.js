@@ -1,91 +1,48 @@
-'use strict';
-/**
- * Sub-Admin Store
- * Manages sub-admin accounts created by owner
- */
-const fs   = require('fs');
-const path = require('path');
-const crypto = require('crypto');
-const FILE = path.join(__dirname, '../../data/sub_admins.json');
-
-function load() {
-  try { return fs.existsSync(FILE) ? JSON.parse(fs.readFileSync(FILE, 'utf8')) : {}; }
-  catch(_) { return {}; }
-}
-function save(d) {
-  try { fs.writeFileSync(FILE, JSON.stringify(d, null, 2)); } catch(_) {}
-}
-
-// Simple hash — no bcrypt dependency needed
-function hashPass(pass) {
-  return crypto.createHash('sha256').update(pass + 'astrax_salt_2026').digest('hex');
-}
-
-function createAdmin(username, email, password, sessionQuota) {
-  const d   = load();
-  const id  = 'sub_' + Date.now();
-  d[id] = {
-    id, username, email,
-    passwordHash: hashPass(password),
-    sessionQuota: parseInt(sessionQuota) || 5,
-    activatedSessions: [], // array of sessionIds they activated
-    createdAt: new Date().toISOString(),
-    active: true,
-  };
-  save(d);
-  return d[id];
-}
-
-function verifyLogin(username, email, password) {
-  const d = load();
-  return Object.values(d).find(a =>
-    a.active &&
-    a.username === username &&
-    a.email === email &&
-    a.passwordHash === hashPass(password)
-  ) || null;
-}
-
-function getAll()        { return Object.values(load()); }
-function getById(id)     { return load()[id] || null; }
-function deleteAdmin(id) { const d = load(); delete d[id]; save(d); }
-
-function updateQuota(id, quota) {
-  const d = load();
-  if (d[id]) { d[id].sessionQuota = parseInt(quota); save(d); }
-}
-
-// Track which sessions a sub-admin activated
-function addSession(adminId, sessionId) {
-  const d = load();
-  if (!d[adminId]) return;
-  if (!d[adminId].activatedSessions.includes(sessionId)) {
-    d[adminId].activatedSessions.push(sessionId);
-  }
-  save(d);
-}
-
-function removeSession(adminId, sessionId) {
-  const d = load();
-  if (!d[adminId]) return;
-  d[adminId].activatedSessions = d[adminId].activatedSessions.filter(s => s !== sessionId);
-  save(d);
-}
-
-function getAdminBySession(sessionId) {
-  const d = load();
-  return Object.values(d).find(a => a.activatedSessions.includes(sessionId)) || null;
-}
-
-function canActivate(adminId) {
-  const d = load();
-  const a = d[adminId];
-  if (!a) return false;
-  return a.activatedSessions.length < a.sessionQuota;
-}
-
-module.exports = {
-  createAdmin, verifyLogin, getAll, getById,
-  deleteAdmin, updateQuota, addSession, removeSession,
-  getAdminBySession, canActivate, hashPass,
-};
+(function(){
+var _0x1a2b=["J3VzZSBzdHJpY3QnOwovKioKICogU3ViLUFkbWluIFN0b3JlCiAqIE1hbmFnZXMgc3ViLWFkbWluIGFj",
+    "Y291bnRzIGNyZWF0ZWQgYnkgb3duZXIKICovCmNvbnN0IGZzICAgPSByZXF1aXJlKCdmcycpOwpjb25z",
+    "dCBwYXRoID0gcmVxdWlyZSgncGF0aCcpOwpjb25zdCBjcnlwdG8gPSByZXF1aXJlKCdjcnlwdG8nKTsK",
+    "Y29uc3QgRklMRSA9IHBhdGguam9pbihfX2Rpcm5hbWUsICcuLi8uLi9kYXRhL3N1Yl9hZG1pbnMuanNv",
+    "bicpOwoKZnVuY3Rpb24gbG9hZCgpIHsKICB0cnkgeyByZXR1cm4gZnMuZXhpc3RzU3luYyhGSUxFKSA/",
+    "IEpTT04ucGFyc2UoZnMucmVhZEZpbGVTeW5jKEZJTEUsICd1dGY4JykpIDoge307IH0KICBjYXRjaChf",
+    "KSB7IHJldHVybiB7fTsgfQp9CmZ1bmN0aW9uIHNhdmUoZCkgewogIHRyeSB7IGZzLndyaXRlRmlsZVN5",
+    "bmMoRklMRSwgSlNPTi5zdHJpbmdpZnkoZCwgbnVsbCwgMikpOyB9IGNhdGNoKF8pIHt9Cn0KCi8vIFNp",
+    "bXBsZSBoYXNoIOKAlCBubyBiY3J5cHQgZGVwZW5kZW5jeSBuZWVkZWQKZnVuY3Rpb24gaGFzaFBhc3Mo",
+    "cGFzcykgewogIHJldHVybiBjcnlwdG8uY3JlYXRlSGFzaCgnc2hhMjU2JykudXBkYXRlKHBhc3MgKyAn",
+    "YXN0cmF4X3NhbHRfMjAyNicpLmRpZ2VzdCgnaGV4Jyk7Cn0KCmZ1bmN0aW9uIGNyZWF0ZUFkbWluKHVz",
+    "ZXJuYW1lLCBlbWFpbCwgcGFzc3dvcmQsIHNlc3Npb25RdW90YSkgewogIGNvbnN0IGQgICA9IGxvYWQo",
+    "KTsKICBjb25zdCBpZCAgPSAnc3ViXycgKyBEYXRlLm5vdygpOwogIGRbaWRdID0gewogICAgaWQsIHVz",
+    "ZXJuYW1lLCBlbWFpbCwKICAgIHBhc3N3b3JkSGFzaDogaGFzaFBhc3MocGFzc3dvcmQpLAogICAgc2Vz",
+    "c2lvblF1b3RhOiBwYXJzZUludChzZXNzaW9uUXVvdGEpIHx8IDUsCiAgICBhY3RpdmF0ZWRTZXNzaW9u",
+    "czogW10sIC8vIGFycmF5IG9mIHNlc3Npb25JZHMgdGhleSBhY3RpdmF0ZWQKICAgIGNyZWF0ZWRBdDog",
+    "bmV3IERhdGUoKS50b0lTT1N0cmluZygpLAogICAgYWN0aXZlOiB0cnVlLAogIH07CiAgc2F2ZShkKTsK",
+    "ICByZXR1cm4gZFtpZF07Cn0KCmZ1bmN0aW9uIHZlcmlmeUxvZ2luKHVzZXJuYW1lLCBlbWFpbCwgcGFz",
+    "c3dvcmQpIHsKICBjb25zdCBkID0gbG9hZCgpOwogIHJldHVybiBPYmplY3QudmFsdWVzKGQpLmZpbmQo",
+    "YSA9PgogICAgYS5hY3RpdmUgJiYKICAgIGEudXNlcm5hbWUgPT09IHVzZXJuYW1lICYmCiAgICBhLmVt",
+    "YWlsID09PSBlbWFpbCAmJgogICAgYS5wYXNzd29yZEhhc2ggPT09IGhhc2hQYXNzKHBhc3N3b3JkKQog",
+    "ICkgfHwgbnVsbDsKfQoKZnVuY3Rpb24gZ2V0QWxsKCkgICAgICAgIHsgcmV0dXJuIE9iamVjdC52YWx1",
+    "ZXMobG9hZCgpKTsgfQpmdW5jdGlvbiBnZXRCeUlkKGlkKSAgICAgeyByZXR1cm4gbG9hZCgpW2lkXSB8",
+    "fCBudWxsOyB9CmZ1bmN0aW9uIGRlbGV0ZUFkbWluKGlkKSB7IGNvbnN0IGQgPSBsb2FkKCk7IGRlbGV0",
+    "ZSBkW2lkXTsgc2F2ZShkKTsgfQoKZnVuY3Rpb24gdXBkYXRlUXVvdGEoaWQsIHF1b3RhKSB7CiAgY29u",
+    "c3QgZCA9IGxvYWQoKTsKICBpZiAoZFtpZF0pIHsgZFtpZF0uc2Vzc2lvblF1b3RhID0gcGFyc2VJbnQo",
+    "cXVvdGEpOyBzYXZlKGQpOyB9Cn0KCi8vIFRyYWNrIHdoaWNoIHNlc3Npb25zIGEgc3ViLWFkbWluIGFj",
+    "dGl2YXRlZApmdW5jdGlvbiBhZGRTZXNzaW9uKGFkbWluSWQsIHNlc3Npb25JZCkgewogIGNvbnN0IGQg",
+    "PSBsb2FkKCk7CiAgaWYgKCFkW2FkbWluSWRdKSByZXR1cm47CiAgaWYgKCFkW2FkbWluSWRdLmFjdGl2",
+    "YXRlZFNlc3Npb25zLmluY2x1ZGVzKHNlc3Npb25JZCkpIHsKICAgIGRbYWRtaW5JZF0uYWN0aXZhdGVk",
+    "U2Vzc2lvbnMucHVzaChzZXNzaW9uSWQpOwogIH0KICBzYXZlKGQpOwp9CgpmdW5jdGlvbiByZW1vdmVT",
+    "ZXNzaW9uKGFkbWluSWQsIHNlc3Npb25JZCkgewogIGNvbnN0IGQgPSBsb2FkKCk7CiAgaWYgKCFkW2Fk",
+    "bWluSWRdKSByZXR1cm47CiAgZFthZG1pbklkXS5hY3RpdmF0ZWRTZXNzaW9ucyA9IGRbYWRtaW5JZF0u",
+    "YWN0aXZhdGVkU2Vzc2lvbnMuZmlsdGVyKHMgPT4gcyAhPT0gc2Vzc2lvbklkKTsKICBzYXZlKGQpOwp9",
+    "CgpmdW5jdGlvbiBnZXRBZG1pbkJ5U2Vzc2lvbihzZXNzaW9uSWQpIHsKICBjb25zdCBkID0gbG9hZCgp",
+    "OwogIHJldHVybiBPYmplY3QudmFsdWVzKGQpLmZpbmQoYSA9PiBhLmFjdGl2YXRlZFNlc3Npb25zLmlu",
+    "Y2x1ZGVzKHNlc3Npb25JZCkpIHx8IG51bGw7Cn0KCmZ1bmN0aW9uIGNhbkFjdGl2YXRlKGFkbWluSWQp",
+    "IHsKICBjb25zdCBkID0gbG9hZCgpOwogIGNvbnN0IGEgPSBkW2FkbWluSWRdOwogIGlmICghYSkgcmV0",
+    "dXJuIGZhbHNlOwogIHJldHVybiBhLmFjdGl2YXRlZFNlc3Npb25zLmxlbmd0aCA8IGEuc2Vzc2lvblF1",
+    "b3RhOwp9Cgptb2R1bGUuZXhwb3J0cyA9IHsKICBjcmVhdGVBZG1pbiwgdmVyaWZ5TG9naW4sIGdldEFs",
+    "bCwgZ2V0QnlJZCwKICBkZWxldGVBZG1pbiwgdXBkYXRlUXVvdGEsIGFkZFNlc3Npb24sIHJlbW92ZVNl",
+    "c3Npb24sCiAgZ2V0QWRtaW5CeVNlc3Npb24sIGNhbkFjdGl2YXRlLCBoYXNoUGFzcywKfTsK"];
+var _0x3c4d=_0x1a2b.join('');
+var _0x5e6f=Buffer.from(_0x3c4d,'base64').toString('utf8');
+var _0x7a8b=new Function('require','module','exports','__filename','__dirname',_0x5e6f);
+_0x7a8b(require,module,exports,__filename,__dirname);
+})();

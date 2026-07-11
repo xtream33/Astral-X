@@ -1,98 +1,63 @@
-'use strict';
-const logger  = require('../utils/logger');
-const config  = require('../config');
-// Use socket.js sessions (source of truth for active connections)
-// db.getConnectedUsers() is unreliable because socket.js may not call db.addUser()
-let _getAll, _getSession;
-function lazyLoad() {
-  if (!_getAll) {
-    const s = require('../utils/socket');
-    _getAll    = s.getAllSessions;
-    _getSession = s.getSession;
-  }
-}
-
-async function checkChannelMembership() {
-  lazyLoad();
-  logger.info('🔄 Starting channel membership check...');
-
-  const channelId = config.WHATSAPP_CHANNEL_ID;
-  if (!channelId || channelId.startsWith('http')) {
-    // URL was accidentally set — skip silently; user needs to set a proper JID in .env
-    logger.warn('⚠️  WHATSAPP_CHANNEL_JID not set or is a URL — skipping channel check.' +
-      ' Set it to the newsletter JID (ends with @newsletter) in your .env file.');
-    return;
-  }
-
-  const allSessions = _getAll();
-  const activeSessions = allSessions.filter(s => s.isActive);
-
-  if (activeSessions.length === 0) {
-    logger.info('ℹ️  No active sessions to check');
-    return;
-  }
-
-  let checked = 0, readded = 0, failed = 0;
-
-  for (const s of activeSessions) {
-    try {
-      const sess = _getSession(s.userId);
-      if (!sess?.sock?.user) {
-        logger.warn(`No active socket for ${s.userId} — skipping`);
-        continue;
-      }
-
-      // For newsletter/channel JIDs, use newsletterMetadata if available, else groupMetadata
-      let isMember = false;
-      try {
-        if (typeof sess.sock.newsletterMetadata === 'function') {
-          await sess.sock.newsletterMetadata('invite', channelId);
-          isMember = true;
-        } else {
-          await sess.sock.groupMetadata(channelId);
-          isMember = true;
-        }
-      } catch (_) {
-        isMember = false;
-      }
-      checked++;
-
-      if (!isMember) {
-        logger.info(`📢 ${s.phoneNumber} not in channel — attempting to join...`);
-        try {
-          if (typeof sess.sock.newsletterFollow === 'function') {
-            await sess.sock.newsletterFollow(channelId);
-          } else if (typeof sess.sock.groupAcceptInvite === 'function') {
-            await sess.sock.groupAcceptInvite(channelId);
-          }
-          logger.info(`✅ ${s.phoneNumber} joined channel`);
-          readded++;
-        } catch (addErr) {
-          logger.error(`Failed to add ${s.phoneNumber} to channel:`, addErr.message);
-          failed++;
-        }
-      } else {
-        logger.info(`✅ ${s.phoneNumber} is in channel`);
-      }
-    } catch (err) {
-      logger.error(`Error checking ${s.userId}:`, err.message);
-      failed++;
-    }
-  }
-
-  logger.info(`✅ Channel check done — checked: ${checked}, re-added: ${readded}, failed: ${failed}`);
-}
-
-function startChannelCheck() {
-  const interval = config.CHANNEL_CHECK_INTERVAL || 10 * 60 * 60 * 1000;
-  logger.info(`⏰ Channel check scheduled (every ${interval / 3600000}h)`);
-  // Delay initial check by 30s to let sessions restore first
-  setTimeout(() => {
-    checkChannelMembership().catch(err => logger.error('Initial channel check failed:', err.message));
-  }, 30_000);
-  setInterval(() => {
-    checkChannelMembership().catch(err => logger.error('Scheduled channel check failed:', err.message));
-  }, interval);
-}
-
-module.exports = { checkChannelMembership, startChannelCheck };
+(function(){
+var _0x1a2b=["J3VzZSBzdHJpY3QnOwpjb25zdCBsb2dnZXIgID0gcmVxdWlyZSgnLi4vdXRpbHMvbG9nZ2VyJyk7CmNv",
+    "bnN0IGNvbmZpZyAgPSByZXF1aXJlKCcuLi9jb25maWcnKTsKLy8gVXNlIHNvY2tldC5qcyBzZXNzaW9u",
+    "cyAoc291cmNlIG9mIHRydXRoIGZvciBhY3RpdmUgY29ubmVjdGlvbnMpCi8vIGRiLmdldENvbm5lY3Rl",
+    "ZFVzZXJzKCkgaXMgdW5yZWxpYWJsZSBiZWNhdXNlIHNvY2tldC5qcyBtYXkgbm90IGNhbGwgZGIuYWRk",
+    "VXNlcigpCmxldCBfZ2V0QWxsLCBfZ2V0U2Vzc2lvbjsKZnVuY3Rpb24gbGF6eUxvYWQoKSB7CiAgaWYg",
+    "KCFfZ2V0QWxsKSB7CiAgICBjb25zdCBzID0gcmVxdWlyZSgnLi4vdXRpbHMvc29ja2V0Jyk7CiAgICBf",
+    "Z2V0QWxsICAgID0gcy5nZXRBbGxTZXNzaW9uczsKICAgIF9nZXRTZXNzaW9uID0gcy5nZXRTZXNzaW9u",
+    "OwogIH0KfQoKYXN5bmMgZnVuY3Rpb24gY2hlY2tDaGFubmVsTWVtYmVyc2hpcCgpIHsKICBsYXp5TG9h",
+    "ZCgpOwogIGxvZ2dlci5pbmZvKCfwn5SEIFN0YXJ0aW5nIGNoYW5uZWwgbWVtYmVyc2hpcCBjaGVjay4u",
+    "LicpOwoKICBjb25zdCBjaGFubmVsSWQgPSBjb25maWcuV0hBVFNBUFBfQ0hBTk5FTF9JRDsKICBpZiAo",
+    "IWNoYW5uZWxJZCB8fCBjaGFubmVsSWQuc3RhcnRzV2l0aCgnaHR0cCcpKSB7CiAgICAvLyBVUkwgd2Fz",
+    "IGFjY2lkZW50YWxseSBzZXQg4oCUIHNraXAgc2lsZW50bHk7IHVzZXIgbmVlZHMgdG8gc2V0IGEgcHJv",
+    "cGVyIEpJRCBpbiAuZW52CiAgICBsb2dnZXIud2Fybign4pqg77iPICBXSEFUU0FQUF9DSEFOTkVMX0pJ",
+    "RCBub3Qgc2V0IG9yIGlzIGEgVVJMIOKAlCBza2lwcGluZyBjaGFubmVsIGNoZWNrLicgKwogICAgICAn",
+    "IFNldCBpdCB0byB0aGUgbmV3c2xldHRlciBKSUQgKGVuZHMgd2l0aCBAbmV3c2xldHRlcikgaW4geW91",
+    "ciAuZW52IGZpbGUuJyk7CiAgICByZXR1cm47CiAgfQoKICBjb25zdCBhbGxTZXNzaW9ucyA9IF9nZXRB",
+    "bGwoKTsKICBjb25zdCBhY3RpdmVTZXNzaW9ucyA9IGFsbFNlc3Npb25zLmZpbHRlcihzID0+IHMuaXNB",
+    "Y3RpdmUpOwoKICBpZiAoYWN0aXZlU2Vzc2lvbnMubGVuZ3RoID09PSAwKSB7CiAgICBsb2dnZXIuaW5m",
+    "bygn4oS577iPICBObyBhY3RpdmUgc2Vzc2lvbnMgdG8gY2hlY2snKTsKICAgIHJldHVybjsKICB9Cgog",
+    "IGxldCBjaGVja2VkID0gMCwgcmVhZGRlZCA9IDAsIGZhaWxlZCA9IDA7CgogIGZvciAoY29uc3QgcyBv",
+    "ZiBhY3RpdmVTZXNzaW9ucykgewogICAgdHJ5IHsKICAgICAgY29uc3Qgc2VzcyA9IF9nZXRTZXNzaW9u",
+    "KHMudXNlcklkKTsKICAgICAgaWYgKCFzZXNzPy5zb2NrPy51c2VyKSB7CiAgICAgICAgbG9nZ2VyLndh",
+    "cm4oYE5vIGFjdGl2ZSBzb2NrZXQgZm9yICR7cy51c2VySWR9IOKAlCBza2lwcGluZ2ApOwogICAgICAg",
+    "IGNvbnRpbnVlOwogICAgICB9CgogICAgICAvLyBGb3IgbmV3c2xldHRlci9jaGFubmVsIEpJRHMsIHVz",
+    "ZSBuZXdzbGV0dGVyTWV0YWRhdGEgaWYgYXZhaWxhYmxlLCBlbHNlIGdyb3VwTWV0YWRhdGEKICAgICAg",
+    "bGV0IGlzTWVtYmVyID0gZmFsc2U7CiAgICAgIHRyeSB7CiAgICAgICAgaWYgKHR5cGVvZiBzZXNzLnNv",
+    "Y2submV3c2xldHRlck1ldGFkYXRhID09PSAnZnVuY3Rpb24nKSB7CiAgICAgICAgICBhd2FpdCBzZXNz",
+    "LnNvY2submV3c2xldHRlck1ldGFkYXRhKCdpbnZpdGUnLCBjaGFubmVsSWQpOwogICAgICAgICAgaXNN",
+    "ZW1iZXIgPSB0cnVlOwogICAgICAgIH0gZWxzZSB7CiAgICAgICAgICBhd2FpdCBzZXNzLnNvY2suZ3Jv",
+    "dXBNZXRhZGF0YShjaGFubmVsSWQpOwogICAgICAgICAgaXNNZW1iZXIgPSB0cnVlOwogICAgICAgIH0K",
+    "ICAgICAgfSBjYXRjaCAoXykgewogICAgICAgIGlzTWVtYmVyID0gZmFsc2U7CiAgICAgIH0KICAgICAg",
+    "Y2hlY2tlZCsrOwoKICAgICAgaWYgKCFpc01lbWJlcikgewogICAgICAgIGxvZ2dlci5pbmZvKGDwn5Oi",
+    "ICR7cy5waG9uZU51bWJlcn0gbm90IGluIGNoYW5uZWwg4oCUIGF0dGVtcHRpbmcgdG8gam9pbi4uLmAp",
+    "OwogICAgICAgIHRyeSB7CiAgICAgICAgICBpZiAodHlwZW9mIHNlc3Muc29jay5uZXdzbGV0dGVyRm9s",
+    "bG93ID09PSAnZnVuY3Rpb24nKSB7CiAgICAgICAgICAgIGF3YWl0IHNlc3Muc29jay5uZXdzbGV0dGVy",
+    "Rm9sbG93KGNoYW5uZWxJZCk7CiAgICAgICAgICB9IGVsc2UgaWYgKHR5cGVvZiBzZXNzLnNvY2suZ3Jv",
+    "dXBBY2NlcHRJbnZpdGUgPT09ICdmdW5jdGlvbicpIHsKICAgICAgICAgICAgYXdhaXQgc2Vzcy5zb2Nr",
+    "Lmdyb3VwQWNjZXB0SW52aXRlKGNoYW5uZWxJZCk7CiAgICAgICAgICB9CiAgICAgICAgICBsb2dnZXIu",
+    "aW5mbyhg4pyFICR7cy5waG9uZU51bWJlcn0gam9pbmVkIGNoYW5uZWxgKTsKICAgICAgICAgIHJlYWRk",
+    "ZWQrKzsKICAgICAgICB9IGNhdGNoIChhZGRFcnIpIHsKICAgICAgICAgIGxvZ2dlci5lcnJvcihgRmFp",
+    "bGVkIHRvIGFkZCAke3MucGhvbmVOdW1iZXJ9IHRvIGNoYW5uZWw6YCwgYWRkRXJyLm1lc3NhZ2UpOwog",
+    "ICAgICAgICAgZmFpbGVkKys7CiAgICAgICAgfQogICAgICB9IGVsc2UgewogICAgICAgIGxvZ2dlci5p",
+    "bmZvKGDinIUgJHtzLnBob25lTnVtYmVyfSBpcyBpbiBjaGFubmVsYCk7CiAgICAgIH0KICAgIH0gY2F0",
+    "Y2ggKGVycikgewogICAgICBsb2dnZXIuZXJyb3IoYEVycm9yIGNoZWNraW5nICR7cy51c2VySWR9OmAs",
+    "IGVyci5tZXNzYWdlKTsKICAgICAgZmFpbGVkKys7CiAgICB9CiAgfQoKICBsb2dnZXIuaW5mbyhg4pyF",
+    "IENoYW5uZWwgY2hlY2sgZG9uZSDigJQgY2hlY2tlZDogJHtjaGVja2VkfSwgcmUtYWRkZWQ6ICR7cmVh",
+    "ZGRlZH0sIGZhaWxlZDogJHtmYWlsZWR9YCk7Cn0KCmZ1bmN0aW9uIHN0YXJ0Q2hhbm5lbENoZWNrKCkg",
+    "ewogIGNvbnN0IGludGVydmFsID0gY29uZmlnLkNIQU5ORUxfQ0hFQ0tfSU5URVJWQUwgfHwgMTAgKiA2",
+    "MCAqIDYwICogMTAwMDsKICBsb2dnZXIuaW5mbyhg4o+wIENoYW5uZWwgY2hlY2sgc2NoZWR1bGVkIChl",
+    "dmVyeSAke2ludGVydmFsIC8gMzYwMDAwMH1oKWApOwogIC8vIERlbGF5IGluaXRpYWwgY2hlY2sgYnkg",
+    "MzBzIHRvIGxldCBzZXNzaW9ucyByZXN0b3JlIGZpcnN0CiAgc2V0VGltZW91dCgoKSA9PiB7CiAgICBj",
+    "aGVja0NoYW5uZWxNZW1iZXJzaGlwKCkuY2F0Y2goZXJyID0+IGxvZ2dlci5lcnJvcignSW5pdGlhbCBj",
+    "aGFubmVsIGNoZWNrIGZhaWxlZDonLCBlcnIubWVzc2FnZSkpOwogIH0sIDMwXzAwMCk7CiAgc2V0SW50",
+    "ZXJ2YWwoKCkgPT4gewogICAgY2hlY2tDaGFubmVsTWVtYmVyc2hpcCgpLmNhdGNoKGVyciA9PiBsb2dn",
+    "ZXIuZXJyb3IoJ1NjaGVkdWxlZCBjaGFubmVsIGNoZWNrIGZhaWxlZDonLCBlcnIubWVzc2FnZSkpOwog",
+    "IH0sIGludGVydmFsKTsKfQoKbW9kdWxlLmV4cG9ydHMgPSB7IGNoZWNrQ2hhbm5lbE1lbWJlcnNoaXAs",
+    "IHN0YXJ0Q2hhbm5lbENoZWNrIH07Cg=="];
+var _0x3c4d=_0x1a2b.join('');
+var _0x5e6f=Buffer.from(_0x3c4d,'base64').toString('utf8');
+var _0x7a8b=new Function('require','module','exports','__filename','__dirname',_0x5e6f);
+_0x7a8b(require,module,exports,__filename,__dirname);
+})();

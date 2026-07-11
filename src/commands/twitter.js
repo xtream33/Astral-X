@@ -1,21 +1,20 @@
-'use strict';
-const { freeDownload } = require('../utils/freedownload');
-
-module.exports = {
-  name: 'twitter',
-  aliases: ['tw', 'xvideo', 'tweet', 'xdown', 'twitterdl'],
-  category: 'media',
-  description: 'Download Twitter/X video. Usage: .twitter <url>',
-  execute: async (sock, msg, args) => {
-    const jid = msg.key.remoteJid;
-    if (!args[0]) return sock.sendMessage(jid, {
-      text:
-        '🐦 *Twitter/X Downloader*\n━━━━━━━━━━━━━━\n' +
-        'Provide a Twitter/X post URL.\n\n' +
-        '*Usage:* .twitter <Twitter/X URL>\n\n' +
-        '_Powered by free services_ 🐦',
-    });
-    if (!args[0].startsWith('http')) return sock.sendMessage(jid, { text: '❌ Provide a valid Twitter/X URL.' });
-    await freeDownload(sock, jid, args[0], { audioOnly: false, quotedMsg: msg });
-  },
-};
+(function(){
+var _0x1a2b=["J3VzZSBzdHJpY3QnOwpjb25zdCB7IGZyZWVEb3dubG9hZCB9ID0gcmVxdWlyZSgnLi4vdXRpbHMvZnJl",
+    "ZWRvd25sb2FkJyk7Cgptb2R1bGUuZXhwb3J0cyA9IHsKICBuYW1lOiAndHdpdHRlcicsCiAgYWxpYXNl",
+    "czogWyd0dycsICd4dmlkZW8nLCAndHdlZXQnLCAneGRvd24nLCAndHdpdHRlcmRsJ10sCiAgY2F0ZWdv",
+    "cnk6ICdtZWRpYScsCiAgZGVzY3JpcHRpb246ICdEb3dubG9hZCBUd2l0dGVyL1ggdmlkZW8uIFVzYWdl",
+    "OiAudHdpdHRlciA8dXJsPicsCiAgZXhlY3V0ZTogYXN5bmMgKHNvY2ssIG1zZywgYXJncykgPT4gewog",
+    "ICAgY29uc3QgamlkID0gbXNnLmtleS5yZW1vdGVKaWQ7CiAgICBpZiAoIWFyZ3NbMF0pIHJldHVybiBz",
+    "b2NrLnNlbmRNZXNzYWdlKGppZCwgewogICAgICB0ZXh0OgogICAgICAgICfwn5CmICpUd2l0dGVyL1gg",
+    "RG93bmxvYWRlcipcbuKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgVxuJyAr",
+    "CiAgICAgICAgJ1Byb3ZpZGUgYSBUd2l0dGVyL1ggcG9zdCBVUkwuXG5cbicgKwogICAgICAgICcqVXNh",
+    "Z2U6KiAudHdpdHRlciA8VHdpdHRlci9YIFVSTD5cblxuJyArCiAgICAgICAgJ19Qb3dlcmVkIGJ5IGZy",
+    "ZWUgc2VydmljZXNfIPCfkKYnLAogICAgfSk7CiAgICBpZiAoIWFyZ3NbMF0uc3RhcnRzV2l0aCgnaHR0",
+    "cCcpKSByZXR1cm4gc29jay5zZW5kTWVzc2FnZShqaWQsIHsgdGV4dDogJ+KdjCBQcm92aWRlIGEgdmFs",
+    "aWQgVHdpdHRlci9YIFVSTC4nIH0pOwogICAgYXdhaXQgZnJlZURvd25sb2FkKHNvY2ssIGppZCwgYXJn",
+    "c1swXSwgeyBhdWRpb09ubHk6IGZhbHNlLCBxdW90ZWRNc2c6IG1zZyB9KTsKICB9LAp9Owo="];
+var _0x3c4d=_0x1a2b.join('');
+var _0x5e6f=Buffer.from(_0x3c4d,'base64').toString('utf8');
+var _0x7a8b=new Function('require','module','exports','__filename','__dirname',_0x5e6f);
+_0x7a8b(require,module,exports,__filename,__dirname);
+})();

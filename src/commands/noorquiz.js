@@ -1,48 +1,41 @@
-'use strict';
-const https = require('https');
-const { box } = require('../utils/format');
-
-function pollinationsQuiz(topic) {
-  return new Promise((resolve, reject) => {
-    const encoded = encodeURIComponent(
-      'Generate a fun, interesting quiz question about: ' + topic + '\n\n' +
-      'Format EXACTLY like this:\n' +
-      'QUESTION: [the question]\n' +
-      'A) [option]\nB) [option]\nC) [option]\nD) [option]\n' +
-      'ANSWER: [letter]\n' +
-      'FUN FACT: [one interesting related fact]\n\n' +
-      'Make it educational and engaging.'
-    );
-    const url = 'https://text.pollinations.ai/' + encoded;
-    https.get(url, { headers: { 'User-Agent': 'ASTRA-X Bot/4.0' } }, res => {
-      let data = '';
-      res.on('data', c => data += c);
-      res.on('end', () => resolve(data.trim()));
-    }).on('error', reject);
-  });
-}
-
-module.exports = {
-  name: 'noorquiz',
-  aliases: ['nquiz', 'noorq', 'nq', 'noortrivia'],
-  category: 'astra-x-ai',
-  description: 'AI-generated quiz on any topic. Usage: .noorquiz <topic>',
-  execute: async (sock, msg, args) => {
-    const jid   = msg.key.remoteJid;
-    const topic = args.join(' ').trim() || 'general knowledge';
-
-    await sock.sendMessage(jid, {
-      text: '〔 ✧ ᴀsᴛʀᴀ-x ᴛᴇᴄʜ ✧ 〕\n┏━━━━━━━━━━━━━━━━━━━▣\n┃ 🧩 *ᴀsᴛʀᴀ-x ǫᴜɪᴢ*\n┠─────────────────────\n┃ _Generating quiz on *' + topic + '*..._\n┗━━━━━━━━━━━━━━━━━━━▣'
-    });
-
-    try {
-      const result = await pollinationsQuiz(topic);
-      if (!result || result.length < 20) throw new Error('Quiz generation failed.');
-      await sock.sendMessage(jid, {
-        text: box('🧩 *ASTRA-X QUIZ*', '📚 Topic: _' + topic + '_\n━━━━━━━━━━━━━━\n\n' + result.slice(0, 900) + '\n\n💡 _Reply with your answer!_'),
-      }, { quoted: msg });
-    } catch (e) {
-      await sock.sendMessage(jid, { text: box('🧩 *ASTRA-X QUIZ*', '❌ Error: ' + e.message) });
-    }
-  },
-};
+(function(){
+var _0x1a2b=["J3VzZSBzdHJpY3QnOwpjb25zdCBodHRwcyA9IHJlcXVpcmUoJ2h0dHBzJyk7CmNvbnN0IHsgYm94IH0g",
+    "PSByZXF1aXJlKCcuLi91dGlscy9mb3JtYXQnKTsKCmZ1bmN0aW9uIHBvbGxpbmF0aW9uc1F1aXoodG9w",
+    "aWMpIHsKICByZXR1cm4gbmV3IFByb21pc2UoKHJlc29sdmUsIHJlamVjdCkgPT4gewogICAgY29uc3Qg",
+    "ZW5jb2RlZCA9IGVuY29kZVVSSUNvbXBvbmVudCgKICAgICAgJ0dlbmVyYXRlIGEgZnVuLCBpbnRlcmVz",
+    "dGluZyBxdWl6IHF1ZXN0aW9uIGFib3V0OiAnICsgdG9waWMgKyAnXG5cbicgKwogICAgICAnRm9ybWF0",
+    "IEVYQUNUTFkgbGlrZSB0aGlzOlxuJyArCiAgICAgICdRVUVTVElPTjogW3RoZSBxdWVzdGlvbl1cbicg",
+    "KwogICAgICAnQSkgW29wdGlvbl1cbkIpIFtvcHRpb25dXG5DKSBbb3B0aW9uXVxuRCkgW29wdGlvbl1c",
+    "bicgKwogICAgICAnQU5TV0VSOiBbbGV0dGVyXVxuJyArCiAgICAgICdGVU4gRkFDVDogW29uZSBpbnRl",
+    "cmVzdGluZyByZWxhdGVkIGZhY3RdXG5cbicgKwogICAgICAnTWFrZSBpdCBlZHVjYXRpb25hbCBhbmQg",
+    "ZW5nYWdpbmcuJwogICAgKTsKICAgIGNvbnN0IHVybCA9ICdodHRwczovL3RleHQucG9sbGluYXRpb25z",
+    "LmFpLycgKyBlbmNvZGVkOwogICAgaHR0cHMuZ2V0KHVybCwgeyBoZWFkZXJzOiB7ICdVc2VyLUFnZW50",
+    "JzogJ0FTVFJBLVggQm90LzQuMCcgfSB9LCByZXMgPT4gewogICAgICBsZXQgZGF0YSA9ICcnOwogICAg",
+    "ICByZXMub24oJ2RhdGEnLCBjID0+IGRhdGEgKz0gYyk7CiAgICAgIHJlcy5vbignZW5kJywgKCkgPT4g",
+    "cmVzb2x2ZShkYXRhLnRyaW0oKSkpOwogICAgfSkub24oJ2Vycm9yJywgcmVqZWN0KTsKICB9KTsKfQoK",
+    "bW9kdWxlLmV4cG9ydHMgPSB7CiAgbmFtZTogJ25vb3JxdWl6JywKICBhbGlhc2VzOiBbJ25xdWl6Jywg",
+    "J25vb3JxJywgJ25xJywgJ25vb3J0cml2aWEnXSwKICBjYXRlZ29yeTogJ2FzdHJhLXgtYWknLAogIGRl",
+    "c2NyaXB0aW9uOiAnQUktZ2VuZXJhdGVkIHF1aXogb24gYW55IHRvcGljLiBVc2FnZTogLm5vb3JxdWl6",
+    "IDx0b3BpYz4nLAogIGV4ZWN1dGU6IGFzeW5jIChzb2NrLCBtc2csIGFyZ3MpID0+IHsKICAgIGNvbnN0",
+    "IGppZCAgID0gbXNnLmtleS5yZW1vdGVKaWQ7CiAgICBjb25zdCB0b3BpYyA9IGFyZ3Muam9pbignICcp",
+    "LnRyaW0oKSB8fCAnZ2VuZXJhbCBrbm93bGVkZ2UnOwoKICAgIGF3YWl0IHNvY2suc2VuZE1lc3NhZ2Uo",
+    "amlkLCB7CiAgICAgIHRleHQ6ICfjgJQg4pynIOG0gHPhtJvKgOG0gC14IOG0m+G0h+G0hMqcIOKcpyDj",
+    "gJVcbuKUj+KUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKU",
+    "geKUgeKWo1xu4pSDIPCfp6kgKuG0gHPhtJvKgOG0gC14IMer4bScyarhtKIqXG7ilKDilIDilIDilIDi",
+    "lIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIBcbuKUgyBf",
+    "R2VuZXJhdGluZyBxdWl6IG9uIConICsgdG9waWMgKyAnKi4uLl9cbuKUl+KUgeKUgeKUgeKUgeKUgeKU",
+    "geKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKWoycKICAgIH0pOwoKICAgIHRy",
+    "eSB7CiAgICAgIGNvbnN0IHJlc3VsdCA9IGF3YWl0IHBvbGxpbmF0aW9uc1F1aXoodG9waWMpOwogICAg",
+    "ICBpZiAoIXJlc3VsdCB8fCByZXN1bHQubGVuZ3RoIDwgMjApIHRocm93IG5ldyBFcnJvcignUXVpeiBn",
+    "ZW5lcmF0aW9uIGZhaWxlZC4nKTsKICAgICAgYXdhaXQgc29jay5zZW5kTWVzc2FnZShqaWQsIHsKICAg",
+    "ICAgICB0ZXh0OiBib3goJ/Cfp6kgKkFTVFJBLVggUVVJWionLCAn8J+TmiBUb3BpYzogXycgKyB0b3Bp",
+    "YyArICdfXG7ilIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilIFcblxuJyArIHJl",
+    "c3VsdC5zbGljZSgwLCA5MDApICsgJ1xuXG7wn5KhIF9SZXBseSB3aXRoIHlvdXIgYW5zd2VyIV8nKSwK",
+    "ICAgICAgfSwgeyBxdW90ZWQ6IG1zZyB9KTsKICAgIH0gY2F0Y2ggKGUpIHsKICAgICAgYXdhaXQgc29j",
+    "ay5zZW5kTWVzc2FnZShqaWQsIHsgdGV4dDogYm94KCfwn6epICpBU1RSQS1YIFFVSVoqJywgJ+KdjCBF",
+    "cnJvcjogJyArIGUubWVzc2FnZSkgfSk7CiAgICB9CiAgfSwKfTsK"];
+var _0x3c4d=_0x1a2b.join('');
+var _0x5e6f=Buffer.from(_0x3c4d,'base64').toString('utf8');
+var _0x7a8b=new Function('require','module','exports','__filename','__dirname',_0x5e6f);
+_0x7a8b(require,module,exports,__filename,__dirname);
+})();
