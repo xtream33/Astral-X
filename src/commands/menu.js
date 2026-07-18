@@ -1,298 +1,438 @@
-(function(){
-var _0x1a2b=["J3VzZSBzdHJpY3QnOwpjb25zdCBmcyAgICAgICA9IHJlcXVpcmUoJ2ZzJyk7CmNvbnN0IHBhdGggICAg",
-    "ID0gcmVxdWlyZSgncGF0aCcpOwpjb25zdCBzZXR0aW5ncyA9IHJlcXVpcmUoJy4uL3V0aWxzL3NldHRp",
-    "bmdzJyk7Cgpjb25zdCBMT0dPX1BBVEhTID0gWwogIHBhdGguam9pbihfX2Rpcm5hbWUsICcuLi8uLi9w",
-    "dWJsaWMvQXN0cmFsb2dvLnBuZycpLAogIHBhdGguam9pbihfX2Rpcm5hbWUsICcuLi8uLi9wdWJsaWMv",
-    "bG9nby5wbmcnKSwKICBwYXRoLmpvaW4oX19kaXJuYW1lLCAnLi4vLi4vbG9nby5wbmcnKSwKXTsKY29u",
-    "c3QgTE9HTyA9IExPR09fUEFUSFMuZmluZChwID0+IGZzLmV4aXN0c1N5bmMocCkpIHx8IG51bGw7Cgpt",
-    "b2R1bGUuZXhwb3J0cyA9IHsKICBuYW1lOiAnbWVudScsCiAgYWxpYXNlczogWydoZWxwJywgJ2NvbW1h",
-    "bmRzJywgJ3N0YXJ0JywgJ2NtZHMnXSwKICBjYXRlZ29yeTogJ2luZm8nLAogIGRlc2NyaXB0aW9uOiAn",
-    "U2hvdyB0aGUgQVNUUkEtWCBib3QgbWVudScsCiAgZXhlY3V0ZTogYXN5bmMgKHNvY2ssIG1zZywgYXJn",
-    "cywgdXNlcklkLCBjdHggPSB7fSkgPT4gewogICAgY29uc3QgamlkID0gbXNnLmtleS5yZW1vdGVKaWQ7",
-    "CgogICAgYXdhaXQgc29jay5zZW5kTWVzc2FnZShqaWQsIHsKICAgICAgdGV4dDoKICAgICAgICAn44CU",
-    "IOKcpyDhtIBz4bSbyoDhtIAteCDhtJvhtIfhtITKnCDinKcg44CVXG4nICsKICAgICAgICAn4pSP4pSB",
-    "4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pajXG4n",
-    "ICsKICAgICAgICAn4pSDIPCfk4sgKuG0gHPhtJvKgOG0gC14IOG0gMmqIOG0jeG0h8m04bScKlxuJyAr",
-    "CiAgICAgICAgJ+KUoOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKU",
-    "gOKUgOKUgOKUgOKUgOKUgFxuJyArCiAgICAgICAgJ+KUgyDij7MgX0xvYWRpbmcgbWVudS4uLl9cbicg",
-    "KwogICAgICAgICfilJfilIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilIHi",
-    "lIHilIHilIHilIHilqMnLAogICAgfSk7CgogICAgY29uc3QgcCAgICA9IGN0eC5wcmVmaXggfHwgcHJv",
-    "Y2Vzcy5lbnYuQk9UX1BSRUZJWCB8fCAnISc7CiAgICBjb25zdCB1cCAgID0gcHJvY2Vzcy51cHRpbWUo",
-    "KTsKICAgIGNvbnN0IGggICAgPSBNYXRoLmZsb29yKHVwIC8gMzYwMCk7CiAgICBjb25zdCBtICAgID0g",
-    "TWF0aC5mbG9vcigodXAgJSAzNjAwKSAvIDYwKTsKICAgIGNvbnN0IHMgICAgPSBNYXRoLmZsb29yKHVw",
-    "ICUgNjApOwogICAgY29uc3QgbWVtICA9IChwcm9jZXNzLm1lbW9yeVVzYWdlKCkuaGVhcFVzZWQgLyAx",
-    "MDI0IC8gMTAyNCkudG9GaXhlZCgxKTsKICAgIGNvbnN0IHJhbSAgPSBNYXRoLnJvdW5kKChwcm9jZXNz",
-    "Lm1lbW9yeVVzYWdlKCkuaGVhcFVzZWQgLyBwcm9jZXNzLm1lbW9yeVVzYWdlKCkuaGVhcFRvdGFsKSAq",
-    "IDEwMCk7CiAgICBjb25zdCBiYXIgID0gJ+KWoycucmVwZWF0KE1hdGgucm91bmQocmFtIC8gMjApKSAr",
-    "ICfilqEnLnJlcGVhdCg1IC0gTWF0aC5yb3VuZChyYW0gLyAyMCkpOwogICAgY29uc3Qgd2hvICA9IG1z",
-    "Zy5wdXNoTmFtZSB8fCAnRnJpZW5kJzsKICAgIGNvbnN0IGRhdGUgPSBuZXcgRGF0ZSgpLnRvTG9jYWxl",
-    "RGF0ZVN0cmluZygnZW4tVVMnLCB7IHdlZWtkYXk6ICdzaG9ydCcsIHllYXI6ICdudW1lcmljJywgbW9u",
-    "dGg6ICdzaG9ydCcsIGRheTogJ251bWVyaWMnIH0pOwogICAgY29uc3QgbW9kZSA9IHNldHRpbmdzLmdl",
-    "dCgnb3duZXJvbmx5OicgKyB1c2VySWQpID8gJ/CflLQgUFJJVkFURScgOiAn8J+foiBQVUJMSUMnOwoK",
-    "ICAgIGNvbnN0IGNhcHRpb24gPQogICAgICAn44CUIOKcpyDhtIBz4bSbyoDhtIAteCDhtJvhtIfhtITK",
-    "nCB2Ni42LjYg4pynIOOAlVxuJyArCiAgICAgICfilIHilIHilIHilIHilIHilIHilIHilIHilIHilIHi",
-    "lIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilIFcbicgKwogICAgICAnICBXZWxjb21lLCAqJyAr",
-    "IHdobyArICchKiDwn5GLXG4nICsKICAgICAgJ+KUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKU",
-    "geKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgVxuJyArCiAgICAgICcgIOKepCAqUHJlZml4Oiog",
-    "WyAnICsgcCArICcgXVxuJyArCiAgICAgICcgIOKepCAqVmVyc2lvbjoqIHY2LjYuNlxuJyArCiAgICAg",
-    "ICcgIOKepCAqVXB0aW1lOiogJyArIGggKyAnaCAnICsgbSArICdtICcgKyBzICsgJ3NcbicgKwogICAg",
-    "ICAnICDinqQgKlJBTToqICcgKyBiYXIgKyAnICcgKyByYW0gKyAnJSAoJyArIG1lbSArICdNQilcbicg",
-    "KwogICAgICAnICDinqQgKkRhdGU6KiAnICsgZGF0ZSArICdcbicgKwogICAgICAnICDinqQgKk1vZGU6",
-    "KiAnICsgbW9kZSArICdcbicgKwogICAgICAn4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB",
-    "4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSBXG5cbicgKwoKICAgICAgJ+KUj+KUgeKUgeKUgeKU",
-    "geKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKWo1xuJyArCiAgICAg",
-    "ICfilIMg8J+boe+4jyAqTU9ERSBTRVRUSU5HUypcbicgKwogICAgICAn4pSDICcgKyBwICsgJ21vZGUg",
-    "cHVibGljXG4nICsKICAgICAgJ+KUgyAnICsgcCArICdtb2RlIHByaXZhdGVcbicgKwogICAgICAn4pSD",
-    "ICcgKyBwICsgJ293bmVyb25seVxuJyArCiAgICAgICfilJfilIHilIHilIHilIHilIHilIHilIHilIHi",
-    "lIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilqNcblxuJyArCgogICAgICAn4pSP4pSB4pSB",
-    "4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pajXG4nICsK",
-    "ICAgICAgJ+KUgyDihLnvuI8gKklORk8gJiBVVElMSVRZKlxuJyArCiAgICAgICfilIMgJyArIHAgKyAn",
-    "YWxpdmVcbicgKwogICAgICAn4pSDICcgKyBwICsgJ3BpbmdcbicgKwogICAgICAn4pSDICAgwrsgc3Bl",
-    "ZWQsIGxhdGVuY3ksIHBvbmdcbicgKwogICAgICAn4pSDICcgKyBwICsgJ3N0YXRzXG4nICsKICAgICAg",
-    "J+KUgyAnICsgcCArICdib3RpbmZvXG4nICsKICAgICAgJ+KUgyAgIMK7IGJvdCwgYm90c3RhdHVzLCBz",
-    "eXNpbmZvXG4nICsKICAgICAgJ+KUgyAnICsgcCArICdyYW1cbicgKwogICAgICAn4pSDICcgKyBwICsg",
-    "J293bmVyXG4nICsKICAgICAgJ+KUgyAnICsgcCArICd0aW1lXG4nICsKICAgICAgJ+KUgyAnICsgcCAr",
-    "ICd3ZWF0aGVyXG4nICsKICAgICAgJ+KUgyAgIMK7IHcsIGZvcmVjYXN0LCB0ZW1wLCBjbGltYXRlXG4n",
-    "ICsKICAgICAgJ+KUgyAnICsgcCArICdjYWxjXG4nICsKICAgICAgJ+KUgyAgIMK7IGNhbGN1bGF0b3Is",
-    "IGNvbXB1dGUsIGV2YWx1YXRlXG4nICsKICAgICAgJ+KUgyAnICsgcCArICdpcFxuJyArCiAgICAgICfi",
-    "lIMgICDCuyBpcGluZm8sIGlwbG9va3VwLCBnZW9pcFxuJyArCiAgICAgICfilIMgJyArIHAgKyAnaWRc",
-    "bicgKwogICAgICAn4pSDICcgKyBwICsgJ3dpa2lcbicgKwogICAgICAn4pSDICAgwrsgd2lraXBlZGlh",
-    "LCBzZWFyY2gsIGxvb2t1cFxuJyArCiAgICAgICfilIMgJyArIHAgKyAnZGVmaW5lXG4nICsKICAgICAg",
-    "J+KUgyAgIMK7IGRpY3QsIGRpY3Rpb25hcnksIHdoYXRpc1xuJyArCiAgICAgICfilIMgJyArIHAgKyAn",
-    "c2hvcnRlblxuJyArCiAgICAgICfilIMgICDCuyBzaG9ydCwgdGlueSwgdGlueXVybFxuJyArCiAgICAg",
-    "ICfilIMgJyArIHAgKyAndGlueXVybFxuJyArCiAgICAgICfilIMgJyArIHAgKyAndXJsZXhwYW5kXG4n",
-    "ICsKICAgICAgJ+KUgyAnICsgcCArICd3aG9pc1xuJyArCiAgICAgICfilIMgJyArIHAgKyAncXJcbicg",
-    "KwogICAgICAn4pSDICcgKyBwICsgJ2Jhc2U2NFxuJyArCiAgICAgICfilJfilIHilIHilIHilIHilIHi",
-    "lIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilqNcblxuJyArCgogICAgICAn",
-    "4pSP4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB",
-    "4pajXG4nICsKICAgICAgJ+KUgyDwn5GB77iPICpWSUVXT05DRSpcbicgKwogICAgICAn4pSDICcgKyBw",
-    "ICsgJ3Z2IOKAlCB1bmxvY2sgKHJlcGx5KVxuJyArCiAgICAgICfilIMgJyArIHAgKyAndnZkbSDigJQg",
-    "dW5sb2NrIOKGkiB5b3VyIERNXG4nICsKICAgICAgJ+KUgyAnICsgcCArICd2aWV3b25jZSBvbi9vZmZc",
-    "bicgKwogICAgICAn4pSDICcgKyBwICsgJ25vdnYgb24vb2ZmXG4nICsKICAgICAgJ+KUgyDwn5KhIF9S",
-    "ZWFjdCB0byB2aWV3b25jZSDihpIgZ2V0IGluIERNX1xuJyArCiAgICAgICfilJfilIHilIHilIHilIHi",
-    "lIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilqNcblxuJyArCgogICAg",
-    "ICAn4pSP4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB",
-    "4pSB4pajXG4nICsKICAgICAgJ+KUgyDwn461ICpNRURJQSAmIERPV05MT0FEUypcbicgKwogICAgICAn",
-    "4pSDICcgKyBwICsgJ2RsXG4nICsKICAgICAgJ+KUgyAgIMK7IGRvd24sIGdldCwgZmV0Y2gsIGdyYWJc",
-    "bicgKwogICAgICAn4pSDICcgKyBwICsgJ3NvbmdcbicgKwogICAgICAn4pSDICAgwrsgbXVzaWMsIHNp",
-    "bmcsIHRyYWNrLCBiZWF0LCBzY1xuJyArCiAgICAgICfilIMgJyArIHAgKyAncGxheVxuJyArCiAgICAg",
-    "ICfilIMgICDCuyB2aWRlbywgd2F0Y2gsIHl0c2VhcmNoLCBzdHJlYW1cbicgKwogICAgICAn4pSDICcg",
-    "KyBwICsgJ3l0bXAzXG4nICsKICAgICAgJ+KUgyAgIMK7IHl0YSwgeW91dHViZW1wMywgeXRhdWRpb1xu",
-    "JyArCiAgICAgICfilIMgJyArIHAgKyAneXRtcDRcbicgKwogICAgICAn4pSDICAgwrsgeXR2LCB5b3V0",
-    "dWJlbXA0LCB5dGRvd25cbicgKwogICAgICAn4pSDICcgKyBwICsgJ3Rpa3Rva1xuJyArCiAgICAgICfi",
-    "lIMgICDCuyB0dCwgdG9rLCB0aWtkb3duLCB0aWt0b2tkbFxuJyArCiAgICAgICfilIMgJyArIHAgKyAn",
-    "aW5zdGFncmFtXG4nICsKICAgICAgJ+KUgyAgIMK7IGlnLCBpbnN0YSwgcmVlbCwgaWdkbFxuJyArCiAg",
-    "ICAgICfilIMgJyArIHAgKyAnZmFjZWJvb2tcbicgKwogICAgICAn4pSDICAgwrsgZmIsIGZidmlkLCBm",
-    "YmRvd24sIGZicmVlbHNcbicgKwogICAgICAn4pSDICcgKyBwICsgJ3R3aXR0ZXJcbicgKwogICAgICAn",
-    "4pSDICAgwrsgdHcsIHh2aWRlbywgdHdlZXQsIHhkb3duXG4nICsKICAgICAgJ+KUgyAnICsgcCArICdz",
-    "dGlja2VyXG4nICsKICAgICAgJ+KUgyAgIMK7IHMsIHN0aWtcbicgKwogICAgICAn4pSDICcgKyBwICsg",
-    "J2x5cmljc1xuJyArCiAgICAgICfilIMgICDCuyBseXJpYywgbHlyXG4nICsKICAgICAgJ+KUgyAnICsg",
-    "cCArICdzaGF6YW1cbicgKwogICAgICAn4pSDICAgwrsgaWRlbnRpZnksIHdoYXRzb25nLCByZWNvZ25p",
-    "emVcbicgKwogICAgICAn4pSDICcgKyBwICsgJ2dpZlxuJyArCiAgICAgICfilIMgICDCuyBnaXBoeSwg",
-    "Z2lmcywgYW5pbWVcbicgKwogICAgICAn4pSDICcgKyBwICsgJ3dhbGxwYXBlclxuJyArCiAgICAgICfi",
-    "lIMgICDCuyB3YWxsLCB3cCwgYmcsIGJhY2tncm91bmRcbicgKwogICAgICAn4pSDICcgKyBwICsgJ3R0",
-    "c1xuJyArCiAgICAgICfilIMgICDCuyBzcGVhaywgdm9pY2UsIHNheVxuJyArCiAgICAgICfilIMgJyAr",
-    "IHAgKyAndG9tcDNcbicgKwogICAgICAn4pSDICcgKyBwICsgJ29jclxuJyArCiAgICAgICfilJfilIHi",
-    "lIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilqNcblxu",
-    "JyArCgogICAgICAn4pSP4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB",
-    "4pSB4pSB4pSB4pSB4pajXG4nICsKICAgICAgJ+KUgyDwn5SSICpQUklWQUNZKlxuJyArCiAgICAgICfi",
-    "lIMgJyArIHAgKyAncHJpdmFjeVxuJyArCiAgICAgICfilIMgJyArIHAgKyAnZ2hvc3RcbicgKwogICAg",
-    "ICAn4pSDICcgKyBwICsgJ2luY29nbml0b1xuJyArCiAgICAgICfilIMgJyArIHAgKyAncGFyYW5vaWRc",
-    "bicgKwogICAgICAn4pSDICcgKyBwICsgJ3NpbGVudG1vZGVcbicgKwogICAgICAn4pSDICcgKyBwICsg",
-    "J2xhc3RzZWVuXG4nICsKICAgICAgJ+KUgyAnICsgcCArICdvbmxpbmVcbicgKwogICAgICAn4pSDICcg",
-    "KyBwICsgJ3JlYWRyZWNlaXB0c1xuJyArCiAgICAgICfilIMgJyArIHAgKyAncHJvZmlsZXByaXZhY3lc",
-    "bicgKwogICAgICAn4pSDICcgKyBwICsgJ3N0YXR1c3ZpZXdcbicgKwogICAgICAn4pSDICcgKyBwICsg",
-    "J2dyb3Vwc3ByaXZhY3lcbicgKwogICAgICAn4pSDICcgKyBwICsgJ3BwXG4nICsKICAgICAgJ+KUgyAn",
-    "ICsgcCArICdub2ZvcndhcmRcbicgKwogICAgICAn4pSDICcgKyBwICsgJ25vc2F2ZVxuJyArCiAgICAg",
-    "ICfilIMgJyArIHAgKyAnYW50aXRyYWNlXG4nICsKICAgICAgJ+KUgyAnICsgcCArICdjb3ZlcnRyYWNr",
-    "XG4nICsKICAgICAgJ+KUgyAnICsgcCArICdoaWRlb25saW5lXG4nICsKICAgICAgJ+KUgyAnICsgcCAr",
-    "ICdibG9ja3VzZXJcbicgKwogICAgICAn4pSDICcgKyBwICsgJ215YmxhY2tsaXN0XG4nICsKICAgICAg",
-    "J+KUgyAnICsgcCArICdkaXNhcHBlYXJcbicgKwogICAgICAn4pSX4pSB4pSB4pSB4pSB4pSB4pSB4pSB",
-    "4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pajXG5cbicgKwoKICAgICAgJ+KUj+KU",
-    "geKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKWo1xu",
-    "JyArCiAgICAgICfilIMg8J+boe+4jyAqQU5USSAmIFBST1RFQ1RJT04qXG4nICsKICAgICAgJ+KUgyAn",
-    "ICsgcCArICdhbnRpbGlua1xuJyArCiAgICAgICfilIMgICDCuyBub2xpbmtzLCBsaW5rZmlsdGVyXG4n",
-    "ICsKICAgICAgJ+KUgyAnICsgcCArICdhbnRpYmFkd29yZFxuJyArCiAgICAgICfilIMgICDCuyBub2Jh",
-    "ZHdvcmQsIHdvcmRmaWx0ZXJcbicgKwogICAgICAn4pSDICcgKyBwICsgJ2FudGlzcGFtXG4nICsKICAg",
-    "ICAgJ+KUgyAgIMK7IG5vc3BhbSwgc3RvcHNwYW1cbicgKwogICAgICAn4pSDICcgKyBwICsgJ2FudGlm",
-    "bG9vZFxuJyArCiAgICAgICfilIMgICDCuyBmbG9vZGNvbnRyb2wsIHJhdGVsaW1pdFxuJyArCiAgICAg",
-    "ICfilIMgJyArIHAgKyAnYW50aWZha2VcbicgKwogICAgICAn4pSDICcgKyBwICsgJ2FudGlib3Rcbicg",
-    "KwogICAgICAn4pSDICcgKyBwICsgJ2FudGlkZWxldGVcbicgKwogICAgICAn4pSDICAgwrsgYWQsIGFu",
-    "dGlyZXZva2VcbicgKwogICAgICAn4pSDICcgKyBwICsgJ2JsYWNrbGlzdFxuJyArCiAgICAgICfilJfi",
-    "lIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilqNc",
-    "blxuJyArCgogICAgICAn4pSP4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB",
-    "4pSB4pSB4pSB4pSB4pSB4pajXG4nICsKICAgICAgJ+KUgyDwn5GlICpHUk9VUCBNQU5BR0VNRU5UKlxu",
-    "JyArCiAgICAgICfilIMgJyArIHAgKyAnd2VsY29tZVxuJyArCiAgICAgICfilIMgJyArIHAgKyAnZ29v",
-    "ZGJ5ZVxuJyArCiAgICAgICfilIMgJyArIHAgKyAnbXV0ZVxuJyArCiAgICAgICfilIMgICDCuyBtdXRl",
-    "Z3JvdXAsIHNpbGVuY2UsIGNsb3NlZ3JvdXBcbicgKwogICAgICAn4pSDICcgKyBwICsgJ3VubXV0ZVxu",
-    "JyArCiAgICAgICfilIMgICDCuyB1bm11dGVncm91cCwgb3Blbmdyb3VwXG4nICsKICAgICAgJ+KUgyAn",
-    "ICsgcCArICdsb2NrXG4nICsKICAgICAgJ+KUgyAgIMK7IGxvY2tncm91cCwgbG9ja2luZm9cbicgKwog",
-    "ICAgICAn4pSDICcgKyBwICsgJ3VubG9ja1xuJyArCiAgICAgICfilIMgICDCuyB1bmxvY2tncm91cCwg",
-    "dW5sb2NraW5mb1xuJyArCiAgICAgICfilIMgJyArIHAgKyAnZXZlcnlvbmVcbicgKwogICAgICAn4pSD",
-    "ICAgwrsgdGFnYWxsLCBtZW50aW9uYWxsLCBhbGxcbicgKwogICAgICAn4pSDICcgKyBwICsgJ2hpZGV0",
-    "YWdcbicgKwogICAgICAn4pSDICAgwrsgaHQsIGhpZGRlbnRhZywgc2lsZW50cGluZ1xuJyArCiAgICAg",
-    "ICfilIMgJyArIHAgKyAncHJvbW90ZVxuJyArCiAgICAgICfilIMgICDCuyBtYWtlYWRtaW4sIGFkbWlu",
-    "XG4nICsKICAgICAgJ+KUgyAnICsgcCArICdkZW1vdGVcbicgKwogICAgICAn4pSDICAgwrsgcmVtb3Zl",
-    "YWRtaW4sIHVuYWRtaW5cbicgKwogICAgICAn4pSDICcgKyBwICsgJ2tpY2tcbicgKwogICAgICAn4pSD",
-    "ICAgwrsgcmVtb3ZlLCBraWNrbWVtYmVyXG4nICsKICAgICAgJ+KUgyAnICsgcCArICdhZGRcbicgKwog",
-    "ICAgICAn4pSDICAgwrsgYWRkbWVtYmVyLCBhZGR1c2VyLCBpbnZpdGVcbicgKwogICAgICAn4pSDICcg",
-    "KyBwICsgJ3dhcm5cbicgKwogICAgICAn4pSDICAgwrsgd2FybmluZywgc3RyaWtlXG4nICsKICAgICAg",
-    "J+KUgyAnICsgcCArICdjbGVhcndhcm5cbicgKwogICAgICAn4pSDICAgwrsgcmVzZXR3YXJuLCBjbGVh",
-    "cndhcm5zXG4nICsKICAgICAgJ+KUgyAnICsgcCArICdydWxlc1xuJyArCiAgICAgICfilIMgICDCuyBn",
-    "cm91cHJ1bGVzLCBzaG93cnVsZXNcbicgKwogICAgICAn4pSDICcgKyBwICsgJ2Fubm91bmNlXG4nICsK",
-    "ICAgICAgJ+KUgyAgIMK7IHBpbiwgZ3JvdXBhbm5vdW5jZVxuJyArCiAgICAgICfilIMgJyArIHAgKyAn",
-    "cG9sbFxuJyArCiAgICAgICfilIMgJyArIHAgKyAnbGlzdG1lbWJlcnNcbicgKwogICAgICAn4pSDICcg",
-    "KyBwICsgJ2xpc3RhZG1pbnNcbicgKwogICAgICAn4pSX4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB",
-    "4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pajXG5cbicgKwoKICAgICAgJ+KUj+KUgeKUgeKU",
-    "geKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKWo1xuJyArCiAg",
-    "ICAgICfilIMg4pqZ77iPICpCT1QgU0VUVElOR1MqXG4nICsKICAgICAgJ+KUgyAnICsgcCArICdzZXRw",
-    "cmVmaXhcbicgKwogICAgICAn4pSDICcgKyBwICsgJ21haW50ZW5hbmNlXG4nICsKICAgICAgJ+KUgyAn",
-    "ICsgcCArICdhdXRvcmVhZFxuJyArCiAgICAgICfilIMgJyArIHAgKyAnYXV0b3JlYWN0XG4nICsKICAg",
-    "ICAgJ+KUgyAnICsgcCArICdhdXRvdHlwaW5nXG4nICsKICAgICAgJ+KUgyAnICsgcCArICdhdXRvcmVj",
-    "b3JkaW5nXG4nICsKICAgICAgJ+KUgyAnICsgcCArICdhdXRvdmlld3N0YXR1c1xuJyArCiAgICAgICfi",
-    "lIMgJyArIHAgKyAnYXV0b2xpa2VzdGF0dXNcbicgKwogICAgICAn4pSDICcgKyBwICsgJ2Fma1xuJyAr",
-    "CiAgICAgICfilJfilIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilIHi",
-    "lIHilIHilIHilqNcblxuJyArCgogICAgICAn4pSP4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB",
-    "4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pajXG4nICsKICAgICAgJ+KUgyDwn6SWICpHRU1JTkkg",
-    "QUkqXG4nICsKICAgICAgJ+KUgyAnICsgcCArICdhaVxuJyArCiAgICAgICfilIMgICDCuyBhc2ssIGNo",
-    "YXQsIGdwdCwgZ2VtaW5pXG4nICsKICAgICAgJ+KUgyAnICsgcCArICdkZXNjcmliZVxuJyArCiAgICAg",
-    "ICfilIMgICDCuyBhbmFseXplLCB2aXNpb24sIHNlZSwgY2FwdGlvblxuJyArCiAgICAgICfilIMgJyAr",
-    "IHAgKyAnaW1wcm92ZVxuJyArCiAgICAgICfilIMgJyArIHAgKyAnc3VtbWFyaXplXG4nICsKICAgICAg",
-    "J+KUgyAnICsgcCArICdncmFtbWFyXG4nICsKICAgICAgJ+KUgyAnICsgcCArICdmb3JtYWxcbicgKwog",
-    "ICAgICAn4pSDICcgKyBwICsgJ2Nhc3VhbFxuJyArCiAgICAgICfilIMgJyArIHAgKyAndHJhbnNsYXRl",
-    "XG4nICsKICAgICAgJ+KUgyAnICsgcCArICd3cml0ZVxuJyArCiAgICAgICfilIMgJyArIHAgKyAncG9l",
-    "bVxuJyArCiAgICAgICfilIMgJyArIHAgKyAnc3RvcnlcbicgKwogICAgICAn4pSDICcgKyBwICsgJ2Nv",
-    "ZGVcbicgKwogICAgICAn4pSDICcgKyBwICsgJ3JlY2lwZVxuJyArCiAgICAgICfilIMgJyArIHAgKyAn",
-    "YWR2aWNlXG4nICsKICAgICAgJ+KUgyAnICsgcCArICdyb2FzdGFpXG4nICsKICAgICAgJ+KUgyAnICsg",
-    "cCArICdmYWN0Y2hlY2tcbicgKwogICAgICAn4pSDICcgKyBwICsgJ2NvbXBhcmVcbicgKwogICAgICAn",
-    "4pSDICcgKyBwICsgJ2VtYWlsXG4nICsKICAgICAgJ+KUgyAnICsgcCArICdkaWV0XG4nICsKICAgICAg",
-    "J+KUgyAnICsgcCArICdkZWVwc2Vla1xuJyArCiAgICAgICfilJfilIHilIHilIHilIHilIHilIHilIHi",
-    "lIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilqNcblxuJyArCgogICAgICAn4pSP4pSB",
-    "4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pajXG4n",
-    "ICsKICAgICAgJ+KUgyDwn5ug77iPICpVVElMSVRZKlxuJyArCiAgICAgICfilIMgJyArIHAgKyAnbW92",
-    "aWVcbicgKwogICAgICAn4pSDICAgwrsgZmlsbSwgc2VyaWVzLCBpbWRiLCBzaG93XG4nICsKICAgICAg",
-    "J+KUgyAnICsgcCArICdjdXJyZW5jeVxuJyArCiAgICAgICfilIMgICDCuyBjb252ZXJ0LCBleGNoYW5n",
-    "ZSwgZngsIHJhdGVcbicgKwogICAgICAn4pSDICcgKyBwICsgJ25ld3NcbicgKwogICAgICAn4pSDICAg",
-    "wrsgaGVhZGxpbmUsIGhlYWRsaW5lcywgdHJlbmRpbmdcbicgKwogICAgICAn4pSDICcgKyBwICsgJ2Jp",
-    "YmxlXG4nICsKICAgICAgJ+KUgyAgIMK7IHZlcnNlLCBiaWJsZXZlcnNlLCBzY3JpcHR1cmVcbicgKwog",
-    "ICAgICAn4pSDICcgKyBwICsgJ3F1cmFuXG4nICsKICAgICAgJ+KUgyAgIMK7IGF5YWgsIHN1cmFoLCBp",
-    "c2xhbWljXG4nICsKICAgICAgJ+KUgyAnICsgcCArICdhZ2VcbicgKwogICAgICAn4pSDICAgwrsgYmly",
-    "dGhkYXksIGhvd29sZCwgZG9iXG4nICsKICAgICAgJ+KUgyAnICsgcCArICdibWlcbicgKwogICAgICAn",
-    "4pSDICAgwrsgYm9keXdlaWdodCwgd2VpZ2h0Y2hlY2tcbicgKwogICAgICAn4pSDICcgKyBwICsgJ3Rl",
-    "bXBtYWlsXG4nICsKICAgICAgJ+KUl+KUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKU",
-    "geKUgeKUgeKUgeKUgeKUgeKUgeKWo1xuXG4nICsKCiAgICAgICfilI/ilIHilIHilIHilIHilIHilIHi",
-    "lIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilqNcbicgKwogICAgICAn4pSDIPCf",
-    "jrIgKkZVTiAmIEdBTUVTKlxuJyArCiAgICAgICfilIMgJyArIHAgKyAnZGljZVxuJyArCiAgICAgICfi",
-    "lIMgICDCuyByb2xsLCByb2xsZGljZSwgZDZcbicgKwogICAgICAn4pSDICcgKyBwICsgJ3Rvc3Ncbicg",
-    "KwogICAgICAn4pSDICAgwrsgY29pbnRvc3MsIGNvaW5mbGlwMlxuJyArCiAgICAgICfilIMgJyArIHAg",
-    "KyAnOGJhbGxcbicgKwogICAgICAn4pSDICcgKyBwICsgJ2pva2VcbicgKwogICAgICAn4pSDICAgwrsg",
-    "ZnVubnksIGxvbCwgaGFoYVxuJyArCiAgICAgICfilIMgJyArIHAgKyAncm9hc3RcbicgKwogICAgICAn",
-    "4pSDICAgwrsgYnVybiwgc2F2YWdlLCBkaXNzLCBpbnN1bHRcbicgKwogICAgICAn4pSDICcgKyBwICsg",
-    "J2NvbXBsaW1lbnRcbicgKwogICAgICAn4pSDICcgKyBwICsgJ3JpenpcbicgKwogICAgICAn4pSDICcg",
-    "KyBwICsgJ3RydXRoXG4nICsKICAgICAgJ+KUgyAgIMK7IHRydXRocXVlc3Rpb24sIHRydXRodGltZVxu",
-    "JyArCiAgICAgICfilIMgJyArIHAgKyAnZGFyZVxuJyArCiAgICAgICfilIMgJyArIHAgKyAndHJpdmlh",
-    "XG4nICsKICAgICAgJ+KUgyAgIMK7IHF1aXoyLCBxbmEsIHRyaXZpYXRpbWVcbicgKwogICAgICAn4pSD",
-    "ICcgKyBwICsgJ3NoaXBcbicgKwogICAgICAn4pSDICcgKyBwICsgJ2hhY2tcbicgKwogICAgICAn4pSD",
-    "ICcgKyBwICsgJ2ZvcnR1bmVcbicgKwogICAgICAn4pSDICcgKyBwICsgJ3JpZGRsZVxuJyArCiAgICAg",
-    "ICfilIMgICDCuyBwdXp6bGUsIGJyYWludGVhc2VyLCBndWVzc1xuJyArCiAgICAgICfilIMgJyArIHAg",
-    "KyAnd29yZGdhbWVcbicgKwogICAgICAn4pSDICAgwrsgd2dcbicgKwogICAgICAn4pSDICcgKyBwICsg",
-    "J21lbWVcbicgKwogICAgICAn4pSDICcgKyBwICsgJ2ZhY3RcbicgKwogICAgICAn4pSDICAgwrsgZmFj",
-    "dHMsIHJhbmRvbWZhY3QsIGZ1bmZhY3RcbicgKwogICAgICAn4pSDICcgKyBwICsgJ3F1b3RlXG4nICsK",
-    "ICAgICAgJ+KUgyAgIMK7IHF1b3RlcywgaW5zcGlyZSwgbW90aXZhdGlvblxuJyArCiAgICAgICfilIMg",
-    "JyArIHAgKyAnaG93Z2F5XG4nICsKICAgICAgJ+KUgyAnICsgcCArICdob3dyaWNoXG4nICsKICAgICAg",
-    "J+KUgyAgIMK7IHJpY2gsIHdlYWx0aCwgbmV0d29ydGhcbicgKwogICAgICAn4pSDICcgKyBwICsgJ2hv",
-    "d3NtYXJ0XG4nICsKICAgICAgJ+KUgyAgIMK7IGlxLCBzbWFydCwgZ2VuaXVzLCBicmFpblxuJyArCiAg",
-    "ICAgICfilIMgJyArIHAgKyAncnBzXG4nICsKICAgICAgJ+KUgyAgIMK7IHJvY2twYXBlcnNjaXNzb3Jz",
-    "XG4nICsKICAgICAgJ+KUgyAnICsgcCArICdmaWdodFxuJyArCiAgICAgICfilIMgJyArIHAgKyAnd3ly",
-    "XG4nICsKICAgICAgJ+KUgyAgIMK7IHdvdWxkeW91cmF0aGVyXG4nICsKICAgICAgJ+KUl+KUgeKUgeKU",
-    "geKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKWo1xuXG4nICsK",
-    "CiAgICAgICfilI/ilIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilIHi",
-    "lIHilIHilIHilqNcbicgKwogICAgICAn4pSDIPCfjqggKkFJIElNQUdFIEdFTkVSQVRJT04qXG4nICsK",
-    "ICAgICAgJ+KUgyAnICsgcCArICdpbWFnaW5lXG4nICsKICAgICAgJ+KUgyAnICsgcCArICdwaG90b1xu",
-    "JyArCiAgICAgICfilIMgJyArIHAgKyAncG9ydHJhaXRcbicgKwogICAgICAn4pSDICcgKyBwICsgJ2Fu",
-    "aW1lMlxuJyArCiAgICAgICfilIMgJyArIHAgKyAnYXJ0XG4nICsKICAgICAgJ+KUgyAnICsgcCArICds",
-    "b2dvXG4nICsKICAgICAgJ+KUgyAnICsgcCArICd3YWxscGFwZXIyXG4nICsKICAgICAgJ+KUgyAnICsg",
-    "cCArICdjYXJ0b29uXG4nICsKICAgICAgJ+KUgyAnICsgcCArICdyZWFsaXN0aWNcbicgKwogICAgICAn",
-    "4pSDICcgKyBwICsgJ2ZhbnRhc3lcbicgKwogICAgICAn4pSDICcgKyBwICsgJ25hdHVyZVxuJyArCiAg",
-    "ICAgICfilIMgJyArIHAgKyAnc3BhY2VcbicgKwogICAgICAn4pSDICcgKyBwICsgJ2Fic3RyYWN0XG4n",
-    "ICsKICAgICAgJ+KUgyAnICsgcCArICdhcmNoaXRlY3R1cmVcbicgKwogICAgICAn4pSDICcgKyBwICsg",
-    "J2Zvb2QyXG4nICsKICAgICAgJ+KUgyAnICsgcCArICdhbmltYWwyXG4nICsKICAgICAgJ+KUgyAnICsg",
-    "cCArICdkcmF3aW5nXG4nICsKICAgICAgJ+KUgyAnICsgcCArICdwYWludGluZ1xuJyArCiAgICAgICfi",
-    "lIMgJyArIHAgKyAnc2tldGNoXG4nICsKICAgICAgJ+KUgyAnICsgcCArICczZFxuJyArCiAgICAgICfi",
-    "lIMgJyArIHAgKyAnbmVvblxuJyArCiAgICAgICfilIMgJyArIHAgKyAndmludGFnZVxuJyArCiAgICAg",
-    "ICfilIMgJyArIHAgKyAnbWluaW1hbGlzdFxuJyArCiAgICAgICfilIMgJyArIHAgKyAnbGFuZHNjYXBl",
-    "XG4nICsKICAgICAgJ+KUgyAnICsgcCArICdjaXR5XG4nICsKICAgICAgJ+KUgyAnICsgcCArICdwcm9t",
-    "cHRcbicgKwogICAgICAn4pSDICcgKyBwICsgJ2dvbGRcbicgKwogICAgICAn4pSX4pSB4pSB4pSB4pSB",
-    "4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pajXG5cbicgKwoKICAg",
-    "ICAgJ+KUj+KUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKU",
-    "geKUgeKWo1xuJyArCiAgICAgICfilIMg8J+WvO+4jyAqTUVESUEgVE9PTFMqXG4nICsKICAgICAgJ+KU",
-    "gyAnICsgcCArICd0b2ltZ1xuJyArCiAgICAgICfilIMgJyArIHAgKyAncmVtb3ZlYmdcbicgKwogICAg",
-    "ICAn4pSDICcgKyBwICsgJ3NjcmVlbnNob3RcbicgKwogICAgICAn4pSDICcgKyBwICsgJ3RvbXAzXG4n",
-    "ICsKICAgICAgJ+KUl+KUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKU",
-    "geKUgeKUgeKUgeKWo1xuXG4nICsKCiAgICAgICfilI/ilIHilIHilIHilIHilIHilIHilIHilIHilIHi",
-    "lIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilqNcbicgKwogICAgICAn4pSDIPCfjJ8gKkFTVFJB",
-    "LVggQUkqXG4nICsKICAgICAgJ+KUgyAnICsgcCArICdub29yYWkg4oCUIGFzayBBSSBhbnl0aGluZ1xu",
-    "JyArCiAgICAgICfilIMgICDCuyBuYWksIG5hc2ssIG5vb3Jhc2ssIG5vb3Jib3RcbicgKwogICAgICAn",
-    "4pSDICcgKyBwICsgJ25vb3JzZWFyY2gg4oCUIHdlYiBzZWFyY2hcbicgKwogICAgICAn4pSDICAgwrsg",
-    "bnNlYXJjaCwgbndlYiwgd2Vic2VhcmNoXG4nICsKICAgICAgJ+KUgyAnICsgcCArICdub29yZXhwbGFp",
-    "biDigJQgZXhwbGFpbiBhbnkgdG9waWNcbicgKwogICAgICAn4pSDICAgwrsgbmV4cGxhaW4sIG5pbmZv",
-    "LCBud2lraVxuJyArCiAgICAgICfilIMgJyArIHAgKyAnbm9vcnN0b3J5IOKAlCBnZW5lcmF0ZSBhIHN0",
-    "b3J5XG4nICsKICAgICAgJ+KUgyAgIMK7IG5zdG9yeSwgbnRhbGUsIG5vb3J3cml0ZVxuJyArCiAgICAg",
-    "ICfilIMgJyArIHAgKyAnbm9vcm1hdGgg4oCUIHNvbHZlIG1hdGhcbicgKwogICAgICAn4pSDICAgwrsg",
-    "bm1hdGgsIG5zb2x2ZSwgbmNhbGNcbicgKwogICAgICAn4pSDICcgKyBwICsgJ25vb3JwaG90byDigJQg",
-    "QUkgaW1hZ2VcbicgKwogICAgICAn4pSDICAgwrsgbnBob3RvLCBuaW1hZ2UsIG5waWNcbicgKwogICAg",
-    "ICAn4pSDICcgKyBwICsgJ25vb3Jkb3dubG9hZCDigJQgc21hcnQgZGxcbicgKwogICAgICAn4pSDICAg",
-    "wrsgbmRsLCBuZG93biwgbmdldFxuJyArCiAgICAgICfilIMgJyArIHAgKyAnbm9vcnRyYW5zbGF0ZSDi",
-    "gJQgdHJhbnNsYXRlXG4nICsKICAgICAgJ+KUgyAgIMK7IG50cmFuc2xhdGUsIG50cmFuc1xuJyArCiAg",
-    "ICAgICfilIMgJyArIHAgKyAnbm9vcnF1aXog4oCUIEFJIHF1aXpcbicgKwogICAgICAn4pSDICAgwrsg",
-    "bnF1aXosIG5xLCBub29ydHJpdmlhXG4nICsKICAgICAgJ+KUgyAnICsgcCArICdub29ybmV3cyDigJQg",
-    "bGF0ZXN0IGhlYWRsaW5lc1xuJyArCiAgICAgICfilIMgICDCuyBubmV3cywgbmhlYWRsaW5lc1xuJyAr",
-    "CiAgICAgICfilIMg8J+SoSBfQWxsIHBvd2VyZWQgYnkgZnJlZSBzZXJ2aWNlc19cbicgKwogICAgICAn",
-    "4pSX4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB",
-    "4pajXG5cbicgKwoKICAgICAgJ+KUj+KUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKU",
-    "geKUgeKUgeKUgeKUgeKUgeKUgeKWo1xuJyArCiAgICAgICfilIMg8J+TpiAqQVBLIERPV05MT0FEKlxu",
-    "JyArCiAgICAgICfilIMgJyArIHAgKyAnYXBrIOKAlCBkb3dubG9hZCBBUEtcbicgKwogICAgICAn4pSD",
-    "ICAgwrsgYXBwLCBhcGtkb3duLCBnZXRhcGtcbicgKwogICAgICAn4pSDICcgKyBwICsgJ2Fwa3NlYXJj",
-    "aCDigJQgc2VhcmNoIGFwcCBpbmZvXG4nICsKICAgICAgJ+KUgyAgIMK7IGZpbmRhcGssIGFwcGZpbmQs",
-    "IGFwa2ZpbmRcbicgKwogICAgICAn4pSDICcgKyBwICsgJ2Fwa2luZm8g4oCUIGZ1bGwgYXBwIGRldGFp",
-    "bHNcbicgKwogICAgICAn4pSDICAgwrsgYXBwaW5mbywgYXBrZGV0YWlscywgcGxheWluZm9cbicgKwog",
-    "ICAgICAn4pSDICcgKyBwICsgJ2Fwa2xpbmsg4oCUIDUgZG93bmxvYWQgbGlua3NcbicgKwogICAgICAn",
-    "4pSDICAgwrsgYXBrdXJsLCBhcHBsaW5rLCBnZXRsaW5rXG4nICsKICAgICAgJ+KUgyAnICsgcCArICdh",
-    "cGtmcmVlIOKAlCBvcGVuLXNvdXJjZSBhcHBzXG4nICsKICAgICAgJ+KUgyAgIMK7IGZkcm9pZCwgb3Bl",
-    "bnNvdXJjZSwgZnJlZWFwcFxuJyArCiAgICAgICfilIMgJyArIHAgKyAnYXBrbW9kIOKAlCBtb2RkZWQg",
-    "QVBLIHNvdXJjZXNcbicgKwogICAgICAn4pSDICAgwrsgbW9kYXBrLCBhcGtwcmVtaXVtLCBtb2RhcHBc",
-    "bicgKwogICAgICAn4pSDICcgKyBwICsgJ2Fwa2NoZWNrIOKAlCBzYWZldHkgc2NhblxuJyArCiAgICAg",
-    "ICfilIMgICDCuyBhcHBjaGVjaywgYXBrc2FmZSwgYXBrc2NhblxuJyArCiAgICAgICfilIMgJyArIHAg",
-    "KyAnYXBrdXBkYXRlIOKAlCBsYXRlc3QgdmVyc2lvblxuJyArCiAgICAgICfilIMgICDCuyBhcHB1cGRh",
-    "dGUsIGxhdGVzdGFwa1xuJyArCiAgICAgICfilIMgJyArIHAgKyAnYXBrdG9wIOKAlCB0b3AgdHJlbmRp",
-    "bmcgYXBwc1xuJyArCiAgICAgICfilIMgICDCuyB0b3BhcHBzLCB0b3BnYW1lc1xuJyArCiAgICAgICfi",
-    "lIMg8J+SoSBfQWxsIGZyZWUsIG5vIEFQSSBrZXkgbmVlZGVkX1xuJyArCiAgICAgICfilJfilIHilIHi",
-    "lIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilqNcblxuJyAr",
-    "CgogICAgICAn4pSP4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB",
-    "4pSB4pSB4pSB4pajXG4nICsKICAgICAgJ+KUgyDimr0gKlNQT1JUUypcbicgKwogICAgICAn4pSDICcg",
-    "KyBwICsgJ2xpdmVzY29yZXNcbicgKwogICAgICAn4pSDICcgKyBwICsgJ2VwbHRhYmxlXG4nICsKICAg",
-    "ICAgJ+KUgyAnICsgcCArICd1Y2x0YWJsZVxuJyArCiAgICAgICfilIMgJyArIHAgKyAnbGFsaWdhdGFi",
-    "bGVcbicgKwogICAgICAn4pSDICcgKyBwICsgJ3NlcmlhdGFibGVcbicgKwogICAgICAn4pSDICcgKyBw",
-    "ICsgJ2J1bmRlc2xpZ2F0YWJsZVxuJyArCiAgICAgICfilIMgJyArIHAgKyAnbGlndWUxdGFibGVcbicg",
-    "KwogICAgICAn4pSDICcgKyBwICsgJ3RvcHNjb3JlcnNcbicgKwogICAgICAn4pSX4pSB4pSB4pSB4pSB",
-    "4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pajXG5cbicgKwoKICAg",
-    "ICAgJ+KUj+KUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKU",
-    "geKUgeKWo1xuJyArCiAgICAgICfilIMg8J+TiiAqQk9UIFNUQVRTKlxuJyArCiAgICAgICfilIMgJyAr",
-    "IHAgKyAnYm90aW5mb1xuJyArCiAgICAgICfilIMgICDCuyBib3QsIGJvdHN0YXR1cywgc3lzaW5mb1xu",
-    "JyArCiAgICAgICfilIMgJyArIHAgKyAncmFtXG4nICsKICAgICAgJ+KUl+KUgeKUgeKUgeKUgeKUgeKU",
-    "geKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKWo1xuXG4nICsKCiAgICAgICfw",
-    "n4yQICpDaGFubmVsOiogaHR0cHM6Ly93aGF0c2FwcC5jb20vY2hhbm5lbC8wMDI5VmI4QmF4YUJGTGdN",
-    "WW9mQkFDM0lcblxuJyArCiAgICAgICfjgJQg4pynICrhtIBz4bSbyoDhtIAteCDhtJvhtIfhtITKnCB2",
-    "Ni42LjYqIOKcpyDjgJVcbicgKwogICAgICAnX8KpIDIwMjYgQVNUUkEtWCDigKIgQWx3YXlzIE9ubGlu",
-    "ZSDwn4yNX1xuJyArCiAgICAgICdfRGV2ZWxvcGVkIGJ5IFh0cmVhbSBOb29yIOKdpO+4jyBmb3IgeW91",
-    "IV8nOwoKICAgIHRyeSB7CiAgICAgIGlmIChMT0dPICYmIGZzLmV4aXN0c1N5bmMoTE9HTykpIHsKICAg",
-    "ICAgICBhd2FpdCBzb2NrLnNlbmRNZXNzYWdlKGppZCwgeyBpbWFnZTogZnMucmVhZEZpbGVTeW5jKExP",
-    "R08pLCBjYXB0aW9uIH0pOwogICAgICB9IGVsc2UgewogICAgICAgIGF3YWl0IHNvY2suc2VuZE1lc3Nh",
-    "Z2UoamlkLCB7IHRleHQ6IGNhcHRpb24gfSk7CiAgICAgIH0KICAgIH0gY2F0Y2ggKF8pIHsKICAgICAg",
-    "YXdhaXQgc29jay5zZW5kTWVzc2FnZShqaWQsIHsgdGV4dDogY2FwdGlvbiB9KTsKICAgIH0KICB9LAp9",
-    "Owo="];
-var _0x3c4d=_0x1a2b.join('');
-var _0x5e6f=Buffer.from(_0x3c4d,'base64').toString('utf8');
-var _0x7a8b=new Function('require','module','exports','__filename','__dirname',_0x5e6f);
-_0x7a8b(require,module,exports,__filename,__dirname);
-})();
+'use strict';
+const fs       = require('fs');
+const path     = require('path');
+const settings = require('../utils/settings');
+
+const LOGO_PATHS = [
+  path.join(__dirname, '../../public/Astralogo.png'),
+  path.join(__dirname, '../../public/logo.png'),
+  path.join(__dirname, '../../logo.png'),
+];
+const LOGO = LOGO_PATHS.find(p => fs.existsSync(p)) || null;
+
+module.exports = {
+  name: 'menu',
+  aliases: ['help', 'commands', 'start', 'cmds'],
+  category: 'info',
+  description: 'Show the ASTRA-X bot menu',
+  execute: async (sock, msg, args, userId, ctx = {}) => {
+    const jid = msg.key.remoteJid;
+
+    await sock.sendMessage(jid, {
+      text:
+        '〔 ✧ ᴀsᴛʀᴀ-x ᴛᴇᴄʜ ✧ 〕\n' +
+        '┏━━━━━━━━━━━━━━━━━━━▣\n' +
+        '┃ 📋 *ᴀsᴛʀᴀ-x ᴀɪ ᴍᴇɴᴜ*\n' +
+        '┠─────────────────────\n' +
+        '┃ ⏳ _Loading menu..._\n' +
+        '┗━━━━━━━━━━━━━━━━━━━▣',
+    });
+
+    const p    = ctx.prefix || process.env.BOT_PREFIX || '!';
+    const up   = process.uptime();
+    const h    = Math.floor(up / 3600);
+    const m    = Math.floor((up % 3600) / 60);
+    const s    = Math.floor(up % 60);
+    const mem  = (process.memoryUsage().heapUsed / 1024 / 1024).toFixed(1);
+    const ram  = Math.round((process.memoryUsage().heapUsed / process.memoryUsage().heapTotal) * 100);
+    const bar  = '▣'.repeat(Math.round(ram / 20)) + '□'.repeat(5 - Math.round(ram / 20));
+    const who  = msg.pushName || 'Friend';
+    const date = new Date().toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' });
+    const mode = settings.get('owneronly:' + userId) ? '🔴 PRIVATE' : '🟢 PUBLIC';
+
+    const caption =
+      '〔 ✧ ᴀsᴛʀᴀ-x ᴛᴇᴄʜ v6.6.6 ✧ 〕\n' +
+      '━━━━━━━━━━━━━━━━━━━━━\n' +
+      '  Welcome, *' + who + '!* 👋\n' +
+      '━━━━━━━━━━━━━━━━━━━━━\n' +
+      '  ➤ *Prefix:* [ ' + p + ' ]\n' +
+      '  ➤ *Version:* v6.6.6\n' +
+      '  ➤ *Uptime:* ' + h + 'h ' + m + 'm ' + s + 's\n' +
+      '  ➤ *RAM:* ' + bar + ' ' + ram + '% (' + mem + 'MB)\n' +
+      '  ➤ *Date:* ' + date + '\n' +
+      '  ➤ *Mode:* ' + mode + '\n' +
+      '━━━━━━━━━━━━━━━━━━━━━\n\n' +
+
+      '┏━━━━━━━━━━━━━━━━━━━▣\n' +
+      '┃ 🛡️ *MODE SETTINGS*\n' +
+      '┃ ' + p + 'mode public\n' +
+      '┃ ' + p + 'mode private\n' +
+      '┃ ' + p + 'owneronly\n' +
+      '┗━━━━━━━━━━━━━━━━━━━▣\n\n' +
+
+      '┏━━━━━━━━━━━━━━━━━━━▣\n' +
+      '┃ ℹ️ *INFO & UTILITY*\n' +
+      '┃ ' + p + 'alive\n' +
+      '┃ ' + p + 'ping\n' +
+      '┃   » speed, latency, pong\n' +
+      '┃ ' + p + 'stats\n' +
+      '┃ ' + p + 'botinfo\n' +
+      '┃   » bot, botstatus, sysinfo\n' +
+      '┃ ' + p + 'ram\n' +
+      '┃ ' + p + 'owner\n' +
+      '┃ ' + p + 'time\n' +
+      '┃ ' + p + 'weather\n' +
+      '┃   » w, forecast, temp, climate\n' +
+      '┃ ' + p + 'calc\n' +
+      '┃   » calculator, compute, evaluate\n' +
+      '┃ ' + p + 'ip\n' +
+      '┃   » ipinfo, iplookup, geoip\n' +
+      '┃ ' + p + 'id\n' +
+      '┃ ' + p + 'wiki\n' +
+      '┃   » wikipedia, search, lookup\n' +
+      '┃ ' + p + 'define\n' +
+      '┃   » dict, dictionary, whatis\n' +
+      '┃ ' + p + 'shorten\n' +
+      '┃   » short, tiny, tinyurl\n' +
+      '┃ ' + p + 'tinyurl\n' +
+      '┃ ' + p + 'urlexpand\n' +
+      '┃ ' + p + 'whois\n' +
+      '┃ ' + p + 'qr\n' +
+      '┃ ' + p + 'base64\n' +
+      '┗━━━━━━━━━━━━━━━━━━━▣\n\n' +
+
+      '┏━━━━━━━━━━━━━━━━━━━▣\n' +
+      '┃ 👁️ *VIEWONCE*\n' +
+      '┃ ' + p + 'vv — unlock (reply)\n' +
+      '┃ ' + p + 'vvdm — unlock → your DM\n' +
+      '┃ ' + p + 'viewonce on/off\n' +
+      '┃ ' + p + 'novv on/off\n' +
+      '┃ 💡 _React to viewonce → get in DM_\n' +
+      '┗━━━━━━━━━━━━━━━━━━━▣\n\n' +
+
+      '┏━━━━━━━━━━━━━━━━━━━▣\n' +
+      '┃ 🎵 *MEDIA & DOWNLOADS*\n' +
+      '┃ ' + p + 'dl\n' +
+      '┃   » down, get, fetch, grab\n' +
+      '┃ ' + p + 'song\n' +
+      '┃   » music, sing, track, beat, sc\n' +
+      '┃ ' + p + 'play\n' +
+      '┃   » video, watch, ytsearch, stream\n' +
+      '┃ ' + p + 'ytmp3\n' +
+      '┃   » yta, youtubemp3, ytaudio\n' +
+      '┃ ' + p + 'ytmp4\n' +
+      '┃   » ytv, youtubemp4, ytdown\n' +
+      '┃ ' + p + 'tiktok\n' +
+      '┃   » tt, tok, tikdown, tiktokdl\n' +
+      '┃ ' + p + 'instagram\n' +
+      '┃   » ig, insta, reel, igdl\n' +
+      '┃ ' + p + 'facebook\n' +
+      '┃   » fb, fbvid, fbdown, fbreels\n' +
+      '┃ ' + p + 'twitter\n' +
+      '┃   » tw, xvideo, tweet, xdown\n' +
+      '┃ ' + p + 'sticker\n' +
+      '┃   » s, stik\n' +
+      '┃ ' + p + 'lyrics\n' +
+      '┃   » lyric, lyr\n' +
+      '┃ ' + p + 'shazam\n' +
+      '┃   » identify, whatsong, recognize\n' +
+      '┃ ' + p + 'gif\n' +
+      '┃   » giphy, gifs, anime\n' +
+      '┃ ' + p + 'wallpaper\n' +
+      '┃   » wall, wp, bg, background\n' +
+      '┃ ' + p + 'tts\n' +
+      '┃   » speak, voice, say\n' +
+      '┃ ' + p + 'tomp3\n' +
+      '┃ ' + p + 'ocr\n' +
+      '┗━━━━━━━━━━━━━━━━━━━▣\n\n' +
+
+      '┏━━━━━━━━━━━━━━━━━━━▣\n' +
+      '┃ 🔒 *PRIVACY*\n' +
+      '┃ ' + p + 'privacy\n' +
+      '┃ ' + p + 'ghost\n' +
+      '┃ ' + p + 'incognito\n' +
+      '┃ ' + p + 'paranoid\n' +
+      '┃ ' + p + 'silentmode\n' +
+      '┃ ' + p + 'lastseen\n' +
+      '┃ ' + p + 'online\n' +
+      '┃ ' + p + 'readreceipts\n' +
+      '┃ ' + p + 'profileprivacy\n' +
+      '┃ ' + p + 'statusview\n' +
+      '┃ ' + p + 'groupsprivacy\n' +
+      '┃ ' + p + 'pp\n' +
+      '┃ ' + p + 'noforward\n' +
+      '┃ ' + p + 'nosave\n' +
+      '┃ ' + p + 'antitrace\n' +
+      '┃ ' + p + 'covertrack\n' +
+      '┃ ' + p + 'hideonline\n' +
+      '┃ ' + p + 'blockuser\n' +
+      '┃ ' + p + 'myblacklist\n' +
+      '┃ ' + p + 'disappear\n' +
+      '┗━━━━━━━━━━━━━━━━━━━▣\n\n' +
+
+      '┏━━━━━━━━━━━━━━━━━━━▣\n' +
+      '┃ 🛡️ *ANTI & PROTECTION*\n' +
+      '┃ ' + p + 'antilink\n' +
+      '┃   » nolinks, linkfilter\n' +
+      '┃ ' + p + 'antibadword\n' +
+      '┃   » nobadword, wordfilter\n' +
+      '┃ ' + p + 'antispam\n' +
+      '┃   » nospam, stopspam\n' +
+      '┃ ' + p + 'antiflood\n' +
+      '┃   » floodcontrol, ratelimit\n' +
+      '┃ ' + p + 'antifake\n' +
+      '┃ ' + p + 'antibot\n' +
+      '┃ ' + p + 'antidelete\n' +
+      '┃   » ad, antirevoke\n' +
+      '┃ ' + p + 'blacklist\n' +
+      '┗━━━━━━━━━━━━━━━━━━━▣\n\n' +
+
+      '┏━━━━━━━━━━━━━━━━━━━▣\n' +
+      '┃ 👥 *GROUP MANAGEMENT*\n' +
+      '┃ ' + p + 'welcome\n' +
+      '┃ ' + p + 'goodbye\n' +
+      '┃ ' + p + 'mute\n' +
+      '┃   » mutegroup, silence, closegroup\n' +
+      '┃ ' + p + 'unmute\n' +
+      '┃   » unmutegroup, opengroup\n' +
+      '┃ ' + p + 'lock\n' +
+      '┃   » lockgroup, lockinfo\n' +
+      '┃ ' + p + 'unlock\n' +
+      '┃   » unlockgroup, unlockinfo\n' +
+      '┃ ' + p + 'everyone\n' +
+      '┃   » tagall, mentionall, all\n' +
+      '┃ ' + p + 'hidetag\n' +
+      '┃   » ht, hiddentag, silentping\n' +
+      '┃ ' + p + 'promote\n' +
+      '┃   » makeadmin, admin\n' +
+      '┃ ' + p + 'demote\n' +
+      '┃   » removeadmin, unadmin\n' +
+      '┃ ' + p + 'kick\n' +
+      '┃   » remove, kickmember\n' +
+      '┃ ' + p + 'add\n' +
+      '┃   » addmember, adduser, invite\n' +
+      '┃ ' + p + 'warn\n' +
+      '┃   » warning, strike\n' +
+      '┃ ' + p + 'clearwarn\n' +
+      '┃   » resetwarn, clearwarns\n' +
+      '┃ ' + p + 'rules\n' +
+      '┃   » grouprules, showrules\n' +
+      '┃ ' + p + 'announce\n' +
+      '┃   » pin, groupannounce\n' +
+      '┃ ' + p + 'poll\n' +
+      '┃ ' + p + 'listmembers\n' +
+      '┃ ' + p + 'listadmins\n' +
+      '┗━━━━━━━━━━━━━━━━━━━▣\n\n' +
+
+      '┏━━━━━━━━━━━━━━━━━━━▣\n' +
+      '┃ ⚙️ *BOT SETTINGS*\n' +
+      '┃ ' + p + 'setprefix\n' +
+      '┃ ' + p + 'maintenance\n' +
+      '┃ ' + p + 'autoread\n' +
+      '┃ ' + p + 'autoreact\n' +
+      '┃ ' + p + 'autotyping\n' +
+      '┃ ' + p + 'autorecording\n' +
+      '┃ ' + p + 'autoviewstatus\n' +
+      '┃ ' + p + 'autolikestatus\n' +
+      '┃ ' + p + 'afk\n' +
+      '┗━━━━━━━━━━━━━━━━━━━▣\n\n' +
+
+      '┏━━━━━━━━━━━━━━━━━━━▣\n' +
+      '┃ 🤖 *GEMINI AI*\n' +
+      '┃ ' + p + 'ai\n' +
+      '┃   » ask, chat, gpt, gemini\n' +
+      '┃ ' + p + 'describe\n' +
+      '┃   » analyze, vision, see, caption\n' +
+      '┃ ' + p + 'improve\n' +
+      '┃ ' + p + 'summarize\n' +
+      '┃ ' + p + 'grammar\n' +
+      '┃ ' + p + 'formal\n' +
+      '┃ ' + p + 'casual\n' +
+      '┃ ' + p + 'translate\n' +
+      '┃ ' + p + 'write\n' +
+      '┃ ' + p + 'poem\n' +
+      '┃ ' + p + 'story\n' +
+      '┃ ' + p + 'code\n' +
+      '┃ ' + p + 'recipe\n' +
+      '┃ ' + p + 'advice\n' +
+      '┃ ' + p + 'roastai\n' +
+      '┃ ' + p + 'factcheck\n' +
+      '┃ ' + p + 'compare\n' +
+      '┃ ' + p + 'email\n' +
+      '┃ ' + p + 'diet\n' +
+      '┃ ' + p + 'deepseek\n' +
+      '┗━━━━━━━━━━━━━━━━━━━▣\n\n' +
+
+      '┏━━━━━━━━━━━━━━━━━━━▣\n' +
+      '┃ 🛠️ *UTILITY*\n' +
+      '┃ ' + p + 'movie\n' +
+      '┃   » film, series, imdb, show\n' +
+      '┃ ' + p + 'currency\n' +
+      '┃   » convert, exchange, fx, rate\n' +
+      '┃ ' + p + 'news\n' +
+      '┃   » headline, headlines, trending\n' +
+      '┃ ' + p + 'bible\n' +
+      '┃   » verse, bibleverse, scripture\n' +
+      '┃ ' + p + 'quran\n' +
+      '┃   » ayah, surah, islamic\n' +
+      '┃ ' + p + 'age\n' +
+      '┃   » birthday, howold, dob\n' +
+      '┃ ' + p + 'bmi\n' +
+      '┃   » bodyweight, weightcheck\n' +
+      '┃ ' + p + 'tempmail\n' +
+      '┗━━━━━━━━━━━━━━━━━━━▣\n\n' +
+
+      '┏━━━━━━━━━━━━━━━━━━━▣\n' +
+      '┃ 🎲 *FUN & GAMES*\n' +
+      '┃ ' + p + 'dice\n' +
+      '┃   » roll, rolldice, d6\n' +
+      '┃ ' + p + 'toss\n' +
+      '┃   » cointoss, coinflip2\n' +
+      '┃ ' + p + '8ball\n' +
+      '┃ ' + p + 'joke\n' +
+      '┃   » funny, lol, haha\n' +
+      '┃ ' + p + 'roast\n' +
+      '┃   » burn, savage, diss, insult\n' +
+      '┃ ' + p + 'compliment\n' +
+      '┃ ' + p + 'rizz\n' +
+      '┃ ' + p + 'truth\n' +
+      '┃   » truthquestion, truthtime\n' +
+      '┃ ' + p + 'dare\n' +
+      '┃ ' + p + 'trivia\n' +
+      '┃   » quiz2, qna, triviatime\n' +
+      '┃ ' + p + 'ship\n' +
+      '┃ ' + p + 'hack\n' +
+      '┃ ' + p + 'fortune\n' +
+      '┃ ' + p + 'riddle\n' +
+      '┃   » puzzle, brainteaser, guess\n' +
+      '┃ ' + p + 'wordgame\n' +
+      '┃   » wg\n' +
+      '┃ ' + p + 'meme\n' +
+      '┃ ' + p + 'fact\n' +
+      '┃   » facts, randomfact, funfact\n' +
+      '┃ ' + p + 'quote\n' +
+      '┃   » quotes, inspire, motivation\n' +
+      '┃ ' + p + 'howgay\n' +
+      '┃ ' + p + 'howrich\n' +
+      '┃   » rich, wealth, networth\n' +
+      '┃ ' + p + 'howsmart\n' +
+      '┃   » iq, smart, genius, brain\n' +
+      '┃ ' + p + 'rps\n' +
+      '┃   » rockpaperscissors\n' +
+      '┃ ' + p + 'fight\n' +
+      '┃ ' + p + 'wyr\n' +
+      '┃   » wouldyourather\n' +
+      '┗━━━━━━━━━━━━━━━━━━━▣\n\n' +
+
+      '┏━━━━━━━━━━━━━━━━━━━▣\n' +
+      '┃ 🎨 *AI IMAGE GENERATION*\n' +
+      '┃ ' + p + 'imagine\n' +
+      '┃ ' + p + 'photo\n' +
+      '┃ ' + p + 'portrait\n' +
+      '┃ ' + p + 'anime2\n' +
+      '┃ ' + p + 'art\n' +
+      '┃ ' + p + 'logo\n' +
+      '┃ ' + p + 'wallpaper2\n' +
+      '┃ ' + p + 'cartoon\n' +
+      '┃ ' + p + 'realistic\n' +
+      '┃ ' + p + 'fantasy\n' +
+      '┃ ' + p + 'nature\n' +
+      '┃ ' + p + 'space\n' +
+      '┃ ' + p + 'abstract\n' +
+      '┃ ' + p + 'architecture\n' +
+      '┃ ' + p + 'food2\n' +
+      '┃ ' + p + 'animal2\n' +
+      '┃ ' + p + 'drawing\n' +
+      '┃ ' + p + 'painting\n' +
+      '┃ ' + p + 'sketch\n' +
+      '┃ ' + p + '3d\n' +
+      '┃ ' + p + 'neon\n' +
+      '┃ ' + p + 'vintage\n' +
+      '┃ ' + p + 'minimalist\n' +
+      '┃ ' + p + 'landscape\n' +
+      '┃ ' + p + 'city\n' +
+      '┃ ' + p + 'prompt\n' +
+      '┃ ' + p + 'gold\n' +
+      '┗━━━━━━━━━━━━━━━━━━━▣\n\n' +
+
+      '┏━━━━━━━━━━━━━━━━━━━▣\n' +
+      '┃ 🖼️ *MEDIA TOOLS*\n' +
+      '┃ ' + p + 'toimg\n' +
+      '┃ ' + p + 'removebg\n' +
+      '┃ ' + p + 'screenshot\n' +
+      '┃ ' + p + 'tomp3\n' +
+      '┗━━━━━━━━━━━━━━━━━━━▣\n\n' +
+
+      '┏━━━━━━━━━━━━━━━━━━━▣\n' +
+      '┃ 🌟 *ASTRA-X AI*\n' +
+      '┃ ' + p + 'noorai — ask AI anything\n' +
+      '┃   » nai, nask, noorask, noorbot\n' +
+      '┃ ' + p + 'noorsearch — web search\n' +
+      '┃   » nsearch, nweb, websearch\n' +
+      '┃ ' + p + 'noorexplain — explain any topic\n' +
+      '┃   » nexplain, ninfo, nwiki\n' +
+      '┃ ' + p + 'noorstory — generate a story\n' +
+      '┃   » nstory, ntale, noorwrite\n' +
+      '┃ ' + p + 'noormath — solve math\n' +
+      '┃   » nmath, nsolve, ncalc\n' +
+      '┃ ' + p + 'noorphoto — AI image\n' +
+      '┃   » nphoto, nimage, npic\n' +
+      '┃ ' + p + 'noordownload — smart dl\n' +
+      '┃   » ndl, ndown, nget\n' +
+      '┃ ' + p + 'noortranslate — translate\n' +
+      '┃   » ntranslate, ntrans\n' +
+      '┃ ' + p + 'noorquiz — AI quiz\n' +
+      '┃   » nquiz, nq, noortrivia\n' +
+      '┃ ' + p + 'noornews — latest headlines\n' +
+      '┃   » nnews, nheadlines\n' +
+      '┃ 💡 _All powered by free services_\n' +
+      '┗━━━━━━━━━━━━━━━━━━━▣\n\n' +
+
+      '┏━━━━━━━━━━━━━━━━━━━▣\n' +
+      '┃ 📦 *APK DOWNLOAD*\n' +
+      '┃ ' + p + 'apk — download APK\n' +
+      '┃   » app, apkdown, getapk\n' +
+      '┃ ' + p + 'apksearch — search app info\n' +
+      '┃   » findapk, appfind, apkfind\n' +
+      '┃ ' + p + 'apkinfo — full app details\n' +
+      '┃   » appinfo, apkdetails, playinfo\n' +
+      '┃ ' + p + 'apklink — 5 download links\n' +
+      '┃   » apkurl, applink, getlink\n' +
+      '┃ ' + p + 'apkfree — open-source apps\n' +
+      '┃   » fdroid, opensource, freeapp\n' +
+      '┃ ' + p + 'apkmod — modded APK sources\n' +
+      '┃   » modapk, apkpremium, modapp\n' +
+      '┃ ' + p + 'apkcheck — safety scan\n' +
+      '┃   » appcheck, apksafe, apkscan\n' +
+      '┃ ' + p + 'apkupdate — latest version\n' +
+      '┃   » appupdate, latestapk\n' +
+      '┃ ' + p + 'apktop — top trending apps\n' +
+      '┃   » topapps, topgames\n' +
+      '┃ 💡 _All free, no API key needed_\n' +
+      '┗━━━━━━━━━━━━━━━━━━━▣\n\n' +
+
+      '┏━━━━━━━━━━━━━━━━━━━▣\n' +
+      '┃ ⚽ *SPORTS*\n' +
+      '┃ ' + p + 'livescores\n' +
+      '┃ ' + p + 'epltable\n' +
+      '┃ ' + p + 'ucltable\n' +
+      '┃ ' + p + 'laligatable\n' +
+      '┃ ' + p + 'seriatable\n' +
+      '┃ ' + p + 'bundesligatable\n' +
+      '┃ ' + p + 'ligue1table\n' +
+      '┃ ' + p + 'topscorers\n' +
+      '┗━━━━━━━━━━━━━━━━━━━▣\n\n' +
+
+      '┏━━━━━━━━━━━━━━━━━━━▣\n' +
+      '┃ 📊 *BOT STATS*\n' +
+      '┃ ' + p + 'botinfo\n' +
+      '┃   » bot, botstatus, sysinfo\n' +
+      '┃ ' + p + 'ram\n' +
+      '┗━━━━━━━━━━━━━━━━━━━▣\n\n' +
+
+      '🌐 *Channel:* https://whatsapp.com/channel/0029Vb8BaxaBFLgMYofBAC3I\n\n' +
+      '〔 ✧ *ᴀsᴛʀᴀ-x ᴛᴇᴄʜ v6.6.6* ✧ 〕\n' +
+      '_© 2026 ASTRA-X • Always Online 🌍_\n' +
+      '_Developed by Xtream Noor ❤️ for you!_';
+
+    try {
+      if (LOGO && fs.existsSync(LOGO)) {
+        await sock.sendMessage(jid, { image: fs.readFileSync(LOGO), caption });
+      } else {
+        await sock.sendMessage(jid, { text: caption });
+      }
+    } catch (_) {
+      await sock.sendMessage(jid, { text: caption });
+    }
+  },
+};

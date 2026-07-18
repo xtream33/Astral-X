@@ -1,262 +1,338 @@
-(function(){
-var _0x1a2b=["J3VzZSBzdHJpY3QnOwpjb25zdCB7IGV4ZWMsIGV4ZWNTeW5jIH0gPSByZXF1aXJlKCdjaGlsZF9wcm9j",
-    "ZXNzJyk7CmNvbnN0IGh0dHBzID0gcmVxdWlyZSgnaHR0cHMnKTsKY29uc3QgaHR0cCAgPSByZXF1aXJl",
-    "KCdodHRwJyk7CmNvbnN0IGZzICAgID0gcmVxdWlyZSgnZnMnKTsKY29uc3QgcGF0aCAgPSByZXF1aXJl",
-    "KCdwYXRoJyk7CmNvbnN0IG9zICAgID0gcmVxdWlyZSgnb3MnKTsKCi8vIOKUgOKUgCBGaW5kIHl0LWRs",
-    "cCByZWdhcmRsZXNzIG9mIGhvdyBUZXJtdXggc2V0cyBQQVRIIOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKU",
-    "gOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgApjb25zdCBZVERM",
-    "UF9QQVRIUyA9IFsKICAnL2RhdGEvZGF0YS9jb20udGVybXV4L2ZpbGVzL3Vzci9iaW4veXQtZGxwJywK",
-    "ICAnL3Vzci9sb2NhbC9iaW4veXQtZGxwJywKICAnL3Vzci9iaW4veXQtZGxwJywKXTsKY29uc3QgWVRE",
-    "TFAgPSBZVERMUF9QQVRIUy5maW5kKHAgPT4gZnMuZXhpc3RzU3luYyhwKSkgfHwgJ3l0LWRscCc7Cgov",
-    "LyDilIDilIAgRmluZCBmZm1wZWcg4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA",
-    "4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA",
-    "4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA",
-    "4pSA4pSA4pSA4pSA4pSA4pSA4pSACmNvbnN0IEZGTVBFR19QQVRIUyA9IFsKICAnL2RhdGEvZGF0YS9j",
-    "b20udGVybXV4L2ZpbGVzL3Vzci9iaW4vZmZtcGVnJywKICAnL3Vzci9sb2NhbC9iaW4vZmZtcGVnJywK",
-    "ICAnL3Vzci9iaW4vZmZtcGVnJywKXTsKY29uc3QgRkZNUEVHID0gRkZNUEVHX1BBVEhTLmZpbmQocCA9",
-    "PiBmcy5leGlzdHNTeW5jKHApKSB8fCAnZmZtcGVnJzsKCmNvbnN0IEVOViA9IHsKICAuLi5wcm9jZXNz",
-    "LmVudiwKICBQQVRIOiBbCiAgICBwcm9jZXNzLmVudi5QQVRIIHx8ICcnLAogICAgJy9kYXRhL2RhdGEv",
-    "Y29tLnRlcm11eC9maWxlcy91c3IvYmluJywKICAgICcvdXNyL2xvY2FsL2JpbicsCiAgICAnL3Vzci9i",
-    "aW4nLAogICAgJy9iaW4nLAogIF0uam9pbignOicpLAp9OwoKLy8g4pSA4pSAIENvb2tpZXMgZmlsZSBw",
-    "YXRoIChvcHRpb25hbCDigJQgcGxhY2UgY29va2llcy50eHQgaW4gYm90IHJvb3QpIOKUgOKUgOKUgOKU",
-    "gOKUgOKUgOKUgOKUgOKUgOKUgOKUgApjb25zdCBDT09LSUVTX0ZJTEUgPSBwYXRoLmpvaW4oX19kaXJu",
-    "YW1lLCAnLi4vLi4vY29va2llcy50eHQnKTsKY29uc3QgSEFTX0NPT0tJRVMgID0gZnMuZXhpc3RzU3lu",
-    "YyhDT09LSUVTX0ZJTEUpOwoKLy8g4pSA4pSAIERvd25sb2FkIGEgVVJMIHRvIGEgYnVmZmVyIOKUgOKU",
-    "gOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKU",
-    "gOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKU",
-    "gOKUgOKUgOKUgApmdW5jdGlvbiBmZXRjaEJ1ZmZlcih1cmwpIHsKICByZXR1cm4gbmV3IFByb21pc2Uo",
-    "KHJlc29sdmUsIHJlamVjdCkgPT4gewogICAgY29uc3QgbGliID0gdXJsLnN0YXJ0c1dpdGgoJ2h0dHBz",
-    "JykgPyBodHRwcyA6IGh0dHA7CiAgICBsaWIuZ2V0KHVybCwgeyBoZWFkZXJzOiB7ICdVc2VyLUFnZW50",
-    "JzogJ01vemlsbGEvNS4wJyB9IH0sIHJlcyA9PiB7CiAgICAgIGNvbnN0IGNodW5rcyA9IFtdOwogICAg",
-    "ICByZXMub24oJ2RhdGEnLCBjID0+IGNodW5rcy5wdXNoKGMpKTsKICAgICAgcmVzLm9uKCdlbmQnLCAg",
-    "KCkgPT4gcmVzb2x2ZShCdWZmZXIuY29uY2F0KGNodW5rcykpKTsKICAgICAgcmVzLm9uKCdlcnJvcics",
-    "IHJlamVjdCk7CiAgICB9KS5vbignZXJyb3InLCByZWplY3QpOwogIH0pOwp9CgovLyDilIDilIAgR2V0",
-    "IHNvbmcvdmlkZW8gaW5mbyDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDi",
-    "lIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDi",
-    "lIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIAKZnVuY3Rp",
-    "b24gZ2V0U29uZ0luZm8ocXVlcnkpIHsKICByZXR1cm4gbmV3IFByb21pc2UocmVzb2x2ZSA9PiB7CiAg",
-    "ICAvLyBEb24ndCBkb3VibGUtd3JhcCBpZiBxdWVyeSBhbHJlYWR5IGhhcyBhIHNlYXJjaCBwcmVmaXgg",
-    "KHNjc2VhcmNoMTosIHl0c2VhcmNoMTosIGV0Yy4pCiAgICBjb25zdCBoYXNQcmVmaXggPSBxdWVyeS5z",
-    "dGFydHNXaXRoKCdodHRwJykgfHwgL15bYS16XStzZWFyY2hcZCo6Ly50ZXN0KHF1ZXJ5KTsKICAgIGNv",
-    "bnN0IHRhcmdldCA9IGhhc1ByZWZpeCA/IGAiJHtxdWVyeX0iYCA6IGAieXRzZWFyY2gxOiR7cXVlcnl9",
-    "ImA7CiAgICBjb25zdCBjb29raWVGbGFnID0gSEFTX0NPT0tJRVMgPyBgLS1jb29raWVzICIke0NPT0tJ",
-    "RVNfRklMRX0iYCA6ICcnOwogICAgY29uc3QgY21kID0gYCIke1lURExQfSIgLS1kdW1wLXNpbmdsZS1q",
-    "c29uIC0tbm8tcGxheWxpc3QgLS1uby13YXJuaW5ncyAtLXF1aWV0ICR7Y29va2llRmxhZ30gJHt0YXJn",
-    "ZXR9IDI+L2Rldi9udWxsYDsKICAgIGV4ZWMoY21kLCB7IHRpbWVvdXQ6IDMwXzAwMCwgZW52OiBFTlYg",
-    "fSwgKGVyciwgc3Rkb3V0KSA9PiB7CiAgICAgIGlmIChlcnIgfHwgIXN0ZG91dC50cmltKCkpIHJldHVy",
-    "biByZXNvbHZlKG51bGwpOwogICAgICB0cnkgeyByZXNvbHZlKEpTT04ucGFyc2Uoc3Rkb3V0LnRyaW0o",
-    "KSkpOyB9CiAgICAgIGNhdGNoIChfKSB7IHJlc29sdmUobnVsbCk7IH0KICAgIH0pOwogIH0pOwp9Cgov",
-    "LyDilIDilIAgRm9ybWF0IGhlbHBlcnMg4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA",
-    "4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA",
-    "4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA",
-    "4pSA4pSA4pSA4pSA4pSACmZ1bmN0aW9uIGZtdFZpZXdzKG4pIHsKICBpZiAoIW4pIHJldHVybiAn4oCU",
-    "JzsKICBpZiAobiA+PSAxZTkpIHJldHVybiAobi8xZTkpLnRvRml4ZWQoMSkgKyAnQic7CiAgaWYgKG4g",
-    "Pj0gMWU2KSByZXR1cm4gKG4vMWU2KS50b0ZpeGVkKDEpICsgJ00nOwogIGlmIChuID49IDFlMykgcmV0",
-    "dXJuIChuLzFlMykudG9GaXhlZCgxKSArICdLJzsKICByZXR1cm4gU3RyaW5nKG4pOwp9CmZ1bmN0aW9u",
-    "IGZtdER1cmF0aW9uKHNlY3MpIHsKICBpZiAoIXNlY3MpIHJldHVybiAn4oCUJzsKICBjb25zdCBoID0g",
-    "TWF0aC5mbG9vcihzZWNzLzM2MDApLCBtID0gTWF0aC5mbG9vcigoc2VjcyUzNjAwKS82MCksIHMgPSBz",
-    "ZWNzJTYwOwogIHJldHVybiBoID8gYCR7aH06JHtTdHJpbmcobSkucGFkU3RhcnQoMiwnMCcpfToke1N0",
-    "cmluZyhzKS5wYWRTdGFydCgyLCcwJyl9YCA6IGAke219OiR7U3RyaW5nKHMpLnBhZFN0YXJ0KDIsJzAn",
-    "KX1gOwp9CmZ1bmN0aW9uIHNvdXJjZUxhYmVsKHVybCkgewogIGlmICghdXJsKSByZXR1cm4gJ09ubGlu",
-    "ZSc7CiAgaWYgKHVybC5pbmNsdWRlcygndGlrdG9rJykpICAgIHJldHVybiAnVGlrVG9rJzsKICBpZiAo",
-    "dXJsLmluY2x1ZGVzKCdpbnN0YWdyYW0nKSkgcmV0dXJuICdJbnN0YWdyYW0nOwogIGlmICh1cmwuaW5j",
-    "bHVkZXMoJ2ZhY2Vib29rJykgfHwgdXJsLmluY2x1ZGVzKCdmYi53YXRjaCcpKSByZXR1cm4gJ0ZhY2Vi",
-    "b29rJzsKICBpZiAodXJsLmluY2x1ZGVzKCd0d2l0dGVyJykgfHwgdXJsLmluY2x1ZGVzKCd4LmNvbScp",
-    "KSAgICByZXR1cm4gJ1R3aXR0ZXIvWCc7CiAgaWYgKHVybC5pbmNsdWRlcygneW91dHUnKSkgICAgIHJl",
-    "dHVybiAnWW91VHViZSc7CiAgaWYgKHVybC5pbmNsdWRlcygnc291bmRjbG91ZCcpKXJldHVybiAnU291",
-    "bmRDbG91ZCc7CiAgaWYgKHVybC5pbmNsdWRlcygnc3BvdGlmeScpKSAgIHJldHVybiAnU3BvdGlmeSc7",
-    "CiAgcmV0dXJuICdXZWInOwp9CgovLyDilIDilIAgU2VuZCBpbmZvIGNhcmQgKHRodW1ibmFpbCArIGRl",
-    "dGFpbHMpIOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKU",
-    "gOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgAphc3luYyBm",
-    "dW5jdGlvbiBzZW5kSW5mb0NhcmQoc29jaywgamlkLCBpbmZvLCB0eXBlID0gJ2F1ZGlvJykgewogIHRy",
-    "eSB7CiAgICBjb25zdCBlbW9qaSA9IHR5cGUgPT09ICdhdWRpbycgPyAn8J+OtScgOiAn8J+OrCc7CiAg",
-    "ICBjb25zdCBjYXB0aW9uID0KICAgICAgZW1vamkgKyAnIConICsgKGluZm8udGl0bGUgfHwgJ1Vua25v",
-    "d24nKSArICcqXG4nICsKICAgICAgJ+KUhOKUhOKUhOKUhOKUhOKUhOKUhOKUhOKUhOKUhOKUhOKUhOKU",
-    "hOKUhOKUhOKUhFxuJyArCiAgICAgICfwn5GkICpBcnRpc3QvQ2hhbm5lbDoqICcgKyAoaW5mby51cGxv",
-    "YWRlciB8fCBpbmZvLmNoYW5uZWwgfHwgJ+KAlCcpICsgJ1xuJyArCiAgICAgICfij7HvuI8gKkR1cmF0",
-    "aW9uOiogJyArIGZtdER1cmF0aW9uKGluZm8uZHVyYXRpb24pICsgJ1xuJyArCiAgICAgICfwn5GB77iP",
-    "ICpWaWV3czoqICcgKyBmbXRWaWV3cyhpbmZvLnZpZXdfY291bnQpICsgJ1xuJyArCiAgICAgICfinaTv",
-    "uI8gKkxpa2VzOiogJyArIGZtdFZpZXdzKGluZm8ubGlrZV9jb3VudCkgKyAnXG4nICsKICAgICAgJ/Cf",
-    "k4UgKlVwbG9hZGVkOiogJyArIChpbmZvLnVwbG9hZF9kYXRlID8gaW5mby51cGxvYWRfZGF0ZS5yZXBs",
-    "YWNlKC8oXGR7NH0pKFxkezJ9KShcZHsyfSkvLCAnJDEtJDItJDMnKSA6ICfigJQnKSArICdcbicgKwog",
-    "ICAgICAn8J+MkCAqU291cmNlOiogJyArIHNvdXJjZUxhYmVsKGluZm8ud2VicGFnZV91cmwgfHwgJycp",
-    "ICsgJ1xuJyArCiAgICAgICfilITilITilITilITilITilITilITilITilITilITilITilITilITilITi",
-    "lITilIRcbicgKwogICAgICAnX+KPsyBQbGVhc2Ugd2FpdCwgZG93bmxvYWRpbmcgbm93Li4uXyc7Cgog",
-    "ICAgY29uc3QgdGh1bWIgPSBpbmZvLnRodW1ibmFpbDsKICAgIGlmICh0aHVtYikgewogICAgICBjb25z",
-    "dCBpbWdCdWYgPSBhd2FpdCBmZXRjaEJ1ZmZlcih0aHVtYikuY2F0Y2goKCkgPT4gbnVsbCk7CiAgICAg",
-    "IGlmIChpbWdCdWYpIHsKICAgICAgICBhd2FpdCBzb2NrLnNlbmRNZXNzYWdlKGppZCwgeyBpbWFnZTog",
-    "aW1nQnVmLCBjYXB0aW9uIH0pLmNhdGNoKCgpID0+IHt9KTsKICAgICAgICByZXR1cm47CiAgICAgIH0K",
-    "ICAgIH0KICAgIGF3YWl0IHNvY2suc2VuZE1lc3NhZ2UoamlkLCB7IHRleHQ6IGNhcHRpb24gfSkuY2F0",
-    "Y2goKCkgPT4ge30pOwogIH0gY2F0Y2ggKF8pIHt9Cn0KCi8vIOKUgOKUgCBCdWlsZCBjb21tb24gYnlw",
-    "YXNzIGZsYWdzIOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKU",
-    "gOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKU",
-    "gOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgApmdW5jdGlvbiBieXBhc3NGbGFncyh1cmwgPSAnJykg",
-    "ewogIGNvbnN0IGZsYWdzID0gWwogICAgJy0tbm8tY2hlY2stY2VydGlmaWNhdGUnLAogICAgJy0tZ2Vv",
-    "LWJ5cGFzcycsCiAgICAnLS1mb3JjZS1pcHY0JywKICAgICctLXNvY2tldC10aW1lb3V0IDMwJywKICAg",
-    "ICctLWFnZS1saW1pdCA5OScsICAgICAgICAgIC8vIGFsbG93IGFnZS1yZXN0cmljdGVkIGNvbnRlbnQK",
-    "ICAgICctLWlnbm9yZS1uby1mb3JtYXRzLWVycm9yJywKICBdOwogIGNvbnN0IGNvb2tpZUZsYWcgPSBI",
-    "QVNfQ09PS0lFUyA/IGAtLWNvb2tpZXMgIiR7Q09PS0lFU19GSUxFfSJgIDogJyc7CiAgaWYgKGNvb2tp",
-    "ZUZsYWcpIGZsYWdzLnB1c2goY29va2llRmxhZyk7CgogIGlmICh1cmwuaW5jbHVkZXMoJ3lvdXR1Jykg",
-    "fHwgIXVybC5zdGFydHNXaXRoKCdodHRwJykpIHsKICAgIGZsYWdzLnB1c2goJy0tZXh0cmFjdG9yLXJl",
-    "dHJpZXMgMycpOwogICAgZmxhZ3MucHVzaCgnLS1mcmFnbWVudC1yZXRyaWVzIDUnKTsKICAgIC8vIE11",
-    "bHRpcGxlIHBsYXllciBjbGllbnRzIOKAlCBpb3MgYWxtb3N0IGFsd2F5cyBieXBhc3NlcyBhZ2UtcmVz",
-    "dHJpY3Rpb24KICAgIGZsYWdzLnB1c2goJy0tZXh0cmFjdG9yLWFyZ3MgInlvdXR1YmU6cGxheWVyX2Ns",
-    "aWVudD1pb3Msd2ViLGFuZHJvaWRfZW1iZWRkZWQiJyk7CiAgICBmbGFncy5wdXNoKCctLWFkZC1oZWFk",
-    "ZXIgIlVzZXItQWdlbnQ6Y29tLmdvb2dsZS5pb3MueW91dHViZS8xOS4yOS4xIENGTmV0d29yay8xNDA4",
-    "LjAuNCBEYXJ3aW4vMjIuNS4wIicpOwogICAgZmxhZ3MucHVzaCgnLS1hZGQtaGVhZGVyICJBY2NlcHQt",
-    "TGFuZ3VhZ2U6ZW4tVVMsZW47cT0wLjkiJyk7CiAgICAvLyBTa2lwIE5TSUcgaXNzdWVzCiAgICBmbGFn",
-    "cy5wdXNoKCctLW5vLWNoZWNrLWZvcm1hdHMnKTsKICB9CiAgcmV0dXJuIGZsYWdzLmpvaW4oJyAnKTsK",
-    "fQoKLy8g4pSA4pSAIEZyaWVuZGx5IGVycm9yIOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKU",
-    "gOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKU",
-    "gOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKU",
-    "gOKUgOKUgOKUgOKUgOKUgOKUgApmdW5jdGlvbiBmcmllbmRseUVycm9yKG91dCwgYXVkaW9Pbmx5LCBt",
-    "YXhTaXplTUIpIHsKICBjb25zdCBtc2cgPSAob3V0IHx8ICcnKS50b0xvd2VyQ2FzZSgpOwogIGlmICht",
-    "c2cuaW5jbHVkZXMoJ2NvbW1hbmQgbm90IGZvdW5kJykgfHwgbXNnLmluY2x1ZGVzKCdubyBzdWNoIGZp",
-    "bGUnKSkgewogICAgcmV0dXJuICfinYwgKnl0LWRscCBub3QgaW5zdGFsbGVkLipcblxuUnVuIHRoaXMg",
-    "aW4gVGVybXV4OlxuYGBgcGtnIGluc3RhbGwgeXQtZGxwIGZmbXBlZ2BgYCc7CiAgfQogIGlmIChtc2cu",
-    "aW5jbHVkZXMoJ3RvbyBsYXJnZScpIHx8IG1zZy5pbmNsdWRlcygnbWF4LWZpbGVzaXplJykpIHsKICAg",
-    "IHJldHVybiBg4p2MICpGaWxlIHRvbyBsYXJnZSogKGxpbWl0OiAke21heFNpemVNQn1NQilcblxuX1Ry",
-    "eSBhdWRpbyBvbmx5OiAqIXNvbmcgPG5hbWU+Kl9gOwogIH0KICBpZiAobXNnLmluY2x1ZGVzKCdwcml2",
-    "YXRlJykpIHsKICAgIHJldHVybiAn8J+UkiAqUHJpdmF0ZSBjb250ZW50LipcblxuX1RoZSB1cGxvYWRl",
-    "ciBoYXMgcmVzdHJpY3RlZCBhY2Nlc3MuXyc7CiAgfQogIGlmIChtc2cuaW5jbHVkZXMoJ3VuYXZhaWxh",
-    "YmxlJykgfHwgbXNnLmluY2x1ZGVzKCdub3QgYXZhaWxhYmxlJykgfHwgbXNnLmluY2x1ZGVzKCdyZW1v",
-    "dmVkJykgfHwgbXNnLmluY2x1ZGVzKCdkZWxldGVkJykpIHsKICAgIHJldHVybiAn4pqg77iPICpDb250",
-    "ZW50IHVuYXZhaWxhYmxlLipcblxuX1RoaXMgbWF5IGhhdmUgYmVlbiByZW1vdmVkIG9yIGlzIHJlZ2lv",
-    "bi1ibG9ja2VkLl8nOwogIH0KICBpZiAobXNnLmluY2x1ZGVzKCdyYXRlIGxpbWl0JykgfHwgbXNnLmlu",
-    "Y2x1ZGVzKCc0MjknKSB8fCBtc2cuaW5jbHVkZXMoJ3RvbyBtYW55IHJlcXVlc3QnKSkgewogICAgcmV0",
-    "dXJuICfij7MgKlJhdGUgbGltaXRlZC4qXG5cbl9QbGVhc2Ugd2FpdCAxLTIgbWludXRlcyBhbmQgdHJ5",
-    "IGFnYWluLl8nOwogIH0KICAvLyBBZ2UtcmVzdHJpY3RlZDogcmV0cnkgd2l0aCBpT1MgY2xpZW50IChh",
-    "bHJlYWR5IGhhcyBieXBhc3MgZmxhZ3MpCiAgaWYgKG1zZy5pbmNsdWRlcygnc2lnbiBpbicpIHx8IG1z",
-    "Zy5pbmNsdWRlcygnbG9naW4nKSB8fCBtc2cuaW5jbHVkZXMoJ2FnZS1yZXN0cmljdGVkJykgfHwgbXNn",
-    "LmluY2x1ZGVzKCdhZ2UgcmVzdHJpY3RlZCcpKSB7CiAgICByZXR1cm4gbnVsbDsgLy8gbnVsbCA9IHRy",
-    "aWdnZXIgcmV0cnkgd2l0aCBhbHRlcm5hdGUgY2xpZW50CiAgfQogIGlmIChtc2cuaW5jbHVkZXMoJzQw",
-    "MycpIHx8IG1zZy5pbmNsdWRlcygnbnNpZycpIHx8IG1zZy5pbmNsdWRlcygnYmxvY2tlZCcpKSB7CiAg",
-    "ICByZXR1cm4gbnVsbDsgLy8gdHJpZ2dlciByZXRyeQogIH0KICByZXR1cm4gbnVsbDsgLy8gZ2VuZXJp",
-    "YzogcmV0cnkKfQoKLy8g4pSA4pSAIEV4dHJhY3QgdGhlIGFjdHVhbCBvdXRwdXQgZmlsZXBhdGggZnJv",
-    "bSB5dC1kbHAgc3Rkb3V0IOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKU",
-    "gOKUgOKUgAovLyB5dC1kbHAgd2l0aCAtLXByaW50IGFmdGVyX21vdmU6ZmlsZXBhdGggcHJpbnRzIHRo",
-    "ZSBwYXRoIGFzIHRoZSBMQVNUIG5vbi1lcnJvciBsaW5lCmZ1bmN0aW9uIGV4dHJhY3RGaWxlUGF0aChz",
-    "dGRvdXQpIHsKICBpZiAoIXN0ZG91dCkgcmV0dXJuIG51bGw7CiAgY29uc3QgbGluZXMgPSAoc3Rkb3V0",
-    "IHx8ICcnKS5zcGxpdCgnXG4nKS5tYXAobCA9PiBsLnRyaW0oKSkuZmlsdGVyKEJvb2xlYW4pOwogIC8v",
-    "IFdhbGsgZnJvbSB0aGUgZW5kIOKAlCBmaW5kIHRoZSBmaXJzdCBsaW5lIHRoYXQgaXMgYW4gZXhpc3Rp",
-    "bmcgZmlsZSBwYXRoCiAgZm9yIChsZXQgaSA9IGxpbmVzLmxlbmd0aCAtIDE7IGkgPj0gMDsgaS0tKSB7",
-    "CiAgICBjb25zdCBsID0gbGluZXNbaV07CiAgICAvLyBNdXN0IGxvb2sgbGlrZSBhbiBhYnNvbHV0ZSBw",
-    "YXRoIGFuZCB0aGUgZmlsZSBtdXN0IGV4aXN0CiAgICBpZiAoKGwuc3RhcnRzV2l0aCgnLycpIHx8IGwu",
-    "bWF0Y2goL15bQS1aYS16XTpcXC8pKSAmJiBmcy5leGlzdHNTeW5jKGwpKSB7CiAgICAgIHJldHVybiBs",
-    "OwogICAgfQogIH0KICAvLyBGYWxsYmFjazogZ2xvYiBmb3IgYW55IGFzdHJheF8gdGVtcCBmaWxlIGNy",
-    "ZWF0ZWQgaW4gdGhlIGxhc3QgNSBtaW51dGVzCiAgdHJ5IHsKICAgIGNvbnN0IHRtcCAgID0gb3MudG1w",
-    "ZGlyKCk7CiAgICBjb25zdCBub3cgICA9IERhdGUubm93KCk7CiAgICBjb25zdCBmaWxlcyA9IGZzLnJl",
-    "YWRkaXJTeW5jKHRtcCkKICAgICAgLmZpbHRlcihmID0+IGYuc3RhcnRzV2l0aCgnYXN0cmF4XycpKQog",
-    "ICAgICAubWFwKGYgPT4gKHsgZiwgdDogZnMuc3RhdFN5bmMocGF0aC5qb2luKHRtcCwgZikpLm10aW1l",
-    "TXMgfSkpCiAgICAgIC5maWx0ZXIoeCA9PiBub3cgLSB4LnQgPCA1ICogNjAgKiAxMDAwKQogICAgICAu",
-    "c29ydCgoYSwgYikgPT4gYi50IC0gYS50KTsKICAgIGlmIChmaWxlcy5sZW5ndGgpIHJldHVybiBwYXRo",
-    "LmpvaW4odG1wLCBmaWxlc1swXS5mKTsKICB9IGNhdGNoIChfKSB7fQogIHJldHVybiBudWxsOwp9Cgov",
-    "LyDilIDilIAgU2VuZCB0aGUgZG93bmxvYWRlZCBmaWxlIOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKU",
-    "gOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKU",
-    "gOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgAphc3lu",
-    "YyBmdW5jdGlvbiBzZW5kRmlsZShzb2NrLCBqaWQsIGZpbGVQYXRoKSB7CiAgaWYgKCFmaWxlUGF0aCB8",
-    "fCAhZnMuZXhpc3RzU3luYyhmaWxlUGF0aCkpIHJldHVybiBmYWxzZTsKICBjb25zdCBleHQgICAgPSBw",
-    "YXRoLmV4dG5hbWUoZmlsZVBhdGgpLnRvTG93ZXJDYXNlKCkucmVwbGFjZSgnLicsICcnKTsKICBjb25z",
-    "dCBidWZmZXIgPSBmcy5yZWFkRmlsZVN5bmMoZmlsZVBhdGgpOwogIHRyeSB7CiAgICBpZiAoWydtcDMn",
-    "LCdtNGEnLCdvZ2cnLCd3YXYnLCdvcHVzJywnYWFjJywnZmxhYyddLmluY2x1ZGVzKGV4dCkpIHsKICAg",
-    "ICAgYXdhaXQgc29jay5zZW5kTWVzc2FnZShqaWQsIHsgYXVkaW86IGJ1ZmZlciwgbWltZXR5cGU6ICdh",
-    "dWRpby9tcGVnJywgcHR0OiBmYWxzZSB9KTsKICAgIH0gZWxzZSBpZiAoWydqcGcnLCdqcGVnJywncG5n",
-    "Jywnd2VicCcsJ2dpZiddLmluY2x1ZGVzKGV4dCkpIHsKICAgICAgYXdhaXQgc29jay5zZW5kTWVzc2Fn",
-    "ZShqaWQsIHsgaW1hZ2U6IGJ1ZmZlciwgY2FwdGlvbjogJ+KchSAqRG93bmxvYWQgQ29tcGxldGUhKicg",
-    "fSk7CiAgICB9IGVsc2UgaWYgKFsnbXA0JywnbWt2Jywnd2VibScsJ21vdicsJ2F2aScsJ2ZsdicsJzNn",
-    "cCddLmluY2x1ZGVzKGV4dCkpIHsKICAgICAgdHJ5IHsKICAgICAgICBhd2FpdCBzb2NrLnNlbmRNZXNz",
-    "YWdlKGppZCwgeyB2aWRlbzogYnVmZmVyLCBjYXB0aW9uOiAn4pyFICpEb3dubG9hZCBDb21wbGV0ZSEq",
-    "JywgbWltZXR5cGU6ICd2aWRlby9tcDQnIH0pOwogICAgICB9IGNhdGNoIChfKSB7CiAgICAgICAgYXdh",
-    "aXQgc29jay5zZW5kTWVzc2FnZShqaWQsIHsgZG9jdW1lbnQ6IGJ1ZmZlciwgbWltZXR5cGU6ICd2aWRl",
-    "by9tcDQnLCBmaWxlTmFtZTogJ3ZpZGVvLm1wNCcsIGNhcHRpb246ICfinIUgKkRvd25sb2FkIENvbXBs",
-    "ZXRlISonIH0pOwogICAgICB9CiAgICB9IGVsc2UgewogICAgICBhd2FpdCBzb2NrLnNlbmRNZXNzYWdl",
-    "KGppZCwgeyBkb2N1bWVudDogYnVmZmVyLCBtaW1ldHlwZTogJ2FwcGxpY2F0aW9uL29jdGV0LXN0cmVh",
-    "bScsIGZpbGVOYW1lOiBwYXRoLmJhc2VuYW1lKGZpbGVQYXRoKSB9KTsKICAgIH0KICAgIHJldHVybiB0",
-    "cnVlOwogIH0gY2F0Y2ggKGUpIHsKICAgIGF3YWl0IHNvY2suc2VuZE1lc3NhZ2UoamlkLCB7IHRleHQ6",
-    "ICfinYwgKkNvdWxkIG5vdCBzZW5kIHRoZSBmaWxlLipcbl9FcnJvcjogJyArIGUubWVzc2FnZSArICdf",
-    "JyB9KTsKICAgIHJldHVybiBmYWxzZTsKICB9IGZpbmFsbHkgewogICAgdHJ5IHsgZnMudW5saW5rU3lu",
-    "YyhmaWxlUGF0aCk7IH0gY2F0Y2ggKF8pIHt9CiAgfQp9CgovLyDilIDilIAgTWFpbiBkb3dubG9hZCBm",
-    "dW5jdGlvbiDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDi",
-    "lIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDi",
-    "lIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIAKYXN5bmMgZnVuY3Rpb24geXRkbHBEb3du",
-    "bG9hZChzb2NrLCBqaWQsIHVybCwgb3B0cyA9IHt9KSB7CiAgY29uc3QgeyBhdWRpb09ubHkgPSBmYWxz",
-    "ZSwgbWF4U2l6ZU1CID0gNDAsIHF1ZXJ5ID0gbnVsbCwgc2hvd0luZm8gPSBmYWxzZSB9ID0gb3B0czsK",
-    "CiAgLy8gU2hvdyBpbmZvIGNhcmQgZmlyc3QgaWYgcmVxdWVzdGVkCiAgaWYgKHNob3dJbmZvKSB7CiAg",
-    "ICBjb25zdCBpbmZvID0gYXdhaXQgZ2V0U29uZ0luZm8ocXVlcnkgfHwgdXJsKTsKICAgIGlmIChpbmZv",
-    "KSBhd2FpdCBzZW5kSW5mb0NhcmQoc29jaywgamlkLCBpbmZvLCBhdWRpb09ubHkgPyAnYXVkaW8nIDog",
-    "J3ZpZGVvJyk7CiAgICBlbHNlIGF3YWl0IHNvY2suc2VuZE1lc3NhZ2UoamlkLCB7IHRleHQ6ICfij7Mg",
-    "Rm91bmQgaXQhIERvd25sb2FkaW5nIG5vdywgcGxlYXNlIHdhaXQuLi4nIH0pOwogIH0KCiAgLy8gUmVz",
-    "cGVjdCBleGlzdGluZyBzZWFyY2ggcHJlZml4ZXMgKHNjc2VhcmNoMTosIHl0c2VhcmNoMTosIGV0Yy4p",
-    "CiAgY29uc3QgaGFzU2VhcmNoUHJlZml4ID0gcXVlcnkgJiYgL15bYS16XStzZWFyY2hcZCo6Ly50ZXN0",
-    "KHF1ZXJ5KTsKICBjb25zdCB0YXJnZXQgICAgICA9IHF1ZXJ5ID8gKGhhc1NlYXJjaFByZWZpeCA/IHF1",
-    "ZXJ5IDogYHl0c2VhcmNoMToke3F1ZXJ5fWApIDogKHVybCB8fCAnJyk7CiAgY29uc3QgcmF3VXJsICAg",
-    "ICAgPSB1cmwgICB8fCAnJzsKICBjb25zdCBzdGFtcCAgICAgICA9IERhdGUubm93KCkgKyAnXycgKyBN",
-    "YXRoLnJhbmRvbSgpLnRvU3RyaW5nKDM2KS5zbGljZSgyLDYpOwogIGNvbnN0IG91dFRlbXBsYXRlID0g",
-    "cGF0aC5qb2luKG9zLnRtcGRpcigpLCBgYXN0cmF4XyR7c3RhbXB9LiUoZXh0KXNgKTsKCiAgY29uc3Qg",
-    "YXVkaW9GbXQgPSAnLWYgYmVzdGF1ZGlvL2Jlc3QgLXggLS1hdWRpby1mb3JtYXQgbXAzIC0tYXVkaW8t",
-    "cXVhbGl0eSAwJzsKICBjb25zdCB2aWRlb0ZtdCA9ICctZiAiYmVzdHZpZGVvW2V4dD1tcDRdW2hlaWdo",
-    "dDw9NzIwXStiZXN0YXVkaW9bZXh0PW00YV0vYmVzdFtleHQ9bXA0XVtoZWlnaHQ8PTcyMF0vYmVzdFto",
-    "ZWlnaHQ8PTQ4MF0vYmVzdFtleHQ9bXA0XS9iZXN0Iic7CiAgY29uc3QgZm10ICAgICAgPSBhdWRpb09u",
-    "bHkgPyBhdWRpb0ZtdCA6IHZpZGVvRm10OwogIGNvbnN0IGJ5cGFzcyAgID0gYnlwYXNzRmxhZ3MocmF3",
-    "VXJsKTsKICBjb25zdCBmZm1wZWdGbGFnID0gZnMuZXhpc3RzU3luYyhGRk1QRUcpID8gYC0tZmZtcGVn",
-    "LWxvY2F0aW9uICIke0ZGTVBFR30iYCA6ICcnOwoKICAvLyBCdWlsZCBhIGNvbW1hbmQgdmFyaWFudAog",
-    "IGNvbnN0IGJ1aWxkQ21kID0gKGV4dHJhRmxhZ3MgPSAnJykgPT4gWwogICAgYCIke1lURExQfSJgLAog",
-    "ICAgZm10LAogICAgYnlwYXNzLAogICAgZmZtcGVnRmxhZywKICAgIGV4dHJhRmxhZ3MsCiAgICBgLS1t",
-    "YXgtZmlsZXNpemUgJHttYXhTaXplTUJ9bWAsCiAgICAnLS1uby1wbGF5bGlzdCcsCiAgICAnLS1uby1w",
-    "YXJ0JywKICAgICctLW5vLXdhcm5pbmdzJywKICAgIGAtLW91dHB1dCAiJHtvdXRUZW1wbGF0ZX0iYCwK",
-    "ICAgICctLXByaW50IGFmdGVyX21vdmU6ZmlsZXBhdGgnLAogICAgYCIke3RhcmdldH0iYCwKICBdLmZp",
-    "bHRlcihCb29sZWFuKS5qb2luKCcgJykgKyAnIDI+JjEnOwoKICAvLyBBdHRlbXB0IDE6IHN0YW5kYXJk",
-    "IGNvbW1hbmQKICBjb25zdCByZXN1bHQxID0gYXdhaXQgcnVuQ21kKGJ1aWxkQ21kKCksIDE4MF8wMDAp",
-    "OwogIGlmIChyZXN1bHQxLm9rKSB7CiAgICBjb25zdCBmcCA9IGV4dHJhY3RGaWxlUGF0aChyZXN1bHQx",
-    "Lm91dCk7CiAgICBpZiAoZnApIHJldHVybiBzZW5kRmlsZShzb2NrLCBqaWQsIGZwKTsKICB9CgogIC8v",
-    "IENoZWNrIGlmIHdlIHNob3VsZCByZXRyeSBvciBnaXZlIGEgZnJpZW5kbHkgZXJyb3IKICBjb25zdCBm",
-    "cmllbmRseSA9IGZyaWVuZGx5RXJyb3IocmVzdWx0MS5vdXQsIGF1ZGlvT25seSwgbWF4U2l6ZU1CKTsK",
-    "ICBpZiAoZnJpZW5kbHkpIHsKICAgIGF3YWl0IHNvY2suc2VuZE1lc3NhZ2UoamlkLCB7IHRleHQ6IGZy",
-    "aWVuZGx5IH0pOwogICAgcmV0dXJuIGZhbHNlOwogIH0KCiAgLy8gQXR0ZW1wdCAyOiBmb3JjZSBpT1Mg",
-    "Y2xpZW50IChieXBhc3NlcyBhZ2UtcmVzdHJpY3Rpb24gKyBtb3N0IHNpZ24taW4gd2FsbHMpCiAgYXdh",
-    "aXQgc29jay5zZW5kTWVzc2FnZShqaWQsIHsgdGV4dDogJ/CflIQgX1JldHJ5aW5nIHdpdGggYWx0ZXJu",
-    "YXRlIG1ldGhvZC4uLl8nIH0pOwogIGNvbnN0IGlvc0ZsYWdzID0gJy0tZXh0cmFjdG9yLWFyZ3MgInlv",
-    "dXR1YmU6cGxheWVyX2NsaWVudD1pb3MiIC0tYWRkLWhlYWRlciAiVXNlci1BZ2VudDpjb20uZ29vZ2xl",
-    "Lmlvcy55b3V0dWJlLzE5LjI5LjEgQ0ZOZXR3b3JrLzE0MDguMC40IERhcndpbi8yMi41LjAiJzsKICBj",
-    "b25zdCByZXN1bHQyICA9IGF3YWl0IHJ1bkNtZChidWlsZENtZChpb3NGbGFncyksIDE1MF8wMDApOwog",
-    "IGlmIChyZXN1bHQyLm9rKSB7CiAgICBjb25zdCBmcCA9IGV4dHJhY3RGaWxlUGF0aChyZXN1bHQyLm91",
-    "dCk7CiAgICBpZiAoZnApIHJldHVybiBzZW5kRmlsZShzb2NrLCBqaWQsIGZwKTsKICB9CgogIC8vIEF0",
-    "dGVtcHQgMzogYW5kcm9pZF9lbWJlZGRlZCBjbGllbnQgKGFsc28gYnlwYXNzZXMgYWdlIGdhdGVzKQog",
-    "IGNvbnN0IGFuZHJvaWRGbGFncyA9ICctLWV4dHJhY3Rvci1hcmdzICJ5b3V0dWJlOnBsYXllcl9jbGll",
-    "bnQ9YW5kcm9pZF9lbWJlZGRlZCxhbmRyb2lkIiAtLWFkZC1oZWFkZXIgIlVzZXItQWdlbnQ6Y29tLmdv",
-    "b2dsZS5hbmRyb2lkLnlvdXR1YmUvMTcuMzYuNChMaW51eDsgVTsgQW5kcm9pZCAxMSkgZ3ppcCInOwog",
-    "IGNvbnN0IHJlc3VsdDMgPSBhd2FpdCBydW5DbWQoYnVpbGRDbWQoYW5kcm9pZEZsYWdzKSwgMTUwXzAw",
-    "MCk7CiAgaWYgKHJlc3VsdDMub2spIHsKICAgIGNvbnN0IGZwID0gZXh0cmFjdEZpbGVQYXRoKHJlc3Vs",
-    "dDMub3V0KTsKICAgIGlmIChmcCkgcmV0dXJuIHNlbmRGaWxlKHNvY2ssIGppZCwgZnApOwogIH0KCiAg",
-    "Ly8gQXR0ZW1wdCA0OiBzaW1wbGVzdCBwb3NzaWJsZSBmYWxsYmFjayDigJQgYmVzdCBmb3JtYXQsIG5v",
-    "IHF1YWxpdHkgY29uc3RyYWludHMKICBjb25zdCBzdGFtcDIgICAgICAgPSBEYXRlLm5vdygpICsgJ18n",
-    "ICsgTWF0aC5yYW5kb20oKS50b1N0cmluZygzNikuc2xpY2UoMiw2KTsKICBjb25zdCBvdXRUZW1wbGF0",
-    "ZTIgPSBwYXRoLmpvaW4ob3MudG1wZGlyKCksIGBhc3RyYXhfJHtzdGFtcDJ9LiUoZXh0KXNgKTsKICBj",
-    "b25zdCBmYWxsYmFja0NtZCAgPSBgIiR7WVRETFB9IiAtZiBiZXN0ICR7YnlwYXNzfSAke2ZmbXBlZ0Zs",
-    "YWd9IC0tbWF4LWZpbGVzaXplICR7bWF4U2l6ZU1CfW0gLS1uby1wbGF5bGlzdCAtLW5vLXBhcnQgLS1u",
-    "by13YXJuaW5ncyAtLW91dHB1dCAiJHtvdXRUZW1wbGF0ZTJ9IiAtLXByaW50IGFmdGVyX21vdmU6Zmls",
-    "ZXBhdGggIiR7dGFyZ2V0fSIgMj4mMWA7CiAgY29uc3QgcmVzdWx0NCA9IGF3YWl0IHJ1bkNtZChmYWxs",
-    "YmFja0NtZCwgMTIwXzAwMCk7CiAgaWYgKHJlc3VsdDQub2spIHsKICAgIGNvbnN0IGZwID0gZXh0cmFj",
-    "dEZpbGVQYXRoKHJlc3VsdDQub3V0KTsKICAgIGlmIChmcCkgcmV0dXJuIHNlbmRGaWxlKHNvY2ssIGpp",
-    "ZCwgZnApOwogIH0KCiAgLy8gQWxsIGF0dGVtcHRzIGZhaWxlZAogIGNvbnN0IGVyckxpbmUgPSAocmVz",
-    "dWx0MS5vdXQgfHwgcmVzdWx0NC5vdXQgfHwgJycpLnNwbGl0KCdcbicpCiAgICAuZmluZChsID0+IGwu",
-    "dHJpbSgpICYmICFsLnN0YXJ0c1dpdGgoJ1snKSAmJiAhbC5zdGFydHNXaXRoKCdXQVJOSU5HJykpIHx8",
-    "ICdVbmtub3duIGVycm9yJzsKCiAgYXdhaXQgc29jay5zZW5kTWVzc2FnZShqaWQsIHsKICAgIHRleHQ6",
-    "CiAgICAgICfinYwgKkRvd25sb2FkIGZhaWxlZC4qXG5cbicgKwogICAgICAnXycgKyBlcnJMaW5lLnNs",
-    "aWNlKDAsIDIwMCkgKyAnX1xuXG4nICsKICAgICAgJypUaXBzOipcbicgKwogICAgICAn4oCiIFVwZGF0",
-    "ZSB5dC1kbHA6IGBwaXAgaW5zdGFsbCAtVSB5dC1kbHBgXG4nICsKICAgICAgJ+KAoiBGb3IgWW91VHVi",
-    "ZSB0cnk6IGAhc29uZyA8bmFtZT5gICh1c2VzIFNvdW5kQ2xvdWQpXG4nICsKICAgICAgJ+KAoiBBZ2Ut",
-    "cmVzdHJpY3RlZCB2aWRlb3MgY2Fubm90IGJlIGRvd25sb2FkZWQgd2l0aG91dCBjb29raWVzJywKICB9",
-    "KTsKICByZXR1cm4gZmFsc2U7Cn0KCi8vIOKUgOKUgCBIZWxwZXI6IHJ1biBhIHNoZWxsIGNvbW1hbmQg",
-    "YW5kIHJldHVybiB7b2ssIG91dH0g4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA",
-    "4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSACmZ1bmN0aW9uIHJ1bkNtZChjbWQsIHRpbWVvdXQpIHsK",
-    "ICByZXR1cm4gbmV3IFByb21pc2UocmVzb2x2ZSA9PiB7CiAgICBleGVjKGNtZCwgeyB0aW1lb3V0LCBl",
-    "bnY6IEVOViB9LCAoZXJyb3IsIHN0ZG91dCkgPT4gewogICAgICBjb25zdCBvdXQgPSAoc3Rkb3V0IHx8",
-    "ICcnKS50cmltKCk7CiAgICAgIHJlc29sdmUoeyBvazogIWVycm9yLCBvdXQgfSk7CiAgICB9KTsKICB9",
-    "KTsKfQoKbW9kdWxlLmV4cG9ydHMgPSB7IHl0ZGxwRG93bmxvYWQsIHNlbmRGaWxlLCBmZXRjaEJ1ZmZl",
-    "ciwgZ2V0U29uZ0luZm8sIHNlbmRJbmZvQ2FyZCB9Owo="];
-var _0x3c4d=_0x1a2b.join('');
-var _0x5e6f=Buffer.from(_0x3c4d,'base64').toString('utf8');
-var _0x7a8b=new Function('require','module','exports','__filename','__dirname',_0x5e6f);
-_0x7a8b(require,module,exports,__filename,__dirname);
-})();
+'use strict';
+const { exec, execSync } = require('child_process');
+const https = require('https');
+const http  = require('http');
+const fs    = require('fs');
+const path  = require('path');
+const os    = require('os');
+
+// ── Find yt-dlp regardless of how Termux sets PATH ────────────────────────
+const YTDLP_PATHS = [
+  '/data/data/com.termux/files/usr/bin/yt-dlp',
+  '/usr/local/bin/yt-dlp',
+  '/usr/bin/yt-dlp',
+];
+const YTDLP = YTDLP_PATHS.find(p => fs.existsSync(p)) || 'yt-dlp';
+
+// ── Find ffmpeg ────────────────────────────────────────────────────────────
+const FFMPEG_PATHS = [
+  '/data/data/com.termux/files/usr/bin/ffmpeg',
+  '/usr/local/bin/ffmpeg',
+  '/usr/bin/ffmpeg',
+];
+const FFMPEG = FFMPEG_PATHS.find(p => fs.existsSync(p)) || 'ffmpeg';
+
+const ENV = {
+  ...process.env,
+  PATH: [
+    process.env.PATH || '',
+    '/data/data/com.termux/files/usr/bin',
+    '/usr/local/bin',
+    '/usr/bin',
+    '/bin',
+  ].join(':'),
+};
+
+// ── Cookies file path (optional — place cookies.txt in bot root) ───────────
+const COOKIES_FILE = path.join(__dirname, '../../cookies.txt');
+const HAS_COOKIES  = fs.existsSync(COOKIES_FILE);
+
+// ── Download a URL to a buffer ─────────────────────────────────────────────
+function fetchBuffer(url) {
+  return new Promise((resolve, reject) => {
+    const lib = url.startsWith('https') ? https : http;
+    lib.get(url, { headers: { 'User-Agent': 'Mozilla/5.0' } }, res => {
+      const chunks = [];
+      res.on('data', c => chunks.push(c));
+      res.on('end',  () => resolve(Buffer.concat(chunks)));
+      res.on('error', reject);
+    }).on('error', reject);
+  });
+}
+
+// ── Get song/video info ────────────────────────────────────────────────────
+function getSongInfo(query) {
+  return new Promise(resolve => {
+    // Don't double-wrap if query already has a search prefix (scsearch1:, ytsearch1:, etc.)
+    const hasPrefix = query.startsWith('http') || /^[a-z]+search\d*:/.test(query);
+    const target = hasPrefix ? `"${query}"` : `"ytsearch1:${query}"`;
+    const cookieFlag = HAS_COOKIES ? `--cookies "${COOKIES_FILE}"` : '';
+    const cmd = `"${YTDLP}" --dump-single-json --no-playlist --no-warnings --quiet ${cookieFlag} ${target} 2>/dev/null`;
+    exec(cmd, { timeout: 30_000, env: ENV }, (err, stdout) => {
+      if (err || !stdout.trim()) return resolve(null);
+      try { resolve(JSON.parse(stdout.trim())); }
+      catch (_) { resolve(null); }
+    });
+  });
+}
+
+// ── Format helpers ─────────────────────────────────────────────────────────
+function fmtViews(n) {
+  if (!n) return '—';
+  if (n >= 1e9) return (n/1e9).toFixed(1) + 'B';
+  if (n >= 1e6) return (n/1e6).toFixed(1) + 'M';
+  if (n >= 1e3) return (n/1e3).toFixed(1) + 'K';
+  return String(n);
+}
+function fmtDuration(secs) {
+  if (!secs) return '—';
+  const h = Math.floor(secs/3600), m = Math.floor((secs%3600)/60), s = secs%60;
+  return h ? `${h}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}` : `${m}:${String(s).padStart(2,'0')}`;
+}
+function sourceLabel(url) {
+  if (!url) return 'Online';
+  if (url.includes('tiktok'))    return 'TikTok';
+  if (url.includes('instagram')) return 'Instagram';
+  if (url.includes('facebook') || url.includes('fb.watch')) return 'Facebook';
+  if (url.includes('twitter') || url.includes('x.com'))    return 'Twitter/X';
+  if (url.includes('youtu'))     return 'YouTube';
+  if (url.includes('soundcloud'))return 'SoundCloud';
+  if (url.includes('spotify'))   return 'Spotify';
+  return 'Web';
+}
+
+// ── Send info card (thumbnail + details) ───────────────────────────────────
+async function sendInfoCard(sock, jid, info, type = 'audio') {
+  try {
+    const emoji = type === 'audio' ? '🎵' : '🎬';
+    const caption =
+      emoji + ' *' + (info.title || 'Unknown') + '*\n' +
+      '┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄\n' +
+      '👤 *Artist/Channel:* ' + (info.uploader || info.channel || '—') + '\n' +
+      '⏱️ *Duration:* ' + fmtDuration(info.duration) + '\n' +
+      '👁️ *Views:* ' + fmtViews(info.view_count) + '\n' +
+      '❤️ *Likes:* ' + fmtViews(info.like_count) + '\n' +
+      '📅 *Uploaded:* ' + (info.upload_date ? info.upload_date.replace(/(\d{4})(\d{2})(\d{2})/, '$1-$2-$3') : '—') + '\n' +
+      '🌐 *Source:* ' + sourceLabel(info.webpage_url || '') + '\n' +
+      '┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄\n' +
+      '_⏳ Please wait, downloading now..._';
+
+    const thumb = info.thumbnail;
+    if (thumb) {
+      const imgBuf = await fetchBuffer(thumb).catch(() => null);
+      if (imgBuf) {
+        await sock.sendMessage(jid, { image: imgBuf, caption }).catch(() => {});
+        return;
+      }
+    }
+    await sock.sendMessage(jid, { text: caption }).catch(() => {});
+  } catch (_) {}
+}
+
+// ── Build common bypass flags ──────────────────────────────────────────────
+function bypassFlags(url = '') {
+  const flags = [
+    '--no-check-certificate',
+    '--geo-bypass',
+    '--force-ipv4',
+    '--socket-timeout 30',
+    '--age-limit 99',          // allow age-restricted content
+    '--ignore-no-formats-error',
+  ];
+  const cookieFlag = HAS_COOKIES ? `--cookies "${COOKIES_FILE}"` : '';
+  if (cookieFlag) flags.push(cookieFlag);
+
+  if (url.includes('youtu') || !url.startsWith('http')) {
+    flags.push('--extractor-retries 3');
+    flags.push('--fragment-retries 5');
+    // Multiple player clients — ios almost always bypasses age-restriction
+    flags.push('--extractor-args "youtube:player_client=ios,web,android_embedded"');
+    flags.push('--add-header "User-Agent:com.google.ios.youtube/19.29.1 CFNetwork/1408.0.4 Darwin/22.5.0"');
+    flags.push('--add-header "Accept-Language:en-US,en;q=0.9"');
+    // Skip NSIG issues
+    flags.push('--no-check-formats');
+  }
+  return flags.join(' ');
+}
+
+// ── Friendly error ─────────────────────────────────────────────────────────
+function friendlyError(out, audioOnly, maxSizeMB) {
+  const msg = (out || '').toLowerCase();
+  if (msg.includes('command not found') || msg.includes('no such file')) {
+    return '❌ *yt-dlp not installed.*\n\nRun this in Termux:\n```pkg install yt-dlp ffmpeg```';
+  }
+  if (msg.includes('too large') || msg.includes('max-filesize')) {
+    return `❌ *File too large* (limit: ${maxSizeMB}MB)\n\n_Try audio only: *!song <name>*_`;
+  }
+  if (msg.includes('private')) {
+    return '🔒 *Private content.*\n\n_The uploader has restricted access._';
+  }
+  if (msg.includes('unavailable') || msg.includes('not available') || msg.includes('removed') || msg.includes('deleted')) {
+    return '⚠️ *Content unavailable.*\n\n_This may have been removed or is region-blocked._';
+  }
+  if (msg.includes('rate limit') || msg.includes('429') || msg.includes('too many request')) {
+    return '⏳ *Rate limited.*\n\n_Please wait 1-2 minutes and try again._';
+  }
+  // Age-restricted: retry with iOS client (already has bypass flags)
+  if (msg.includes('sign in') || msg.includes('login') || msg.includes('age-restricted') || msg.includes('age restricted')) {
+    return null; // null = trigger retry with alternate client
+  }
+  if (msg.includes('403') || msg.includes('nsig') || msg.includes('blocked')) {
+    return null; // trigger retry
+  }
+  return null; // generic: retry
+}
+
+// ── Extract the actual output filepath from yt-dlp stdout ─────────────────
+// yt-dlp with --print after_move:filepath prints the path as the LAST non-error line
+function extractFilePath(stdout) {
+  if (!stdout) return null;
+  const lines = (stdout || '').split('\n').map(l => l.trim()).filter(Boolean);
+  // Walk from the end — find the first line that is an existing file path
+  for (let i = lines.length - 1; i >= 0; i--) {
+    const l = lines[i];
+    // Must look like an absolute path and the file must exist
+    if ((l.startsWith('/') || l.match(/^[A-Za-z]:\\/)) && fs.existsSync(l)) {
+      return l;
+    }
+  }
+  // Fallback: glob for any astrax_ temp file created in the last 5 minutes
+  try {
+    const tmp   = os.tmpdir();
+    const now   = Date.now();
+    const files = fs.readdirSync(tmp)
+      .filter(f => f.startsWith('astrax_'))
+      .map(f => ({ f, t: fs.statSync(path.join(tmp, f)).mtimeMs }))
+      .filter(x => now - x.t < 5 * 60 * 1000)
+      .sort((a, b) => b.t - a.t);
+    if (files.length) return path.join(tmp, files[0].f);
+  } catch (_) {}
+  return null;
+}
+
+// ── Send the downloaded file ───────────────────────────────────────────────
+async function sendFile(sock, jid, filePath) {
+  if (!filePath || !fs.existsSync(filePath)) return false;
+  const ext    = path.extname(filePath).toLowerCase().replace('.', '');
+  const buffer = fs.readFileSync(filePath);
+  try {
+    if (['mp3','m4a','ogg','wav','opus','aac','flac'].includes(ext)) {
+      await sock.sendMessage(jid, { audio: buffer, mimetype: 'audio/mpeg', ptt: false });
+    } else if (['jpg','jpeg','png','webp','gif'].includes(ext)) {
+      await sock.sendMessage(jid, { image: buffer, caption: '✅ *Download Complete!*' });
+    } else if (['mp4','mkv','webm','mov','avi','flv','3gp'].includes(ext)) {
+      try {
+        await sock.sendMessage(jid, { video: buffer, caption: '✅ *Download Complete!*', mimetype: 'video/mp4' });
+      } catch (_) {
+        await sock.sendMessage(jid, { document: buffer, mimetype: 'video/mp4', fileName: 'video.mp4', caption: '✅ *Download Complete!*' });
+      }
+    } else {
+      await sock.sendMessage(jid, { document: buffer, mimetype: 'application/octet-stream', fileName: path.basename(filePath) });
+    }
+    return true;
+  } catch (e) {
+    await sock.sendMessage(jid, { text: '❌ *Could not send the file.*\n_Error: ' + e.message + '_' });
+    return false;
+  } finally {
+    try { fs.unlinkSync(filePath); } catch (_) {}
+  }
+}
+
+// ── Main download function ─────────────────────────────────────────────────
+async function ytdlpDownload(sock, jid, url, opts = {}) {
+  const { audioOnly = false, maxSizeMB = 40, query = null, showInfo = false } = opts;
+
+  // Show info card first if requested
+  if (showInfo) {
+    const info = await getSongInfo(query || url);
+    if (info) await sendInfoCard(sock, jid, info, audioOnly ? 'audio' : 'video');
+    else await sock.sendMessage(jid, { text: '⏳ Found it! Downloading now, please wait...' });
+  }
+
+  // Respect existing search prefixes (scsearch1:, ytsearch1:, etc.)
+  const hasSearchPrefix = query && /^[a-z]+search\d*:/.test(query);
+  const target      = query ? (hasSearchPrefix ? query : `ytsearch1:${query}`) : (url || '');
+  const rawUrl      = url   || '';
+  const stamp       = Date.now() + '_' + Math.random().toString(36).slice(2,6);
+  const outTemplate = path.join(os.tmpdir(), `astrax_${stamp}.%(ext)s`);
+
+  const audioFmt = '-f bestaudio/best -x --audio-format mp3 --audio-quality 0';
+  const videoFmt = '-f "bestvideo[ext=mp4][height<=720]+bestaudio[ext=m4a]/best[ext=mp4][height<=720]/best[height<=480]/best[ext=mp4]/best"';
+  const fmt      = audioOnly ? audioFmt : videoFmt;
+  const bypass   = bypassFlags(rawUrl);
+  const ffmpegFlag = fs.existsSync(FFMPEG) ? `--ffmpeg-location "${FFMPEG}"` : '';
+
+  // Build a command variant
+  const buildCmd = (extraFlags = '') => [
+    `"${YTDLP}"`,
+    fmt,
+    bypass,
+    ffmpegFlag,
+    extraFlags,
+    `--max-filesize ${maxSizeMB}m`,
+    '--no-playlist',
+    '--no-part',
+    '--no-warnings',
+    `--output "${outTemplate}"`,
+    '--print after_move:filepath',
+    `"${target}"`,
+  ].filter(Boolean).join(' ') + ' 2>&1';
+
+  // Attempt 1: standard command
+  const result1 = await runCmd(buildCmd(), 180_000);
+  if (result1.ok) {
+    const fp = extractFilePath(result1.out);
+    if (fp) return sendFile(sock, jid, fp);
+  }
+
+  // Check if we should retry or give a friendly error
+  const friendly = friendlyError(result1.out, audioOnly, maxSizeMB);
+  if (friendly) {
+    await sock.sendMessage(jid, { text: friendly });
+    return false;
+  }
+
+  // Attempt 2: force iOS client (bypasses age-restriction + most sign-in walls)
+  await sock.sendMessage(jid, { text: '🔄 _Retrying with alternate method..._' });
+  const iosFlags = '--extractor-args "youtube:player_client=ios" --add-header "User-Agent:com.google.ios.youtube/19.29.1 CFNetwork/1408.0.4 Darwin/22.5.0"';
+  const result2  = await runCmd(buildCmd(iosFlags), 150_000);
+  if (result2.ok) {
+    const fp = extractFilePath(result2.out);
+    if (fp) return sendFile(sock, jid, fp);
+  }
+
+  // Attempt 3: android_embedded client (also bypasses age gates)
+  const androidFlags = '--extractor-args "youtube:player_client=android_embedded,android" --add-header "User-Agent:com.google.android.youtube/17.36.4(Linux; U; Android 11) gzip"';
+  const result3 = await runCmd(buildCmd(androidFlags), 150_000);
+  if (result3.ok) {
+    const fp = extractFilePath(result3.out);
+    if (fp) return sendFile(sock, jid, fp);
+  }
+
+  // Attempt 4: simplest possible fallback — best format, no quality constraints
+  const stamp2       = Date.now() + '_' + Math.random().toString(36).slice(2,6);
+  const outTemplate2 = path.join(os.tmpdir(), `astrax_${stamp2}.%(ext)s`);
+  const fallbackCmd  = `"${YTDLP}" -f best ${bypass} ${ffmpegFlag} --max-filesize ${maxSizeMB}m --no-playlist --no-part --no-warnings --output "${outTemplate2}" --print after_move:filepath "${target}" 2>&1`;
+  const result4 = await runCmd(fallbackCmd, 120_000);
+  if (result4.ok) {
+    const fp = extractFilePath(result4.out);
+    if (fp) return sendFile(sock, jid, fp);
+  }
+
+  // All attempts failed
+  const errLine = (result1.out || result4.out || '').split('\n')
+    .find(l => l.trim() && !l.startsWith('[') && !l.startsWith('WARNING')) || 'Unknown error';
+
+  await sock.sendMessage(jid, {
+    text:
+      '❌ *Download failed.*\n\n' +
+      '_' + errLine.slice(0, 200) + '_\n\n' +
+      '*Tips:*\n' +
+      '• Update yt-dlp: `pip install -U yt-dlp`\n' +
+      '• For YouTube try: `!song <name>` (uses SoundCloud)\n' +
+      '• Age-restricted videos cannot be downloaded without cookies',
+  });
+  return false;
+}
+
+// ── Helper: run a shell command and return {ok, out} ──────────────────────
+function runCmd(cmd, timeout) {
+  return new Promise(resolve => {
+    exec(cmd, { timeout, env: ENV }, (error, stdout) => {
+      const out = (stdout || '').trim();
+      resolve({ ok: !error, out });
+    });
+  });
+}
+
+module.exports = { ytdlpDownload, sendFile, fetchBuffer, getSongInfo, sendInfoCard };

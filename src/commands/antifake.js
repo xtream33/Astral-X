@@ -1,35 +1,38 @@
-(function(){
-var _0x1a2b=["J3VzZSBzdHJpY3QnOwpjb25zdCBzZXR0aW5ncyA9IHJlcXVpcmUoJy4uL3V0aWxzL3NldHRpbmdzJyk7",
-    "CmNvbnN0IHsgc21hcnRUb2dnbGUsIHRvZ2dsZU1zZywgcGFyc2VPbk9mZiB9ID0gcmVxdWlyZSgnLi4v",
-    "dXRpbHMvdG9nZ2xlJyk7Cm1vZHVsZS5leHBvcnRzID0gewogIG5hbWU6ICdhbnRpZmFrZScsIGNhdGVn",
-    "b3J5OiAnYW50aScsCiAgZGVzY3JpcHRpb246ICdCbG9jayBub24tbG9jYWwgbnVtYmVycy4gVXNhZ2U6",
-    "IC5hbnRpZmFrZSBvbiAvIC5hbnRpZmFrZSBvZmYgLyAuYW50aWZha2UgMjU2JywKICBleGVjdXRlOiBh",
-    "c3luYyAoc29jaywgbXNnLCBhcmdzKSA9PiB7CiAgICBjb25zdCBqaWQgPSBtc2cua2V5LnJlbW90ZUpp",
-    "ZDsKICAgIGlmICghamlkLmVuZHNXaXRoKCdAZy51cycpKSByZXR1cm4gc29jay5zZW5kTWVzc2FnZShq",
-    "aWQsIHsgdGV4dDogJ+KdjCBHcm91cHMgb25seS4nIH0pOwogICAgLy8gSWYgYXJnIGlzIGEgY291bnRy",
-    "eSBjb2RlIG51bWJlciAoZS5nLiAyNTYpLCBzZXQgdGhlIGNvZGUgYW5kIGVuYWJsZQogICAgaWYgKGFy",
-    "Z3NbMF0gJiYgL15cKz9cZCskLy50ZXN0KGFyZ3NbMF0pKSB7CiAgICAgIGNvbnN0IGNvZGUgPSBhcmdz",
-    "WzBdLnJlcGxhY2UoJysnLCAnJyk7CiAgICAgIHNldHRpbmdzLnNldCgnYW50aWZha2U6JyArIGppZCwg",
-    "dHJ1ZSk7CiAgICAgIHNldHRpbmdzLnNldCgnYW50aWZha2VfY29kZTonICsgamlkLCBjb2RlKTsKICAg",
-    "ICAgcmV0dXJuIHNvY2suc2VuZE1lc3NhZ2UoamlkLCB7CiAgICAgICAgdGV4dDoKICAgICAgICAgICfj",
-    "gJQg4pynIOG0gHPhtJvKgOG0gC14IOKcpyDjgJVcbicgKwogICAgICAgICAgJ+KUj+KUgeKUgeKUgeKU",
-    "geKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKWo1xuJyArCiAgICAgICAgICAn",
-    "4pSDIPCfm6HvuI8gKkFOVEkgRkFLRSpcbicgKwogICAgICAgICAgJ+KUoOKUgOKUgOKUgOKUgOKUgOKU",
-    "gOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgFxuJyArCiAgICAgICAgICAn4pSD",
-    "IFN0YXR1czogKvCfn6IgRU5BQkxFRCpcbicgKwogICAgICAgICAgJ+KUgyBDb3VudHJ5IGNvZGU6ICor",
-    "JyArIGNvZGUgKyAnKlxuJyArCiAgICAgICAgICAn4pSg4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA",
-    "4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSAXG4nICsKICAgICAgICAgICfilIMgT25seSArJyAr",
-    "IGNvZGUgKyAnIG51bWJlcnMgYXJlIGFsbG93ZWQuXG4nICsKICAgICAgICAgICfilJfilIHilIHilIHi",
-    "lIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilqMnLAogICAgICB9KTsKICAg",
-    "IH0KICAgIGNvbnN0IGZvcmNlT24gPSBwYXJzZU9uT2ZmKGFyZ3NbMF0pOwogICAgY29uc3QgcmVzdWx0",
-    "ICA9IHNtYXJ0VG9nZ2xlKCdhbnRpZmFrZTonICsgamlkLCBmb3JjZU9uKTsKICAgIGNvbnN0IGNvZGUg",
-    "ICAgPSBzZXR0aW5ncy5nZXQoJ2FudGlmYWtlX2NvZGU6JyArIGppZCkgfHwgJz8/JzsKICAgIGF3YWl0",
-    "IHNvY2suc2VuZE1lc3NhZ2UoamlkLCB7CiAgICAgIHRleHQ6IHRvZ2dsZU1zZygnQW50aSBGYWtlJywg",
-    "J/Cfm6HvuI8nLCByZXN1bHQsCiAgICAgICAgJ09ubHkgKisnICsgY29kZSArICcqIG51bWJlcnMgYWxs",
-    "b3dlZFxu4pSDIF9TZXQgY29kZTogKi5hbnRpZmFrZSA8Y29kZT4qXycsCiAgICAgICAgJ0FsbCBudW1i",
-    "ZXJzIGNhbiBqb2luIGZyZWVseScKICAgICAgKSwKICAgIH0pOwogIH0sCn07Cg=="];
-var _0x3c4d=_0x1a2b.join('');
-var _0x5e6f=Buffer.from(_0x3c4d,'base64').toString('utf8');
-var _0x7a8b=new Function('require','module','exports','__filename','__dirname',_0x5e6f);
-_0x7a8b(require,module,exports,__filename,__dirname);
-})();
+'use strict';
+const settings = require('../utils/settings');
+const { smartToggle, toggleMsg, parseOnOff } = require('../utils/toggle');
+module.exports = {
+  name: 'antifake', category: 'anti',
+  description: 'Block non-local numbers. Usage: .antifake on / .antifake off / .antifake 256',
+  execute: async (sock, msg, args) => {
+    const jid = msg.key.remoteJid;
+    if (!jid.endsWith('@g.us')) return sock.sendMessage(jid, { text: '❌ Groups only.' });
+    // If arg is a country code number (e.g. 256), set the code and enable
+    if (args[0] && /^\+?\d+$/.test(args[0])) {
+      const code = args[0].replace('+', '');
+      settings.set('antifake:' + jid, true);
+      settings.set('antifake_code:' + jid, code);
+      return sock.sendMessage(jid, {
+        text:
+          '〔 ✧ ᴀsᴛʀᴀ-x ✧ 〕\n' +
+          '┏━━━━━━━━━━━━━━━━━▣\n' +
+          '┃ 🛡️ *ANTI FAKE*\n' +
+          '┠───────────────────\n' +
+          '┃ Status: *🟢 ENABLED*\n' +
+          '┃ Country code: *+' + code + '*\n' +
+          '┠───────────────────\n' +
+          '┃ Only +' + code + ' numbers are allowed.\n' +
+          '┗━━━━━━━━━━━━━━━━━▣',
+      });
+    }
+    const forceOn = parseOnOff(args[0]);
+    const result  = smartToggle('antifake:' + jid, forceOn);
+    const code    = settings.get('antifake_code:' + jid) || '??';
+    await sock.sendMessage(jid, {
+      text: toggleMsg('Anti Fake', '🛡️', result,
+        'Only *+' + code + '* numbers allowed\n┃ _Set code: *.antifake <code>*_',
+        'All numbers can join freely'
+      ),
+    });
+  },
+};

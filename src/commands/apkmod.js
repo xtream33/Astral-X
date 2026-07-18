@@ -1,44 +1,42 @@
-(function(){
-var _0x1a2b=["J3VzZSBzdHJpY3QnOwpjb25zdCB7IHNlYXJjaEFwcCB9ID0gcmVxdWlyZSgnLi4vdXRpbHMvYXBrZmV0",
-    "Y2gnKTsKY29uc3QgeyBib3ggfSA9IHJlcXVpcmUoJy4uL3V0aWxzL2Zvcm1hdCcpOwoKbW9kdWxlLmV4",
-    "cG9ydHMgPSB7CiAgbmFtZTogJ2Fwa21vZCcsCiAgYWxpYXNlczogWydtb2RhcGsnLCAnYXBrcHJlbWl1",
-    "bScsICdtb2RhcHAnLCAnYXBraGFjayddLAogIGNhdGVnb3J5OiAnYXBrLWRvd25sb2FkJywKICBkZXNj",
-    "cmlwdGlvbjogJ0ZpbmQgbW9kZGVkL3ByZW1pdW0gQVBLIHNvdXJjZXMuIFVzYWdlOiAuYXBrbW9kIDxh",
-    "cHAgbmFtZT4nLAogIGV4ZWN1dGU6IGFzeW5jIChzb2NrLCBtc2csIGFyZ3MpID0+IHsKICAgIGNvbnN0",
-    "IGppZCAgID0gbXNnLmtleS5yZW1vdGVKaWQ7CiAgICBjb25zdCBxdWVyeSA9IGFyZ3Muam9pbignICcp",
-    "LnRyaW0oKTsKICAgIGlmICghcXVlcnkpIHJldHVybiBzb2NrLnNlbmRNZXNzYWdlKGppZCwgewogICAg",
-    "ICB0ZXh0OiBib3goJ/CflJMgKk1PRCBBUEsgRklOREVSKicsCiAgICAgICAgJ+KdkyBQcm92aWRlIGFu",
-    "IGFwcCBuYW1lIVxuXG7wn5OMICpVc2FnZToqIC5hcGttb2QgPGFwcCBuYW1lPlxuXG7wn5KhICpFeGFt",
-    "cGxlczoqXG4uYXBrbW9kIFNwb3RpZnlcbi5hcGttb2QgTWluZWNyYWZ0XG4uYXBrbW9kIFlvdVR1YmVc",
-    "blxu4pqg77iPIF9Gb3IgZWR1Y2F0aW9uYWwvcGVyc29uYWwgdXNlIG9ubHlfJwogICAgICApLAogICAg",
-    "fSk7CgogICAgYXdhaXQgc29jay5zZW5kTWVzc2FnZShqaWQsIHsgdGV4dDogJ+OAlCDinKcg4bSAc+G0",
-    "m8qA4bSALXgg4bSb4bSH4bSEypwg4pynIOOAlVxu4pSP4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB",
-    "4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pajXG7ilIMg8J+UkyAq4bSN4bSP4bSFIOG0gOG0",
-    "mOG0iyDqnLDJqsm04bSF4bSHyoAqXG7ilKDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDi",
-    "lIDilIDilIDilIDilIDilIDilIDilIDilIDilIBcbuKUgyBfRmluZGluZyBtb2Qgc291cmNlcyBmb3Ig",
-    "KicgKyBxdWVyeSArICcqLi4uX1xu4pSX4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB",
-    "4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pajJyB9KTsKCiAgICB0cnkgewogICAgICBjb25zdCBhcHAgID0g",
-    "YXdhaXQgc2VhcmNoQXBwKHF1ZXJ5KS5jYXRjaCgoKSA9PiBudWxsKTsKICAgICAgY29uc3QgbmFtZSA9",
-    "IGFwcCA/IChhcHAubmFtZSB8fCBhcHAucGtnKSA6IHF1ZXJ5OwogICAgICBjb25zdCBzbHVnID0gbmFt",
-    "ZS50b0xvd2VyQ2FzZSgpLnJlcGxhY2UoL1xzKy9nLCAnLScpLnJlcGxhY2UoL1teYS16MC05LV0vZywg",
-    "JycpOwogICAgICBjb25zdCBlbmMgID0gZW5jb2RlVVJJQ29tcG9uZW50KG5hbWUpOwoKICAgICAgY29u",
-    "c3QgYm9keSA9CiAgICAgICAgJ/CflJMgKk1vZCBTb3VyY2VzIGZvcjogJyArIG5hbWUgKyAnKlxu4pSB",
-    "4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSBXG5cbicgKwogICAgICAgICcx77iP",
-    "4oOjICpIYXBweU1vZDoqXG5odHRwczovL3d3dy5oYXBweW1vZC5jb20vc2VhcmNoLmh0bWw/cT0nICsg",
-    "ZW5jICsgJ1xuXG4nICsKICAgICAgICAnMu+4j+KDoyAqTW9kQ29tYm86KlxuaHR0cHM6Ly9tb2Rjb21i",
-    "by5jb20vc2VhcmNoP3E9JyArIGVuYyArICdcblxuJyArCiAgICAgICAgJzPvuI/ig6MgKkFQS0RvbmU6",
-    "KlxuaHR0cHM6Ly9hcGtkb25lLmNvbS8/cz0nICsgZW5jICsgJ1xuXG4nICsKICAgICAgICAnNO+4j+KD",
-    "oyAqTW9keW9sbzoqXG5odHRwczovL21vZHlvbG8uY29tLz9zPScgKyBlbmMgKyAnXG5cbicgKwogICAg",
-    "ICAgICc177iP4oOjICpSZXZETDoqXG5odHRwczovL3d3dy5yZXZkbC5jb20vP3M9JyArIGVuYyArICdc",
-    "blxuJyArCiAgICAgICAgJ+KUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgVxu",
-    "JyArCiAgICAgICAgJ+KaoO+4jyBfTW9kIEFQS3MgYXJlIGZvciBwZXJzb25hbC9lZHVjYXRpb25hbCB1",
-    "c2Ugb25seS4gQWx3YXlzIHNjYW4gd2l0aCBhbnRpdmlydXMgYmVmb3JlIGluc3RhbGxpbmcuXyc7Cgog",
-    "ICAgICBhd2FpdCBzb2NrLnNlbmRNZXNzYWdlKGppZCwgeyB0ZXh0OiBib3goJ/CflJMgKk1PRCBBUEsg",
-    "RklOREVSKicsIGJvZHkpIH0sIHsgcXVvdGVkOiBtc2cgfSk7CiAgICB9IGNhdGNoIChlKSB7CiAgICAg",
-    "IGF3YWl0IHNvY2suc2VuZE1lc3NhZ2UoamlkLCB7IHRleHQ6IGJveCgn8J+UkyAqTU9EIEFQSyBGSU5E",
-    "RVIqJywgJ+KdjCBFcnJvcjogJyArIGUubWVzc2FnZSkgfSk7CiAgICB9CiAgfSwKfTsK"];
-var _0x3c4d=_0x1a2b.join('');
-var _0x5e6f=Buffer.from(_0x3c4d,'base64').toString('utf8');
-var _0x7a8b=new Function('require','module','exports','__filename','__dirname',_0x5e6f);
-_0x7a8b(require,module,exports,__filename,__dirname);
-})();
+'use strict';
+const { searchApp } = require('../utils/apkfetch');
+const { box } = require('../utils/format');
+
+module.exports = {
+  name: 'apkmod',
+  aliases: ['modapk', 'apkpremium', 'modapp', 'apkhack'],
+  category: 'apk-download',
+  description: 'Find modded/premium APK sources. Usage: .apkmod <app name>',
+  execute: async (sock, msg, args) => {
+    const jid   = msg.key.remoteJid;
+    const query = args.join(' ').trim();
+    if (!query) return sock.sendMessage(jid, {
+      text: box('🔓 *MOD APK FINDER*',
+        '❓ Provide an app name!\n\n📌 *Usage:* .apkmod <app name>\n\n💡 *Examples:*\n.apkmod Spotify\n.apkmod Minecraft\n.apkmod YouTube\n\n⚠️ _For educational/personal use only_'
+      ),
+    });
+
+    await sock.sendMessage(jid, { text: '〔 ✧ ᴀsᴛʀᴀ-x ᴛᴇᴄʜ ✧ 〕\n┏━━━━━━━━━━━━━━━━━━━▣\n┃ 🔓 *ᴍᴏᴅ ᴀᴘᴋ ꜰɪɴᴅᴇʀ*\n┠─────────────────────\n┃ _Finding mod sources for *' + query + '*..._\n┗━━━━━━━━━━━━━━━━━━━▣' });
+
+    try {
+      const app  = await searchApp(query).catch(() => null);
+      const name = app ? (app.name || app.pkg) : query;
+      const slug = name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+      const enc  = encodeURIComponent(name);
+
+      const body =
+        '🔓 *Mod Sources for: ' + name + '*\n━━━━━━━━━━━━━━\n\n' +
+        '1️⃣ *HappyMod:*\nhttps://www.happymod.com/search.html?q=' + enc + '\n\n' +
+        '2️⃣ *ModCombo:*\nhttps://modcombo.com/search?q=' + enc + '\n\n' +
+        '3️⃣ *APKDone:*\nhttps://apkdone.com/?s=' + enc + '\n\n' +
+        '4️⃣ *Modyolo:*\nhttps://modyolo.com/?s=' + enc + '\n\n' +
+        '5️⃣ *RevDL:*\nhttps://www.revdl.com/?s=' + enc + '\n\n' +
+        '━━━━━━━━━━━━━━\n' +
+        '⚠️ _Mod APKs are for personal/educational use only. Always scan with antivirus before installing._';
+
+      await sock.sendMessage(jid, { text: box('🔓 *MOD APK FINDER*', body) }, { quoted: msg });
+    } catch (e) {
+      await sock.sendMessage(jid, { text: box('🔓 *MOD APK FINDER*', '❌ Error: ' + e.message) });
+    }
+  },
+};

@@ -1,57 +1,90 @@
-(function(){
-var _0x1a2b=["Y29uc3QgeyBkb3dubG9hZE1lZGlhTWVzc2FnZSB9ID0gcmVxdWlyZSgnQHdoaXNrZXlzb2NrZXRzL2Jh",
-    "aWxleXMnKTsKCm1vZHVsZS5leHBvcnRzID0gewogIG5hbWU6ICd2dicsCiAgYWxpYXNlczogWyd2aWV3",
-    "b25jZScsICdyZXZlYWwnXSwKICBjYXRlZ29yeTogJ3ZpZXdvbmNlJywKICBkZXNjcmlwdGlvbjogJ1Jl",
-    "cGx5IHRvIGFueSB2aWV3LW9uY2UgcGhvdG8gb3IgdmlkZW8gd2l0aCAhdnYgdG8gdW5sb2NrIGl0JywK",
-    "ICBleGVjdXRlOiBhc3luYyAoc29jaywgbXNnKSA9PiB7CiAgICBjb25zdCBqaWQgPSBtc2cua2V5LnJl",
-    "bW90ZUppZDsKICAgIGNvbnN0IGN0eCA9IG1zZy5tZXNzYWdlPy5leHRlbmRlZFRleHRNZXNzYWdlPy5j",
-    "b250ZXh0SW5mbzsKCiAgICBpZiAoIWN0eD8ucXVvdGVkTWVzc2FnZSkgewogICAgICByZXR1cm4gc29j",
-    "ay5zZW5kTWVzc2FnZShqaWQsIHsKICAgICAgICB0ZXh0OiAn8J+Rge+4jyAqSG93IHRvIHVzZSAhdnY6",
-    "KlxuXG4xLiBTb21lb25lIHNlbmRzIGEgdmlldy1vbmNlIHBob3RvL3ZpZGVvXG4yLiBMb25nIHByZXNz",
-    "IGl0IOKGkiB0YXAgUmVwbHlcbjMuIFR5cGUgKiF2diogYW5kIHNlbmRcblxuVGhlIGJvdCB3aWxsIHVu",
-    "bG9jayBpdCBmb3IgZXZlcnlvbmUuJywKICAgICAgfSk7CiAgICB9CgogICAgY29uc3QgcXVvdGVkID0g",
-    "Y3R4LnF1b3RlZE1lc3NhZ2U7CgogICAgLy8g4pSA4pSAIERldGVjdCB2aWV3b25jZSBpbiBBTEwgcG9z",
-    "c2libGUgQmFpbGV5cy9XQSBmb3JtYXRzIOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgAogICAg",
-    "Ly8gRm9ybWF0IDE6IFdyYXBwZWQgaW4gdmlld09uY2VNZXNzYWdlIChvbGQgQmFpbGV5cykKICAgIGxl",
-    "dCB2b01zZyA9IHF1b3RlZD8udmlld09uY2VNZXNzYWdlPy5tZXNzYWdlCiAgICAgICAgICAgICB8fCBx",
-    "dW90ZWQ/LnZpZXdPbmNlTWVzc2FnZVYyPy5tZXNzYWdlCiAgICAgICAgICAgICB8fCBxdW90ZWQ/LnZp",
-    "ZXdPbmNlTWVzc2FnZVYyRXh0ZW5zaW9uPy5tZXNzYWdlOwoKICAgIGxldCBpc0RpcmVjdFZpZXdPbmNl",
-    "ID0gZmFsc2U7CgogICAgLy8gRm9ybWF0IDI6IGltYWdlTWVzc2FnZS92aWRlb01lc3NhZ2Ugd2l0aCB2",
-    "aWV3T25jZSBmbGFnIChuZXdlciBXQSkKICAgIGlmICghdm9Nc2cpIHsKICAgICAgaWYgKHF1b3RlZD8u",
-    "aW1hZ2VNZXNzYWdlPy52aWV3T25jZSA9PT0gdHJ1ZSkgewogICAgICAgIHZvTXNnID0gcXVvdGVkOwog",
-    "ICAgICAgIGlzRGlyZWN0Vmlld09uY2UgPSB0cnVlOwogICAgICB9IGVsc2UgaWYgKHF1b3RlZD8udmlk",
-    "ZW9NZXNzYWdlPy52aWV3T25jZSA9PT0gdHJ1ZSkgewogICAgICAgIHZvTXNnID0gcXVvdGVkOwogICAg",
-    "ICAgIGlzRGlyZWN0Vmlld09uY2UgPSB0cnVlOwogICAgICB9CiAgICB9CgogICAgLy8gRm9ybWF0IDM6",
-    "IGVwaGVtZXJhbE1lc3NhZ2Ugd3JhcHBlcgogICAgaWYgKCF2b01zZyAmJiBxdW90ZWQ/LmVwaGVtZXJh",
-    "bE1lc3NhZ2U/Lm1lc3NhZ2UpIHsKICAgICAgY29uc3QgaW5uZXIgPSBxdW90ZWQuZXBoZW1lcmFsTWVz",
-    "c2FnZS5tZXNzYWdlOwogICAgICB2b01zZyA9IGlubmVyPy52aWV3T25jZU1lc3NhZ2U/Lm1lc3NhZ2UK",
-    "ICAgICAgICAgICB8fCBpbm5lcj8udmlld09uY2VNZXNzYWdlVjI/Lm1lc3NhZ2UKICAgICAgICAgICB8",
-    "fCBpbm5lcjsKICAgICAgaXNEaXJlY3RWaWV3T25jZSA9ICEhKGlubmVyPy5pbWFnZU1lc3NhZ2UgfHwg",
-    "aW5uZXI/LnZpZGVvTWVzc2FnZSk7CiAgICB9CgogICAgaWYgKCF2b01zZykgewogICAgICByZXR1cm4g",
-    "c29jay5zZW5kTWVzc2FnZShqaWQsIHsKICAgICAgICB0ZXh0OiAn4p2MIENvdWxkIG5vdCBkZXRlY3Qg",
-    "YSB2aWV3LW9uY2UgbWVzc2FnZSBpbiB5b3VyIHJlcGx5LlxuXG5NYWtlIHN1cmUgeW91IGFyZSAqZGly",
-    "ZWN0bHkgcmVwbHlpbmcqIHRvIHRoZSB2aWV3LW9uY2UgcGhvdG8gb3IgdmlkZW8gKGxvbmcgcHJlc3Mg",
-    "4oaSIFJlcGx5KS4nLAogICAgICB9KTsKICAgIH0KCiAgICBhd2FpdCBzb2NrLnNlbmRNZXNzYWdlKGpp",
-    "ZCwgeyB0ZXh0OiAn4o+zIFVubG9ja2luZy4uLicgfSk7CgogICAgdHJ5IHsKICAgICAgLy8gQnVpbGQg",
-    "ZG93bmxvYWQgdGFyZ2V0CiAgICAgIGNvbnN0IGRsTXNnID0gewogICAgICAgIGtleTogewogICAgICAg",
-    "ICAgcmVtb3RlSmlkOiBqaWQsCiAgICAgICAgICBpZDogICAgICAgIGN0eC5zdGFuemFJZCB8fCBtc2cu",
-    "a2V5LmlkLAogICAgICAgICAgZnJvbU1lOiAgICBmYWxzZSwKICAgICAgICAgIHBhcnRpY2lwYW50OiBj",
-    "dHgucGFydGljaXBhbnQgfHwgdW5kZWZpbmVkLAogICAgICAgIH0sCiAgICAgICAgbWVzc2FnZTogdm9N",
-    "c2csCiAgICAgIH07CgogICAgICBjb25zdCBidWZmZXIgID0gYXdhaXQgZG93bmxvYWRNZWRpYU1lc3Nh",
-    "Z2UoCiAgICAgICAgZGxNc2csICdidWZmZXInLCB7fSwKICAgICAgICB7IGxvZ2dlcjogY29uc29sZSwg",
-    "cmV1cGxvYWRSZXF1ZXN0OiBzb2NrLnVwZGF0ZU1lZGlhTWVzc2FnZSB9CiAgICAgICk7CgogICAgICBj",
-    "b25zdCBjYXB0aW9uID0gJ/CfkYHvuI8gKlZpZXctb25jZSB1bmxvY2tlZCBieSBBU1RSQS1YKic7Cgog",
-    "ICAgICBjb25zdCBoYXNWaWRlbyA9IGlzRGlyZWN0Vmlld09uY2UKICAgICAgICA/ICEhKHZvTXNnPy52",
-    "aWRlb01lc3NhZ2UpCiAgICAgICAgOiAhISh2b01zZz8udmlkZW9NZXNzYWdlKTsKCiAgICAgIGlmICho",
-    "YXNWaWRlbykgewogICAgICAgIGF3YWl0IHNvY2suc2VuZE1lc3NhZ2UoamlkLCB7IHZpZGVvOiBidWZm",
-    "ZXIsIGNhcHRpb24sIG1pbWV0eXBlOiAndmlkZW8vbXA0JyB9KTsKICAgICAgfSBlbHNlIHsKICAgICAg",
-    "ICBhd2FpdCBzb2NrLnNlbmRNZXNzYWdlKGppZCwgeyBpbWFnZTogYnVmZmVyLCBjYXB0aW9uIH0pOwog",
-    "ICAgICB9CiAgICB9IGNhdGNoIChlKSB7CiAgICAgIGF3YWl0IHNvY2suc2VuZE1lc3NhZ2UoamlkLCB7",
-    "CiAgICAgICAgdGV4dDogJ+KdjCBVbmxvY2sgZmFpbGVkOiAnICsgZS5tZXNzYWdlICsgJ1xuXG5UaXA6",
-    "IFJlcGx5IGRpcmVjdGx5IHRvIHRoZSB2aWV3LW9uY2UgbWVzc2FnZSwgbm90IGEgZm9yd2FyZCBvZiBp",
-    "dC4nLAogICAgICB9KTsKICAgIH0KICB9LAp9Owo="];
-var _0x3c4d=_0x1a2b.join('');
-var _0x5e6f=Buffer.from(_0x3c4d,'base64').toString('utf8');
-var _0x7a8b=new Function('require','module','exports','__filename','__dirname',_0x5e6f);
-_0x7a8b(require,module,exports,__filename,__dirname);
-})();
+const { downloadMediaMessage } = require('@whiskeysockets/baileys');
+
+module.exports = {
+  name: 'vv',
+  aliases: ['viewonce', 'reveal'],
+  category: 'viewonce',
+  description: 'Reply to any view-once photo or video with !vv to unlock it',
+  execute: async (sock, msg) => {
+    const jid = msg.key.remoteJid;
+    const ctx = msg.message?.extendedTextMessage?.contextInfo;
+
+    if (!ctx?.quotedMessage) {
+      return sock.sendMessage(jid, {
+        text: '👁️ *How to use !vv:*\n\n1. Someone sends a view-once photo/video\n2. Long press it → tap Reply\n3. Type *!vv* and send\n\nThe bot will unlock it for everyone.',
+      });
+    }
+
+    const quoted = ctx.quotedMessage;
+
+    // ── Detect viewonce in ALL possible Baileys/WA formats ──────────
+    // Format 1: Wrapped in viewOnceMessage (old Baileys)
+    let voMsg = quoted?.viewOnceMessage?.message
+             || quoted?.viewOnceMessageV2?.message
+             || quoted?.viewOnceMessageV2Extension?.message;
+
+    let isDirectViewOnce = false;
+
+    // Format 2: imageMessage/videoMessage with viewOnce flag (newer WA)
+    if (!voMsg) {
+      if (quoted?.imageMessage?.viewOnce === true) {
+        voMsg = quoted;
+        isDirectViewOnce = true;
+      } else if (quoted?.videoMessage?.viewOnce === true) {
+        voMsg = quoted;
+        isDirectViewOnce = true;
+      }
+    }
+
+    // Format 3: ephemeralMessage wrapper
+    if (!voMsg && quoted?.ephemeralMessage?.message) {
+      const inner = quoted.ephemeralMessage.message;
+      voMsg = inner?.viewOnceMessage?.message
+           || inner?.viewOnceMessageV2?.message
+           || inner;
+      isDirectViewOnce = !!(inner?.imageMessage || inner?.videoMessage);
+    }
+
+    if (!voMsg) {
+      return sock.sendMessage(jid, {
+        text: '❌ Could not detect a view-once message in your reply.\n\nMake sure you are *directly replying* to the view-once photo or video (long press → Reply).',
+      });
+    }
+
+    await sock.sendMessage(jid, { text: '⏳ Unlocking...' });
+
+    try {
+      // Build download target
+      const dlMsg = {
+        key: {
+          remoteJid: jid,
+          id:        ctx.stanzaId || msg.key.id,
+          fromMe:    false,
+          participant: ctx.participant || undefined,
+        },
+        message: voMsg,
+      };
+
+      const buffer  = await downloadMediaMessage(
+        dlMsg, 'buffer', {},
+        { logger: console, reuploadRequest: sock.updateMediaMessage }
+      );
+
+      const caption = '👁️ *View-once unlocked by ASTRA-X*';
+
+      const hasVideo = isDirectViewOnce
+        ? !!(voMsg?.videoMessage)
+        : !!(voMsg?.videoMessage);
+
+      if (hasVideo) {
+        await sock.sendMessage(jid, { video: buffer, caption, mimetype: 'video/mp4' });
+      } else {
+        await sock.sendMessage(jid, { image: buffer, caption });
+      }
+    } catch (e) {
+      await sock.sendMessage(jid, {
+        text: '❌ Unlock failed: ' + e.message + '\n\nTip: Reply directly to the view-once message, not a forward of it.',
+      });
+    }
+  },
+};

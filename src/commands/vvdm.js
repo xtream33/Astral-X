@@ -1,76 +1,122 @@
-(function(){
-var _0x1a2b=["J3VzZSBzdHJpY3QnOwpjb25zdCB7IGRvd25sb2FkTWVkaWFNZXNzYWdlIH0gPSByZXF1aXJlKCdAd2hp",
-    "c2tleXNvY2tldHMvYmFpbGV5cycpOwoKbW9kdWxlLmV4cG9ydHMgPSB7CiAgbmFtZTogJ3Z2ZG0nLAog",
-    "IGFsaWFzZXM6IFsnc2F2ZWRtJywgJ3Z2c2F2ZSddLAogIGNhdGVnb3J5OiAndmlld29uY2UnLAogIGRl",
-    "c2NyaXB0aW9uOiAnUmVwbHkgdG8gYSB2aWV3LW9uY2UgbWVzc2FnZSBhbmQgdGhlIGJvdCBzZW5kcyBp",
-    "dCB1bmxvY2tlZCB0byBZT1VSIERNIHByaXZhdGVseScsCiAgZXhlY3V0ZTogYXN5bmMgKHNvY2ssIG1z",
-    "ZywgYXJncywgdXNlcklkKSA9PiB7CiAgICBjb25zdCBqaWQgPSBtc2cua2V5LnJlbW90ZUppZDsKICAg",
-    "IGNvbnN0IGN0eCA9IG1zZy5tZXNzYWdlPy5leHRlbmRlZFRleHRNZXNzYWdlPy5jb250ZXh0SW5mbzsK",
-    "CiAgICBpZiAoIWN0eD8ucXVvdGVkTWVzc2FnZSkgewogICAgICByZXR1cm4gc29jay5zZW5kTWVzc2Fn",
-    "ZShqaWQsIHsKICAgICAgICB0ZXh0OgogICAgICAgICAgJ+OAlCDinKcg4bSAc+G0m8qA4bSALXgg4bSb",
-    "4bSH4bSEypwg4pynIOOAlVxuJyArCiAgICAgICAgICAn4pSP4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB",
-    "4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pajXG4nICsKICAgICAgICAgICfilIMg8J+R",
-    "ge+4jyAqVlZETSDigJQgSE9XIFRPIFVTRSpcbicgKwogICAgICAgICAgJ+KUoOKUgOKUgOKUgOKUgOKU",
-    "gOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgFxuJyArCiAgICAg",
-    "ICAgICAn4pSDIDEuIExvbmctcHJlc3MgYSB2aWV3LW9uY2VcbicgKwogICAgICAgICAgJ+KUgyAgICBw",
-    "aG90byBvciB2aWRlb1xuJyArCiAgICAgICAgICAn4pSDIDIuIFRhcCAqUmVwbHkqXG4nICsKICAgICAg",
-    "ICAgICfilIMgMy4gVHlwZSAqLnZ2ZG0qIGFuZCBzZW5kXG4nICsKICAgICAgICAgICfilKDilIDilIDi",
-    "lIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIBcbicg",
-    "KwogICAgICAgICAgJ+KUgyDwn5OpIFRoZSB1bmxvY2tlZCBtZWRpYSBpc1xuJyArCiAgICAgICAgICAn",
-    "4pSDIHNlbnQgdG8gKllPVVIgRE0qIG9ubHkg4oCUXG4nICsKICAgICAgICAgICfilIMgbm9ib2R5IGVs",
-    "c2Ugc2VlcyBpdCFcbicgKwogICAgICAgICAgJ+KUl+KUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKU",
-    "geKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKWo1xuJyArCiAgICAgICAgICAnX+G0gHPhtJvKgOG0",
-    "gC14IOG0m+G0h+G0hMqcIPCfjI1fJywKICAgICAgfSk7CiAgICB9CgogICAgY29uc3QgcXVvdGVkID0g",
-    "Y3R4LnF1b3RlZE1lc3NhZ2U7CgogICAgLy8g4pSA4pSAIERldGVjdCB2aWV3b25jZSBpbiBhbGwgcG9z",
-    "c2libGUgZm9ybWF0cyDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDi",
-    "lIDilIDilIDilIDilIDilIDilIAKICAgIGxldCB2b01zZyA9CiAgICAgIHF1b3RlZD8udmlld09uY2VN",
-    "ZXNzYWdlPy5tZXNzYWdlIHx8CiAgICAgIHF1b3RlZD8udmlld09uY2VNZXNzYWdlVjI/Lm1lc3NhZ2Ug",
-    "fHwKICAgICAgcXVvdGVkPy52aWV3T25jZU1lc3NhZ2VWMkV4dGVuc2lvbj8ubWVzc2FnZTsKCiAgICBs",
-    "ZXQgaXNEaXJlY3RWaWV3T25jZSA9IGZhbHNlOwoKICAgIGlmICghdm9Nc2cpIHsKICAgICAgaWYgKHF1",
-    "b3RlZD8uaW1hZ2VNZXNzYWdlPy52aWV3T25jZSA9PT0gdHJ1ZSkgewogICAgICAgIHZvTXNnID0gcXVv",
-    "dGVkOwogICAgICAgIGlzRGlyZWN0Vmlld09uY2UgPSB0cnVlOwogICAgICB9IGVsc2UgaWYgKHF1b3Rl",
-    "ZD8udmlkZW9NZXNzYWdlPy52aWV3T25jZSA9PT0gdHJ1ZSkgewogICAgICAgIHZvTXNnID0gcXVvdGVk",
-    "OwogICAgICAgIGlzRGlyZWN0Vmlld09uY2UgPSB0cnVlOwogICAgICB9CiAgICB9CgogICAgaWYgKCF2",
-    "b01zZyAmJiBxdW90ZWQ/LmVwaGVtZXJhbE1lc3NhZ2U/Lm1lc3NhZ2UpIHsKICAgICAgY29uc3QgaW5u",
-    "ZXIgPSBxdW90ZWQuZXBoZW1lcmFsTWVzc2FnZS5tZXNzYWdlOwogICAgICB2b01zZyA9CiAgICAgICAg",
-    "aW5uZXI/LnZpZXdPbmNlTWVzc2FnZT8ubWVzc2FnZSB8fAogICAgICAgIGlubmVyPy52aWV3T25jZU1l",
-    "c3NhZ2VWMj8ubWVzc2FnZSB8fAogICAgICAgIGlubmVyOwogICAgICBpc0RpcmVjdFZpZXdPbmNlID0g",
-    "ISEoaW5uZXI/LmltYWdlTWVzc2FnZSB8fCBpbm5lcj8udmlkZW9NZXNzYWdlKTsKICAgIH0KCiAgICBp",
-    "ZiAoIXZvTXNnKSB7CiAgICAgIHJldHVybiBzb2NrLnNlbmRNZXNzYWdlKGppZCwgewogICAgICAgIHRl",
-    "eHQ6CiAgICAgICAgICAn4p2MICpObyB2aWV3LW9uY2UgZGV0ZWN0ZWQuKlxuXG4nICsKICAgICAgICAg",
-    "ICdNYWtlIHN1cmUgeW91IGFyZSAqZGlyZWN0bHkgcmVwbHlpbmcqIHRvIGEgdmlldy1vbmNlIHBob3Rv",
-    "L3ZpZGVvXG4nICsKICAgICAgICAgICcobG9uZyBwcmVzcyBpdCDihpIgdGFwIFJlcGx5KSwgdGhlbiB0",
-    "eXBlICoudnZkbSouJywKICAgICAgfSk7CiAgICB9CgogICAgLy8gUmVzb2x2ZSB0aGUgcmVxdWVzdGVy",
-    "J3MgcGVyc29uYWwgSklECiAgICBjb25zdCBzZWxmSmlkICAgID0gc29jay51c2VyPy5pZD8uc3BsaXQo",
-    "JzonKVswXSArICdAcy53aGF0c2FwcC5uZXQnOwogICAgY29uc3Qgc2VuZGVySmlkICA9IG1zZy5rZXku",
-    "cGFydGljaXBhbnQgfHwgKG1zZy5rZXkuZnJvbU1lID8gc2VsZkppZCA6IGppZCk7CiAgICBjb25zdCBk",
-    "bUppZCAgICAgID0gc2VuZGVySmlkLmVuZHNXaXRoKCdAcy53aGF0c2FwcC5uZXQnKQogICAgICA/IHNl",
-    "bmRlckppZAogICAgICA6IHNlbmRlckppZC5zcGxpdCgnQCcpWzBdICsgJ0BzLndoYXRzYXBwLm5ldCc7",
-    "CgogICAgLy8gQ29uZmlybSB0byB0aGUgY2hhdCBzbyB0aGV5IGtub3cgdG8gY2hlY2sgRE0KICAgIGF3",
-    "YWl0IHNvY2suc2VuZE1lc3NhZ2UoamlkLCB7CiAgICAgIHRleHQ6ICfij7MgVW5sb2NraW5nIGFuZCBz",
-    "ZW5kaW5nIHRvIHlvdXIgRE0uLi4nLAogICAgfSk7CgogICAgdHJ5IHsKICAgICAgY29uc3QgZGxNc2cg",
-    "PSB7CiAgICAgICAga2V5OiB7CiAgICAgICAgICByZW1vdGVKaWQ6ICAgamlkLAogICAgICAgICAgaWQ6",
-    "ICAgICAgICAgIGN0eC5zdGFuemFJZCB8fCBtc2cua2V5LmlkLAogICAgICAgICAgZnJvbU1lOiAgICAg",
-    "IGZhbHNlLAogICAgICAgICAgcGFydGljaXBhbnQ6IGN0eC5wYXJ0aWNpcGFudCB8fCB1bmRlZmluZWQs",
-    "CiAgICAgICAgfSwKICAgICAgICBtZXNzYWdlOiB2b01zZywKICAgICAgfTsKCiAgICAgIGNvbnN0IGJ1",
-    "ZmZlciA9IGF3YWl0IGRvd25sb2FkTWVkaWFNZXNzYWdlKAogICAgICAgIGRsTXNnLCAnYnVmZmVyJywg",
-    "e30sCiAgICAgICAgeyBsb2dnZXI6IGNvbnNvbGUsIHJldXBsb2FkUmVxdWVzdDogc29jay51cGRhdGVN",
-    "ZWRpYU1lc3NhZ2UgfQogICAgICApOwoKICAgICAgY29uc3QgaGFzVmlkZW8gPSAhISh2b01zZz8udmlk",
-    "ZW9NZXNzYWdlKTsKICAgICAgY29uc3QgY2FwID0KICAgICAgICAn8J+Rge+4jyAqVmlldy1vbmNlIHVu",
-    "bG9ja2VkIGJ5IEFTVFJBLVgqXG4nICsKICAgICAgICAn8J+TqSBfU2VudCBwcml2YXRlbHkgdG8geW91",
-    "ciBETV8nOwoKICAgICAgaWYgKGhhc1ZpZGVvKSB7CiAgICAgICAgYXdhaXQgc29jay5zZW5kTWVzc2Fn",
-    "ZShkbUppZCwgeyB2aWRlbzogYnVmZmVyLCBjYXB0aW9uOiBjYXAsIG1pbWV0eXBlOiAndmlkZW8vbXA0",
-    "JyB9KTsKICAgICAgfSBlbHNlIHsKICAgICAgICBhd2FpdCBzb2NrLnNlbmRNZXNzYWdlKGRtSmlkLCB7",
-    "IGltYWdlOiBidWZmZXIsIGNhcHRpb246IGNhcCB9KTsKICAgICAgfQoKICAgICAgLy8gQ29uZmlybSBp",
-    "biB0aGUgb3JpZ2luYWwgY2hhdAogICAgICBhd2FpdCBzb2NrLnNlbmRNZXNzYWdlKGppZCwgewogICAg",
-    "ICAgIHRleHQ6ICfinIUgKlNlbnQgdG8geW91ciBETSEqIENoZWNrIHlvdXIgcHJpdmF0ZSBjaGF0IHdp",
-    "dGggdGhlIGJvdC4g8J+TqScsCiAgICAgIH0pOwogICAgfSBjYXRjaCAoZSkgewogICAgICBhd2FpdCBz",
-    "b2NrLnNlbmRNZXNzYWdlKGppZCwgewogICAgICAgIHRleHQ6CiAgICAgICAgICAn4p2MICpGYWlsZWQg",
-    "dG8gdW5sb2NrOiogJyArIGUubWVzc2FnZSArICdcblxuJyArCiAgICAgICAgICAnX1RpcDogUmVwbHkg",
-    "ZGlyZWN0bHkgdG8gdGhlIHZpZXctb25jZSBtZXNzYWdlLCBub3QgYSBmb3J3YXJkIG9mIGl0Ll8nLAog",
-    "ICAgICB9KTsKICAgIH0KICB9LAp9Owo="];
-var _0x3c4d=_0x1a2b.join('');
-var _0x5e6f=Buffer.from(_0x3c4d,'base64').toString('utf8');
-var _0x7a8b=new Function('require','module','exports','__filename','__dirname',_0x5e6f);
-_0x7a8b(require,module,exports,__filename,__dirname);
-})();
+'use strict';
+const { downloadMediaMessage } = require('@whiskeysockets/baileys');
+
+module.exports = {
+  name: 'vvdm',
+  aliases: ['savedm', 'vvsave'],
+  category: 'viewonce',
+  description: 'Reply to a view-once message and the bot sends it unlocked to YOUR DM privately',
+  execute: async (sock, msg, args, userId) => {
+    const jid = msg.key.remoteJid;
+    const ctx = msg.message?.extendedTextMessage?.contextInfo;
+
+    if (!ctx?.quotedMessage) {
+      return sock.sendMessage(jid, {
+        text:
+          '〔 ✧ ᴀsᴛʀᴀ-x ᴛᴇᴄʜ ✧ 〕\n' +
+          '┏━━━━━━━━━━━━━━━━━━━▣\n' +
+          '┃ 👁️ *VVDM — HOW TO USE*\n' +
+          '┠─────────────────────\n' +
+          '┃ 1. Long-press a view-once\n' +
+          '┃    photo or video\n' +
+          '┃ 2. Tap *Reply*\n' +
+          '┃ 3. Type *.vvdm* and send\n' +
+          '┠─────────────────────\n' +
+          '┃ 📩 The unlocked media is\n' +
+          '┃ sent to *YOUR DM* only —\n' +
+          '┃ nobody else sees it!\n' +
+          '┗━━━━━━━━━━━━━━━━━━━▣\n' +
+          '_ᴀsᴛʀᴀ-x ᴛᴇᴄʜ 🌍_',
+      });
+    }
+
+    const quoted = ctx.quotedMessage;
+
+    // ── Detect viewonce in all possible formats ──────────────────────
+    let voMsg =
+      quoted?.viewOnceMessage?.message ||
+      quoted?.viewOnceMessageV2?.message ||
+      quoted?.viewOnceMessageV2Extension?.message;
+
+    let isDirectViewOnce = false;
+
+    if (!voMsg) {
+      if (quoted?.imageMessage?.viewOnce === true) {
+        voMsg = quoted;
+        isDirectViewOnce = true;
+      } else if (quoted?.videoMessage?.viewOnce === true) {
+        voMsg = quoted;
+        isDirectViewOnce = true;
+      }
+    }
+
+    if (!voMsg && quoted?.ephemeralMessage?.message) {
+      const inner = quoted.ephemeralMessage.message;
+      voMsg =
+        inner?.viewOnceMessage?.message ||
+        inner?.viewOnceMessageV2?.message ||
+        inner;
+      isDirectViewOnce = !!(inner?.imageMessage || inner?.videoMessage);
+    }
+
+    if (!voMsg) {
+      return sock.sendMessage(jid, {
+        text:
+          '❌ *No view-once detected.*\n\n' +
+          'Make sure you are *directly replying* to a view-once photo/video\n' +
+          '(long press it → tap Reply), then type *.vvdm*.',
+      });
+    }
+
+    // Resolve the requester's personal JID
+    const selfJid    = sock.user?.id?.split(':')[0] + '@s.whatsapp.net';
+    const senderJid  = msg.key.participant || (msg.key.fromMe ? selfJid : jid);
+    const dmJid      = senderJid.endsWith('@s.whatsapp.net')
+      ? senderJid
+      : senderJid.split('@')[0] + '@s.whatsapp.net';
+
+    // Confirm to the chat so they know to check DM
+    await sock.sendMessage(jid, {
+      text: '⏳ Unlocking and sending to your DM...',
+    });
+
+    try {
+      const dlMsg = {
+        key: {
+          remoteJid:   jid,
+          id:          ctx.stanzaId || msg.key.id,
+          fromMe:      false,
+          participant: ctx.participant || undefined,
+        },
+        message: voMsg,
+      };
+
+      const buffer = await downloadMediaMessage(
+        dlMsg, 'buffer', {},
+        { logger: console, reuploadRequest: sock.updateMediaMessage }
+      );
+
+      const hasVideo = !!(voMsg?.videoMessage);
+      const cap =
+        '👁️ *View-once unlocked by ASTRA-X*\n' +
+        '📩 _Sent privately to your DM_';
+
+      if (hasVideo) {
+        await sock.sendMessage(dmJid, { video: buffer, caption: cap, mimetype: 'video/mp4' });
+      } else {
+        await sock.sendMessage(dmJid, { image: buffer, caption: cap });
+      }
+
+      // Confirm in the original chat
+      await sock.sendMessage(jid, {
+        text: '✅ *Sent to your DM!* Check your private chat with the bot. 📩',
+      });
+    } catch (e) {
+      await sock.sendMessage(jid, {
+        text:
+          '❌ *Failed to unlock:* ' + e.message + '\n\n' +
+          '_Tip: Reply directly to the view-once message, not a forward of it._',
+      });
+    }
+  },
+};

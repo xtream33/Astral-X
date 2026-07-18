@@ -1,43 +1,48 @@
-(function(){
-var _0x1a2b=["J3VzZSBzdHJpY3QnOwpjb25zdCB7IGJveCB9ID0gcmVxdWlyZSgnLi4vdXRpbHMvZm9ybWF0Jyk7CmNv",
-    "bnN0IGh0dHBzID0gcmVxdWlyZSgnaHR0cHMnKTsKCmZ1bmN0aW9uIGZldGNoSlNPTih1cmwpIHsKICBy",
-    "ZXR1cm4gbmV3IFByb21pc2UoKHJlc29sdmUsIHJlamVjdCkgPT4gewogICAgaHR0cHMuZ2V0KHVybCwg",
-    "eyBoZWFkZXJzOiB7ICdVc2VyLUFnZW50JzogJ01vemlsbGEvNS4wJyB9IH0sIHJlcyA9PiB7CiAgICAg",
-    "IGxldCBkID0gJyc7IHJlcy5vbignZGF0YScsIGMgPT4gZCArPSBjKTsKICAgICAgcmVzLm9uKCdlbmQn",
-    "LCAoKSA9PiB7IHRyeSB7IHJlc29sdmUoSlNPTi5wYXJzZShkKSk7IH0gY2F0Y2goZSkgeyByZWplY3Qo",
-    "ZSk7IH0gfSk7CiAgICAgIHJlcy5vbignZXJyb3InLCByZWplY3QpOwogICAgfSkub24oJ2Vycm9yJywg",
-    "cmVqZWN0KTsKICB9KTsKfQoKbW9kdWxlLmV4cG9ydHMgPSB7CiAgbmFtZTogJ2x5cmljcycsCiAgYWxp",
-    "YXNlczogWydseXJpYycsICdseXInXSwKICBjYXRlZ29yeTogJ21lZGlhJywKICBkZXNjcmlwdGlvbjog",
-    "J0dldCBzb25nIGx5cmljcy4gVXNhZ2U6IC5seXJpY3MgPHNvbmcgbmFtZT4nLAogIGV4ZWN1dGU6IGFz",
-    "eW5jIChzb2NrLCBtc2csIGFyZ3MpID0+IHsKICAgIGNvbnN0IGppZCA9IG1zZy5rZXkucmVtb3RlSmlk",
-    "OwogICAgaWYgKCFhcmdzLmxlbmd0aCkgcmV0dXJuIHNvY2suc2VuZE1lc3NhZ2UoamlkLCB7CiAgICAg",
-    "IHRleHQ6IGJveCgn8J+OtSAqTFlSSUNTKicsICfwn5OMICpVc2FnZToqIC5seXJpY3MgPHNvbmcgbmFt",
-    "ZT5cblxu8J+SoSAqRXhhbXBsZXM6KlxuLmx5cmljcyBGYWRlZCBBbGFuIFdhbGtlclxuLmx5cmljcyBT",
-    "aGFwZSBvZiBZb3UgRWQgU2hlZXJhblxuLmx5cmljcyBCbGluZGluZyBMaWdodHMnKSwKICAgIH0pOwog",
-    "ICAgY29uc3QgcXVlcnkgPSBhcmdzLmpvaW4oJyAnKTsKICAgIGF3YWl0IHNvY2suc2VuZE1lc3NhZ2Uo",
-    "amlkLCB7IHRleHQ6IGJveCgn8J+OtSAqTFlSSUNTKicsICdfU2VhcmNoaW5nIGZvciAqJyArIHF1ZXJ5",
-    "ICsgJyouLi5fJykgfSk7CiAgICB0cnkgewogICAgICBjb25zdCBzZWFyY2ggPSBhd2FpdCBmZXRjaEpT",
-    "T04oJ2h0dHBzOi8vbHlyaXN0LnZlcmNlbC5hcHAvYXBpLycgKyBlbmNvZGVVUklDb21wb25lbnQocXVl",
-    "cnkpKTsKICAgICAgaWYgKCFzZWFyY2g/Lmx5cmljcykgdGhyb3cgbmV3IEVycm9yKCdub25lJyk7CiAg",
-    "ICAgIGNvbnN0IGx5cmljcyA9IHNlYXJjaC5seXJpY3Muc2xpY2UoMCwgMzgwMCk7CiAgICAgIGNvbnN0",
-    "IG1vcmUgICA9IHNlYXJjaC5seXJpY3MubGVuZ3RoID4gMzgwMCA/ICdcblxuXy4uLmx5cmljcyB0cnVu",
-    "Y2F0ZWRfJyA6ICcnOwogICAgICBhd2FpdCBzb2NrLnNlbmRNZXNzYWdlKGppZCwgewogICAgICAgIHRl",
-    "eHQ6IGJveCgn8J+OtSAqJyArIChzZWFyY2gudGl0bGUgfHwgcXVlcnkpLnRvVXBwZXJDYXNlKCkgKyAn",
-    "KicsCiAgICAgICAgICAn8J+OpCAqQXJ0aXN0OiogJyArIChzZWFyY2guYXJ0aXN0IHx8ICdVbmtub3du",
-    "JykgKyAnXG7ilIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilIFcblxuJyArIGx5",
-    "cmljcyArIG1vcmUpLAogICAgICB9LCB7IHF1b3RlZDogbXNnIH0pOwogICAgfSBjYXRjaCAoXykgewog",
-    "ICAgICB0cnkgewogICAgICAgIGNvbnN0IHBhcnRzICA9IHF1ZXJ5LnNwbGl0KCcgJyk7CiAgICAgICAg",
-    "Y29uc3QgYXJ0aXN0ID0gcGFydHNbMF0sIHRpdGxlID0gcGFydHMuc2xpY2UoMSkuam9pbignICcpIHx8",
-    "IHBhcnRzWzBdOwogICAgICAgIGNvbnN0IGRhdGEgICA9IGF3YWl0IGZldGNoSlNPTignaHR0cHM6Ly9h",
-    "cGkubHlyaWNzLm92aC92MS8nICsgZW5jb2RlVVJJQ29tcG9uZW50KGFydGlzdCkgKyAnLycgKyBlbmNv",
-    "ZGVVUklDb21wb25lbnQodGl0bGUpKTsKICAgICAgICBpZiAoIWRhdGE/Lmx5cmljcykgcmV0dXJuOyAv",
-    "LyBzaWxlbnQKICAgICAgICBhd2FpdCBzb2NrLnNlbmRNZXNzYWdlKGppZCwgewogICAgICAgICAgdGV4",
-    "dDogYm94KCfwn461IConICsgcXVlcnkudG9VcHBlckNhc2UoKSArICcqJywgZGF0YS5seXJpY3Muc2xp",
-    "Y2UoMCwgMzgwMCkpLAogICAgICAgIH0sIHsgcXVvdGVkOiBtc2cgfSk7CiAgICAgIH0gY2F0Y2ggKF8y",
-    "KSB7IC8qIHNpbGVudCDigJQgbm8gcmVzcG9uc2UgaWYgYm90aCBzb3VyY2VzIGZhaWwgKi8gfQogICAg",
-    "fQogIH0sCn07Cg=="];
-var _0x3c4d=_0x1a2b.join('');
-var _0x5e6f=Buffer.from(_0x3c4d,'base64').toString('utf8');
-var _0x7a8b=new Function('require','module','exports','__filename','__dirname',_0x5e6f);
-_0x7a8b(require,module,exports,__filename,__dirname);
-})();
+'use strict';
+const { box } = require('../utils/format');
+const https = require('https');
+
+function fetchJSON(url) {
+  return new Promise((resolve, reject) => {
+    https.get(url, { headers: { 'User-Agent': 'Mozilla/5.0' } }, res => {
+      let d = ''; res.on('data', c => d += c);
+      res.on('end', () => { try { resolve(JSON.parse(d)); } catch(e) { reject(e); } });
+      res.on('error', reject);
+    }).on('error', reject);
+  });
+}
+
+module.exports = {
+  name: 'lyrics',
+  aliases: ['lyric', 'lyr'],
+  category: 'media',
+  description: 'Get song lyrics. Usage: .lyrics <song name>',
+  execute: async (sock, msg, args) => {
+    const jid = msg.key.remoteJid;
+    if (!args.length) return sock.sendMessage(jid, {
+      text: box('🎵 *LYRICS*', '📌 *Usage:* .lyrics <song name>\n\n💡 *Examples:*\n.lyrics Faded Alan Walker\n.lyrics Shape of You Ed Sheeran\n.lyrics Blinding Lights'),
+    });
+    const query = args.join(' ');
+    await sock.sendMessage(jid, { text: box('🎵 *LYRICS*', '_Searching for *' + query + '*..._') });
+    try {
+      const search = await fetchJSON('https://lyrist.vercel.app/api/' + encodeURIComponent(query));
+      if (!search?.lyrics) throw new Error('none');
+      const lyrics = search.lyrics.slice(0, 3800);
+      const more   = search.lyrics.length > 3800 ? '\n\n_...lyrics truncated_' : '';
+      await sock.sendMessage(jid, {
+        text: box('🎵 *' + (search.title || query).toUpperCase() + '*',
+          '🎤 *Artist:* ' + (search.artist || 'Unknown') + '\n━━━━━━━━━━━━━━\n\n' + lyrics + more),
+      }, { quoted: msg });
+    } catch (_) {
+      try {
+        const parts  = query.split(' ');
+        const artist = parts[0], title = parts.slice(1).join(' ') || parts[0];
+        const data   = await fetchJSON('https://api.lyrics.ovh/v1/' + encodeURIComponent(artist) + '/' + encodeURIComponent(title));
+        if (!data?.lyrics) return; // silent
+        await sock.sendMessage(jid, {
+          text: box('🎵 *' + query.toUpperCase() + '*', data.lyrics.slice(0, 3800)),
+        }, { quoted: msg });
+      } catch (_2) { /* silent — no response if both sources fail */ }
+    }
+  },
+};

@@ -1,51 +1,86 @@
-(function(){
-var _0x1a2b=["LyoqCiAqIEFTVFJBLVggQW50aS1TcGFtIFN5c3RlbQogKgogKiBGSVg6IFByZXZpb3VzIHZlcnNpb24g",
-    "Y291bnRlZCBldmVyeSBtZXNzYWdlIGluY2x1ZGluZyBub3JtYWwgY29udmVyc2F0aW9uLAogKiBzbyBh",
-    "IGZhc3QgZ3JvdXAgY2hhdCB3b3VsZCB0cmlnZ2VyIHNwYW0gd2FybmluZ3Mgb24gaW5ub2NlbnQgdXNl",
-    "cnMuCiAqCiAqIE5vdyB0cmFja3MgQ09NTUFORCBpbnZvY2F0aW9ucyBvbmx5IChjYWxsZWQgYWZ0ZXIg",
-    "UFJFRklYIGNoZWNrIGluIHNvY2tldC5qcykuCiAqIFJlZ3VsYXIgbWVzc2FnZXMgYXJlIGNvdW50ZWQg",
-    "c2VwYXJhdGVseSB3aXRoIGEgbXVjaCBoaWdoZXIsIG1vcmUgbGVuaWVudCB0aHJlc2hvbGQuCiAqCiAq",
-    "IFRocmVzaG9sZHM6CiAqICAgQ29tbWFuZHM6ICA2IGluIDEwcyDihpIgd2FybiB8IDEwIGluIDEwcyDi",
-    "hpIgbXV0ZSA0NXMKICogICBNZXNzYWdlczogIDIwIGluIDZzIOKGkiB3YXJuIHwgMzAgaW4gNnMg4oaS",
-    "IG11dGUgMzBzICAob25seSBmb3Igbm9uLWNvbW1hbmQgc3BhbSkKICovCgpjb25zdCBDTURfTUFYICAg",
-    "ID0gMTA7ICAgIC8vIGNvbW1hbmRzIGJlZm9yZSBtdXRlCmNvbnN0IENNRF9XQVJOICAgPSA2OyAgICAg",
-    "Ly8gY29tbWFuZHMgYmVmb3JlIHdhcm4KY29uc3QgQ01EX1dJTiAgICA9IDEwMDAwOyAvLyAxMCBzZWNv",
-    "bmQgd2luZG93IGZvciBjb21tYW5kcwpjb25zdCBDTURfTVVURSAgID0gNDUwMDA7IC8vIDQ1IHNlY29u",
-    "ZCBtdXRlIGZvciBjb21tYW5kIHNwYW0KCmNvbnN0IE1TR19NQVggICAgPSAzMDsgICAgLy8gbWVzc2Fn",
-    "ZXMgYmVmb3JlIG11dGUKY29uc3QgTVNHX1dBUk4gICA9IDIwOyAgICAvLyBtZXNzYWdlcyBiZWZvcmUg",
-    "d2Fybgpjb25zdCBNU0dfV0lOICAgID0gNjAwMDsgIC8vIDYgc2Vjb25kIHdpbmRvdyBmb3IgcmF3IG1l",
-    "c3NhZ2VzCmNvbnN0IE1TR19NVVRFICAgPSAzMDAwMDsgLy8gMzAgc2Vjb25kIG11dGUKCi8vIE1hcDog",
-    "a2V5IOKGkiB7IGNtZE1zZ3M6IG51bWJlcltdLCBtc2dNc2dzOiBudW1iZXJbXSwgbXV0ZWRVbnRpbDog",
-    "bnVtYmVyLCBtdXRlZEZvcjogc3RyaW5nIH0KY29uc3QgdHJhY2tlciA9IG5ldyBNYXAoKTsKCmZ1bmN0",
-    "aW9uIF9zdGF0ZShrZXkpIHsKICBpZiAoIXRyYWNrZXIuaGFzKGtleSkpIHRyYWNrZXIuc2V0KGtleSwg",
-    "eyBjbWRNc2dzOiBbXSwgbXNnTXNnczogW10sIG11dGVkVW50aWw6IDAgfSk7CiAgcmV0dXJuIHRyYWNr",
-    "ZXIuZ2V0KGtleSk7Cn0KCi8qKgogKiBDaGVjayBhIGNvbW1hbmQgaW52b2NhdGlvbiAoY2FsbGVkIG9u",
-    "Y2UgcGVyICFjb21tYW5kKS4KICogQHJldHVybnMgeydvayd8J3dhcm5lZCd8J211dGVkJ30KICovCmZ1",
-    "bmN0aW9uIGNoZWNrQ29tbWFuZChzZW5kZXJJZCwgamlkKSB7CiAgY29uc3Qga2V5ICA9IGAke3NlbmRl",
-    "cklkfTo6JHtqaWR9YDsKICBjb25zdCBub3cgID0gRGF0ZS5ub3coKTsKICBjb25zdCBzICAgID0gX3N0",
-    "YXRlKGtleSk7CgogIGlmIChzLm11dGVkVW50aWwgPiBub3cpIHJldHVybiAnbXV0ZWQnOwoKICBzLmNt",
-    "ZE1zZ3MgPSBzLmNtZE1zZ3MuZmlsdGVyKHQgPT4gbm93IC0gdCA8IENNRF9XSU4pOwogIHMuY21kTXNn",
-    "cy5wdXNoKG5vdyk7CgogIGlmIChzLmNtZE1zZ3MubGVuZ3RoID4gQ01EX01BWCkgewogICAgcy5tdXRl",
-    "ZFVudGlsID0gbm93ICsgQ01EX01VVEU7CiAgICBzLm11dGVkRm9yICAgPSAnY29tbWFuZHMnOwogICAg",
-    "cy5jbWRNc2dzICAgID0gW107CiAgICByZXR1cm4gJ211dGVkJzsKICB9CiAgcmV0dXJuIHMuY21kTXNn",
-    "cy5sZW5ndGggPj0gQ01EX1dBUk4gPyAnd2FybmVkJyA6ICdvayc7Cn0KCi8qKgogKiBDaGVjayBhIHJh",
-    "dyAobm9uLWNvbW1hbmQpIG1lc3NhZ2Ug4oCUIG11Y2ggbW9yZSBsZW5pZW50LgogKiBAcmV0dXJucyB7",
-    "J29rJ3wnd2FybmVkJ3wnbXV0ZWQnfQogKi8KZnVuY3Rpb24gY2hlY2tNZXNzYWdlKHNlbmRlcklkLCBq",
-    "aWQpIHsKICBjb25zdCBrZXkgID0gYCR7c2VuZGVySWR9Ojoke2ppZH1gOwogIGNvbnN0IG5vdyAgPSBE",
-    "YXRlLm5vdygpOwogIGNvbnN0IHMgICAgPSBfc3RhdGUoa2V5KTsKCiAgaWYgKHMubXV0ZWRVbnRpbCA+",
-    "IG5vdykgcmV0dXJuICdtdXRlZCc7CgogIHMubXNnTXNncyA9IHMubXNnTXNncy5maWx0ZXIodCA9PiBu",
-    "b3cgLSB0IDwgTVNHX1dJTik7CiAgcy5tc2dNc2dzLnB1c2gobm93KTsKCiAgaWYgKHMubXNnTXNncy5s",
-    "ZW5ndGggPiBNU0dfTUFYKSB7CiAgICBzLm11dGVkVW50aWwgPSBub3cgKyBNU0dfTVVURTsKICAgIHMu",
-    "bXV0ZWRGb3IgICA9ICdtZXNzYWdlcyc7CiAgICBzLm1zZ01zZ3MgICAgPSBbXTsKICAgIHJldHVybiAn",
-    "bXV0ZWQnOwogIH0KICByZXR1cm4gcy5tc2dNc2dzLmxlbmd0aCA+PSBNU0dfV0FSTiA/ICd3YXJuZWQn",
-    "IDogJ29rJzsKfQoKZnVuY3Rpb24gcmVzZXQoc2VuZGVySWQsIGppZCkgeyB0cmFja2VyLmRlbGV0ZShg",
-    "JHtzZW5kZXJJZH06OiR7amlkfWApOyB9CgpmdW5jdGlvbiBtdXRlU2Vjb25kc0xlZnQoc2VuZGVySWQs",
-    "IGppZCkgewogIGNvbnN0IHMgPSB0cmFja2VyLmdldChgJHtzZW5kZXJJZH06OiR7amlkfWApOwogIHJl",
-    "dHVybiBzPy5tdXRlZFVudGlsID8gTWF0aC5tYXgoMCwgTWF0aC5jZWlsKChzLm11dGVkVW50aWwgLSBE",
-    "YXRlLm5vdygpKSAvIDEwMDApKSA6IDA7Cn0KCm1vZHVsZS5leHBvcnRzID0geyBjaGVja0NvbW1hbmQs",
-    "IGNoZWNrTWVzc2FnZSwgcmVzZXQsIG11dGVTZWNvbmRzTGVmdCB9Owo="];
-var _0x3c4d=_0x1a2b.join('');
-var _0x5e6f=Buffer.from(_0x3c4d,'base64').toString('utf8');
-var _0x7a8b=new Function('require','module','exports','__filename','__dirname',_0x5e6f);
-_0x7a8b(require,module,exports,__filename,__dirname);
-})();
+/**
+ * ASTRA-X Anti-Spam System
+ *
+ * FIX: Previous version counted every message including normal conversation,
+ * so a fast group chat would trigger spam warnings on innocent users.
+ *
+ * Now tracks COMMAND invocations only (called after PREFIX check in socket.js).
+ * Regular messages are counted separately with a much higher, more lenient threshold.
+ *
+ * Thresholds:
+ *   Commands:  6 in 10s → warn | 10 in 10s → mute 45s
+ *   Messages:  20 in 6s → warn | 30 in 6s → mute 30s  (only for non-command spam)
+ */
+
+const CMD_MAX    = 10;    // commands before mute
+const CMD_WARN   = 6;     // commands before warn
+const CMD_WIN    = 10000; // 10 second window for commands
+const CMD_MUTE   = 45000; // 45 second mute for command spam
+
+const MSG_MAX    = 30;    // messages before mute
+const MSG_WARN   = 20;    // messages before warn
+const MSG_WIN    = 6000;  // 6 second window for raw messages
+const MSG_MUTE   = 30000; // 30 second mute
+
+// Map: key → { cmdMsgs: number[], msgMsgs: number[], mutedUntil: number, mutedFor: string }
+const tracker = new Map();
+
+function _state(key) {
+  if (!tracker.has(key)) tracker.set(key, { cmdMsgs: [], msgMsgs: [], mutedUntil: 0 });
+  return tracker.get(key);
+}
+
+/**
+ * Check a command invocation (called once per !command).
+ * @returns {'ok'|'warned'|'muted'}
+ */
+function checkCommand(senderId, jid) {
+  const key  = `${senderId}::${jid}`;
+  const now  = Date.now();
+  const s    = _state(key);
+
+  if (s.mutedUntil > now) return 'muted';
+
+  s.cmdMsgs = s.cmdMsgs.filter(t => now - t < CMD_WIN);
+  s.cmdMsgs.push(now);
+
+  if (s.cmdMsgs.length > CMD_MAX) {
+    s.mutedUntil = now + CMD_MUTE;
+    s.mutedFor   = 'commands';
+    s.cmdMsgs    = [];
+    return 'muted';
+  }
+  return s.cmdMsgs.length >= CMD_WARN ? 'warned' : 'ok';
+}
+
+/**
+ * Check a raw (non-command) message — much more lenient.
+ * @returns {'ok'|'warned'|'muted'}
+ */
+function checkMessage(senderId, jid) {
+  const key  = `${senderId}::${jid}`;
+  const now  = Date.now();
+  const s    = _state(key);
+
+  if (s.mutedUntil > now) return 'muted';
+
+  s.msgMsgs = s.msgMsgs.filter(t => now - t < MSG_WIN);
+  s.msgMsgs.push(now);
+
+  if (s.msgMsgs.length > MSG_MAX) {
+    s.mutedUntil = now + MSG_MUTE;
+    s.mutedFor   = 'messages';
+    s.msgMsgs    = [];
+    return 'muted';
+  }
+  return s.msgMsgs.length >= MSG_WARN ? 'warned' : 'ok';
+}
+
+function reset(senderId, jid) { tracker.delete(`${senderId}::${jid}`); }
+
+function muteSecondsLeft(senderId, jid) {
+  const s = tracker.get(`${senderId}::${jid}`);
+  return s?.mutedUntil ? Math.max(0, Math.ceil((s.mutedUntil - Date.now()) / 1000)) : 0;
+}
+
+module.exports = { checkCommand, checkMessage, reset, muteSecondsLeft };

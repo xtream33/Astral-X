@@ -1,68 +1,132 @@
-(function(){
-var _0x1a2b=["J3VzZSBzdHJpY3QnOwovKioKICogQVNUUkEtWCBVc2VyIFN0b3JlCiAqIFRyYWNrcyBhY3RpdmF0ZWQg",
-    "dXNlcnMsIGJhbm5lZCBudW1iZXJzLCBhbmQgMS1tb250aCBjb25uZWN0aW9uIGV4cGlyeQogKi8KY29u",
-    "c3QgZnMgICA9IHJlcXVpcmUoJ2ZzJyk7CmNvbnN0IHBhdGggPSByZXF1aXJlKCdwYXRoJyk7CmNvbnN0",
-    "IGxvZ2dlciA9IHJlcXVpcmUoJy4vbG9nZ2VyJyk7Cgpjb25zdCBBQ1RJVkFURURfRklMRSA9IHBhdGgu",
-    "am9pbihfX2Rpcm5hbWUsICcuLi8uLi9kYXRhL2FjdGl2YXRlZF91c2Vycy5qc29uJyk7CmNvbnN0IEJB",
-    "Tk5FRF9GSUxFICAgID0gcGF0aC5qb2luKF9fZGlybmFtZSwgJy4uLy4uL2RhdGEvYmFubmVkX3VzZXJz",
-    "Lmpzb24nKTsKY29uc3QgT05FX01PTlRIICAgICAgPSAzMCAqIDI0ICogNjAgKiA2MCAqIDEwMDA7Cgpm",
-    "dW5jdGlvbiBsb2FkQWN0aXZhdGVkKCkgewogIHRyeSB7IHJldHVybiBmcy5leGlzdHNTeW5jKEFDVElW",
-    "QVRFRF9GSUxFKSA/IEpTT04ucGFyc2UoZnMucmVhZEZpbGVTeW5jKEFDVElWQVRFRF9GSUxFLCd1dGY4",
-    "JykpIDoge307IH0KICBjYXRjaChfKSB7IHJldHVybiB7fTsgfQp9CmZ1bmN0aW9uIHNhdmVBY3RpdmF0",
-    "ZWQoZCkgewogIHRyeSB7IGZzLndyaXRlRmlsZVN5bmMoQUNUSVZBVEVEX0ZJTEUsIEpTT04uc3RyaW5n",
-    "aWZ5KGQsIG51bGwsIDIpKTsgfSBjYXRjaChfKSB7fQp9CmZ1bmN0aW9uIGxvYWRCYW5uZWQoKSB7CiAg",
-    "dHJ5IHsgcmV0dXJuIGZzLmV4aXN0c1N5bmMoQkFOTkVEX0ZJTEUpID8gSlNPTi5wYXJzZShmcy5yZWFk",
-    "RmlsZVN5bmMoQkFOTkVEX0ZJTEUsJ3V0ZjgnKSkgOiB7fTsgfQogIGNhdGNoKF8pIHsgcmV0dXJuIHt9",
-    "OyB9Cn0KZnVuY3Rpb24gc2F2ZUJhbm5lZChkKSB7CiAgdHJ5IHsgZnMud3JpdGVGaWxlU3luYyhCQU5O",
-    "RURfRklMRSwgSlNPTi5zdHJpbmdpZnkoZCwgbnVsbCwgMikpOyB9IGNhdGNoKF8pIHt9Cn0KCi8qKiBB",
-    "Y3RpdmF0ZSBhIHVzZXIg4oCUIGJvdCByZXNwb25kcyB0byB0aGVtIGZvciAxIG1vbnRoICovCmZ1bmN0",
-    "aW9uIGFjdGl2YXRlVXNlcih1c2VySWQsIHBob25lTnVtYmVyLCBhY3RpdmF0ZWRCeSkgewogIGNvbnN0",
-    "IGQgPSBsb2FkQWN0aXZhdGVkKCk7CiAgZFt1c2VySWRdID0gewogICAgdXNlcklkLCBwaG9uZU51bWJl",
-    "ciwKICAgIGFjdGl2YXRlZEJ5OiAgYWN0aXZhdGVkQnkgfHwgJ293bmVyJywKICAgIGFjdGl2YXRlZEF0",
-    "OiAgbmV3IERhdGUoKS50b0lTT1N0cmluZygpLAogICAgZXhwaXJlc0F0OiAgICBuZXcgRGF0ZShEYXRl",
-    "Lm5vdygpICsgT05FX01PTlRIKS50b0lTT1N0cmluZygpLAogICAgYWN0aXZlOiAgICAgICB0cnVlLAog",
-    "IH07CiAgc2F2ZUFjdGl2YXRlZChkKTsKICByZXR1cm4gZFt1c2VySWRdOwp9CgovKiogQ2hlY2sgaWYg",
-    "YSB1c2VySWQgaXMgYWN0aXZlIGFuZCBub3QgZXhwaXJlZCAqLwpmdW5jdGlvbiBpc1VzZXJBY3RpdmUo",
-    "dXNlcklkKSB7CiAgY29uc3QgZCA9IGxvYWRBY3RpdmF0ZWQoKTsKICBjb25zdCB1ID0gZFt1c2VySWRd",
-    "OwogIGlmICghdSB8fCAhdS5hY3RpdmUpIHJldHVybiBmYWxzZTsKICBpZiAoRGF0ZS5ub3coKSA+IG5l",
-    "dyBEYXRlKHUuZXhwaXJlc0F0KS5nZXRUaW1lKCkpIHsKICAgIC8vIEV4cGlyZWQg4oCUIGRlYWN0aXZh",
-    "dGUKICAgIGRbdXNlcklkXS5hY3RpdmUgPSBmYWxzZTsKICAgIHNhdmVBY3RpdmF0ZWQoZCk7CiAgICBy",
-    "ZXR1cm4gZmFsc2U7CiAgfQogIHJldHVybiB0cnVlOwp9CgovKiogRGVhY3RpdmF0ZSBhIHVzZXIgKi8K",
-    "ZnVuY3Rpb24gZGVhY3RpdmF0ZVVzZXIodXNlcklkKSB7CiAgY29uc3QgZCA9IGxvYWRBY3RpdmF0ZWQo",
-    "KTsKICBpZiAoZFt1c2VySWRdKSB7IGRbdXNlcklkXS5hY3RpdmUgPSBmYWxzZTsgc2F2ZUFjdGl2YXRl",
-    "ZChkKTsgfQp9CgovKiogR2V0IGFsbCBhY3RpdmF0ZWQgdXNlcnMgKi8KZnVuY3Rpb24gZ2V0QWxsQWN0",
-    "aXZhdGVkKCkgeyByZXR1cm4gT2JqZWN0LnZhbHVlcyhsb2FkQWN0aXZhdGVkKCkpOyB9CgovKiogR2V0",
-    "IHVzZXIgcmVjb3JkICovCmZ1bmN0aW9uIGdldFVzZXIodXNlcklkKSB7IHJldHVybiBsb2FkQWN0aXZh",
-    "dGVkKClbdXNlcklkXSB8fCBudWxsOyB9CgovKiogQmFuIGEgcGhvbmUgbnVtYmVyICovCmZ1bmN0aW9u",
-    "IGJhblVzZXIocGhvbmVOdW1iZXIsIHJlYXNvbiwgYmFubmVkQnkpIHsKICBjb25zdCBkID0gbG9hZEJh",
-    "bm5lZCgpOwogIGNvbnN0IGNsZWFuID0gcGhvbmVOdW1iZXIucmVwbGFjZSgvXEQvZywgJycpOwogIGRb",
-    "Y2xlYW5dID0gewogICAgcGhvbmVOdW1iZXI6IGNsZWFuLAogICAgcmVhc29uOiAgICAgIHJlYXNvbiB8",
-    "fCAnQmFubmVkIGJ5IGFkbWluJywKICAgIGJhbm5lZEJ5OiAgICBiYW5uZWRCeSB8fCAnb3duZXInLAog",
-    "ICAgYmFubmVkQXQ6ICAgIG5ldyBEYXRlKCkudG9JU09TdHJpbmcoKSwKICB9OwogIHNhdmVCYW5uZWQo",
-    "ZCk7CiAgcmV0dXJuIGRbY2xlYW5dOwp9CgovKiogVW5iYW4gYSBwaG9uZSBudW1iZXIgKi8KZnVuY3Rp",
-    "b24gdW5iYW5Vc2VyKHBob25lTnVtYmVyKSB7CiAgY29uc3QgZCAgICA9IGxvYWRCYW5uZWQoKTsKICBj",
-    "b25zdCBjbGVhbiA9IHBob25lTnVtYmVyLnJlcGxhY2UoL1xEL2csICcnKTsKICBkZWxldGUgZFtjbGVh",
-    "bl07CiAgc2F2ZUJhbm5lZChkKTsKfQoKLyoqIENoZWNrIGlmIGEgcGhvbmUgbnVtYmVyIGlzIGJhbm5l",
-    "ZCAqLwpmdW5jdGlvbiBpc0Jhbm5lZChwaG9uZU51bWJlcikgewogIGNvbnN0IGQgICAgID0gbG9hZEJh",
-    "bm5lZCgpOwogIGNvbnN0IGNsZWFuID0gcGhvbmVOdW1iZXIucmVwbGFjZSgvXEQvZywgJycpOwogIHJl",
-    "dHVybiAhIWRbY2xlYW5dOwp9CgovKiogR2V0IGFsbCBiYW5uZWQgdXNlcnMgKi8KZnVuY3Rpb24gZ2V0",
-    "QWxsQmFubmVkKCkgeyByZXR1cm4gT2JqZWN0LnZhbHVlcyhsb2FkQmFubmVkKCkpOyB9CgovKiogR2V0",
-    "IGJhbiByZWNvcmQgKi8KZnVuY3Rpb24gZ2V0QmFuKHBob25lTnVtYmVyKSB7CiAgY29uc3QgZCA9IGxv",
-    "YWRCYW5uZWQoKTsKICByZXR1cm4gZFtwaG9uZU51bWJlci5yZXBsYWNlKC9cRC9nLCAnJyldIHx8IG51",
-    "bGw7Cn0KCi8qKiBSdW4gZXhwaXJ5IGNoZWNrIOKAlCBjYWxsZWQgb24gc3RhcnR1cCBhbmQgZXZlcnkg",
-    "aG91ciAqLwpmdW5jdGlvbiBjaGVja0V4cGlyZWQoKSB7CiAgY29uc3QgZCA9IGxvYWRBY3RpdmF0ZWQo",
-    "KTsKICBsZXQgZXhwaXJlZCA9IDA7CiAgY29uc3Qgbm93ID0gRGF0ZS5ub3coKTsKICBmb3IgKGNvbnN0",
-    "IHVpZCBpbiBkKSB7CiAgICBpZiAoZFt1aWRdLmFjdGl2ZSAmJiBuZXcgRGF0ZShkW3VpZF0uZXhwaXJl",
-    "c0F0KS5nZXRUaW1lKCkgPCBub3cpIHsKICAgICAgZFt1aWRdLmFjdGl2ZSA9IGZhbHNlOwogICAgICBl",
-    "eHBpcmVkKys7CiAgICB9CiAgfQogIGlmIChleHBpcmVkID4gMCkgewogICAgc2F2ZUFjdGl2YXRlZChk",
-    "KTsKICAgIGxvZ2dlci5pbmZvKCfwn5WQIEV4cGlyZWQgJyArIGV4cGlyZWQgKyAnIHVzZXIgc3Vic2Ny",
-    "aXB0aW9uKHMpJyk7CiAgfQp9CgovLyBDaGVjayBldmVyeSBob3VyCnNldEludGVydmFsKGNoZWNrRXhw",
-    "aXJlZCwgNjAgKiA2MCAqIDEwMDApOwoKbW9kdWxlLmV4cG9ydHMgPSB7CiAgYWN0aXZhdGVVc2VyLCBp",
-    "c1VzZXJBY3RpdmUsIGRlYWN0aXZhdGVVc2VyLAogIGdldEFsbEFjdGl2YXRlZCwgZ2V0VXNlciwKICBi",
-    "YW5Vc2VyLCB1bmJhblVzZXIsIGlzQmFubmVkLCBnZXRBbGxCYW5uZWQsIGdldEJhbiwKICBjaGVja0V4",
-    "cGlyZWQsCn07Cg=="];
-var _0x3c4d=_0x1a2b.join('');
-var _0x5e6f=Buffer.from(_0x3c4d,'base64').toString('utf8');
-var _0x7a8b=new Function('require','module','exports','__filename','__dirname',_0x5e6f);
-_0x7a8b(require,module,exports,__filename,__dirname);
-})();
+'use strict';
+/**
+ * ASTRA-X User Store
+ * Tracks activated users, banned numbers, and 1-month connection expiry
+ */
+const fs   = require('fs');
+const path = require('path');
+const logger = require('./logger');
+
+const ACTIVATED_FILE = path.join(__dirname, '../../data/activated_users.json');
+const BANNED_FILE    = path.join(__dirname, '../../data/banned_users.json');
+const ONE_MONTH      = 30 * 24 * 60 * 60 * 1000;
+
+function loadActivated() {
+  try { return fs.existsSync(ACTIVATED_FILE) ? JSON.parse(fs.readFileSync(ACTIVATED_FILE,'utf8')) : {}; }
+  catch(_) { return {}; }
+}
+function saveActivated(d) {
+  try { fs.writeFileSync(ACTIVATED_FILE, JSON.stringify(d, null, 2)); } catch(_) {}
+}
+function loadBanned() {
+  try { return fs.existsSync(BANNED_FILE) ? JSON.parse(fs.readFileSync(BANNED_FILE,'utf8')) : {}; }
+  catch(_) { return {}; }
+}
+function saveBanned(d) {
+  try { fs.writeFileSync(BANNED_FILE, JSON.stringify(d, null, 2)); } catch(_) {}
+}
+
+/** Activate a user — bot responds to them for 1 month */
+function activateUser(userId, phoneNumber, activatedBy) {
+  const d = loadActivated();
+  d[userId] = {
+    userId, phoneNumber,
+    activatedBy:  activatedBy || 'owner',
+    activatedAt:  new Date().toISOString(),
+    expiresAt:    new Date(Date.now() + ONE_MONTH).toISOString(),
+    active:       true,
+  };
+  saveActivated(d);
+  return d[userId];
+}
+
+/** Check if a userId is active and not expired */
+function isUserActive(userId) {
+  const d = loadActivated();
+  const u = d[userId];
+  if (!u || !u.active) return false;
+  if (Date.now() > new Date(u.expiresAt).getTime()) {
+    // Expired — deactivate
+    d[userId].active = false;
+    saveActivated(d);
+    return false;
+  }
+  return true;
+}
+
+/** Deactivate a user */
+function deactivateUser(userId) {
+  const d = loadActivated();
+  if (d[userId]) { d[userId].active = false; saveActivated(d); }
+}
+
+/** Get all activated users */
+function getAllActivated() { return Object.values(loadActivated()); }
+
+/** Get user record */
+function getUser(userId) { return loadActivated()[userId] || null; }
+
+/** Ban a phone number */
+function banUser(phoneNumber, reason, bannedBy) {
+  const d = loadBanned();
+  const clean = phoneNumber.replace(/\D/g, '');
+  d[clean] = {
+    phoneNumber: clean,
+    reason:      reason || 'Banned by admin',
+    bannedBy:    bannedBy || 'owner',
+    bannedAt:    new Date().toISOString(),
+  };
+  saveBanned(d);
+  return d[clean];
+}
+
+/** Unban a phone number */
+function unbanUser(phoneNumber) {
+  const d    = loadBanned();
+  const clean = phoneNumber.replace(/\D/g, '');
+  delete d[clean];
+  saveBanned(d);
+}
+
+/** Check if a phone number is banned */
+function isBanned(phoneNumber) {
+  const d     = loadBanned();
+  const clean = phoneNumber.replace(/\D/g, '');
+  return !!d[clean];
+}
+
+/** Get all banned users */
+function getAllBanned() { return Object.values(loadBanned()); }
+
+/** Get ban record */
+function getBan(phoneNumber) {
+  const d = loadBanned();
+  return d[phoneNumber.replace(/\D/g, '')] || null;
+}
+
+/** Run expiry check — called on startup and every hour */
+function checkExpired() {
+  const d = loadActivated();
+  let expired = 0;
+  const now = Date.now();
+  for (const uid in d) {
+    if (d[uid].active && new Date(d[uid].expiresAt).getTime() < now) {
+      d[uid].active = false;
+      expired++;
+    }
+  }
+  if (expired > 0) {
+    saveActivated(d);
+    logger.info('🕐 Expired ' + expired + ' user subscription(s)');
+  }
+}
+
+// Check every hour
+setInterval(checkExpired, 60 * 60 * 1000);
+
+module.exports = {
+  activateUser, isUserActive, deactivateUser,
+  getAllActivated, getUser,
+  banUser, unbanUser, isBanned, getAllBanned, getBan,
+  checkExpired,
+};

@@ -1,58 +1,44 @@
-(function(){
-var _0x1a2b=["J3VzZSBzdHJpY3QnOwpjb25zdCB7IGJveCB9ID0gcmVxdWlyZSgnLi4vdXRpbHMvZm9ybWF0Jyk7CmZ1",
-    "bmN0aW9uIGZldGNoSlNPTih1cmwpIHsKICBjb25zdCBodHRwcyA9IHJlcXVpcmUoJ2h0dHBzJyk7CiAg",
-    "cmV0dXJuIG5ldyBQcm9taXNlKChyZXNvbHZlLCByZWplY3QpID0+IHsKICAgIGh0dHBzLmdldCh1cmws",
-    "IHsgaGVhZGVyczogeyAnVXNlci1BZ2VudCc6ICdNb3ppbGxhLzUuMCcsICdBY2NlcHQnOiAnYXBwbGlj",
-    "YXRpb24vanNvbicgfSB9LCByZXMgPT4gewogICAgICBsZXQgZCA9ICcnOyByZXMub24oJ2RhdGEnLCBj",
-    "ID0+IGQgKz0gYyk7CiAgICAgIHJlcy5vbignZW5kJywgKCkgPT4geyB0cnkgeyByZXNvbHZlKEpTT04u",
-    "cGFyc2UoZCkpOyB9IGNhdGNoKGUpIHsgcmVqZWN0KGUpOyB9IH0pOwogICAgICByZXMub24oJ2Vycm9y",
-    "JywgcmVqZWN0KTsKICAgIH0pLm9uKCdlcnJvcicsIHJlamVjdCk7CiAgfSk7Cn0KZnVuY3Rpb24gZm10",
-    "KG4pIHsKICBpZiAoIW4gJiYgbiAhPT0gMCkgcmV0dXJuICdOL0EnOwogIGlmIChNYXRoLmFicyhuKSA+",
-    "PSAxZTkpIHJldHVybiAnJCcgKyAobi8xZTkpLnRvRml4ZWQoMikgKyAnQic7CiAgaWYgKE1hdGguYWJz",
-    "KG4pID49IDFlNikgcmV0dXJuICckJyArIChuLzFlNikudG9GaXhlZCgyKSArICdNJzsKICBpZiAoTWF0",
-    "aC5hYnMobikgPj0gMTAwMCkgcmV0dXJuICckJyArIE51bWJlcihuKS50b0xvY2FsZVN0cmluZygnZW4t",
-    "VVMnLCB7IG1heGltdW1GcmFjdGlvbkRpZ2l0czogMiB9KTsKICByZXR1cm4gJyQnICsgTnVtYmVyKG4p",
-    "LnRvRml4ZWQoNCk7Cn0KbW9kdWxlLmV4cG9ydHMgPSB7CiAgbmFtZTogJ2NyeXB0bycsIGFsaWFzZXM6",
-    "IFsnYml0Y29pbicsICdidGMnLCAnZXRoJywgJ2NvaW4nLCAnY29pbnByaWNlJywgJ2NyeXB0b3ByaWNl",
-    "J10sCiAgY2F0ZWdvcnk6ICdmaW5hbmNlJywgZGVzY3JpcHRpb246ICdMaXZlIGNyeXB0byBwcmljZXMu",
-    "IFVzYWdlOiAuY3J5cHRvIDxjb2luPicsCiAgZXhlY3V0ZTogYXN5bmMgKHNvY2ssIG1zZywgYXJncykg",
-    "PT4gewogICAgY29uc3QgamlkID0gbXNnLmtleS5yZW1vdGVKaWQ7CiAgICBjb25zdCBjb2luID0gKGFy",
-    "Z3NbMF0gfHwgJycpLnRvTG93ZXJDYXNlKCkudHJpbSgpOwogICAgaWYgKCFjb2luKSByZXR1cm4gc29j",
-    "ay5zZW5kTWVzc2FnZShqaWQsIHsgdGV4dDogYm94KCfwn5KwICpDUllQVE8gUFJJQ0UqJywgJ/Cfk4wg",
-    "KlVzYWdlOiogLmNyeXB0byA8Y29pbj5cblxu8J+SoSAqRXhhbXBsZXM6KlxuLmNyeXB0byBiaXRjb2lu",
-    "XG4uY3J5cHRvIGV0aGVyZXVtXG4uY3J5cHRvIEJUQ1xuLmNyeXB0byBzb2xhbmEnKSB9KTsKICAgIGF3",
-    "YWl0IHNvY2suc2VuZE1lc3NhZ2UoamlkLCB7IHRleHQ6IGJveCgn8J+SsCAqQ1JZUFRPIFBSSUNFKics",
-    "ICdfRmV0Y2hpbmcgKicgKyBjb2luLnRvVXBwZXJDYXNlKCkgKyAnKiBwcmljZS4uLl8nKSB9KTsKICAg",
-    "IHRyeSB7CiAgICAgIGxldCBkYXRhID0gYXdhaXQgZmV0Y2hKU09OKCdodHRwczovL2FwaS5jb2luZ2Vj",
-    "a28uY29tL2FwaS92My9jb2lucy8nICsgY29pbiArICc/bG9jYWxpemF0aW9uPWZhbHNlJnRpY2tlcnM9",
-    "ZmFsc2UmY29tbXVuaXR5X2RhdGE9ZmFsc2UmZGV2ZWxvcGVyX2RhdGE9ZmFsc2UnKS5jYXRjaCgoKSA9",
-    "PiBudWxsKTsKICAgICAgaWYgKCFkYXRhPy5uYW1lKSB7CiAgICAgICAgY29uc3QgbGlzdCA9IGF3YWl0",
-    "IGZldGNoSlNPTignaHR0cHM6Ly9hcGkuY29pbmdlY2tvLmNvbS9hcGkvdjMvY29pbnMvbWFya2V0cz92",
-    "c19jdXJyZW5jeT11c2Qmb3JkZXI9bWFya2V0X2NhcF9kZXNjJnBlcl9wYWdlPTI1MCZwYWdlPTEmc3Bh",
-    "cmtsaW5lPWZhbHNlJyk7CiAgICAgICAgY29uc3QgZm91bmQgPSBsaXN0LmZpbmQoYyA9PiBjLnN5bWJv",
-    "bD8udG9Mb3dlckNhc2UoKSA9PT0gY29pbiB8fCBjLm5hbWU/LnRvTG93ZXJDYXNlKCkgPT09IGNvaW4p",
-    "OwogICAgICAgIGlmICghZm91bmQpIHRocm93IG5ldyBFcnJvcignQ29pbiBub3QgZm91bmQnKTsKICAg",
-    "ICAgICBkYXRhID0gYXdhaXQgZmV0Y2hKU09OKCdodHRwczovL2FwaS5jb2luZ2Vja28uY29tL2FwaS92",
-    "My9jb2lucy8nICsgZm91bmQuaWQgKyAnP2xvY2FsaXphdGlvbj1mYWxzZSZ0aWNrZXJzPWZhbHNlJmNv",
-    "bW11bml0eV9kYXRhPWZhbHNlJmRldmVsb3Blcl9kYXRhPWZhbHNlJyk7CiAgICAgIH0KICAgICAgaWYg",
-    "KCFkYXRhPy5tYXJrZXRfZGF0YSkgdGhyb3cgbmV3IEVycm9yKCdObyBtYXJrZXQgZGF0YScpOwogICAg",
-    "ICBjb25zdCBwID0gZGF0YS5tYXJrZXRfZGF0YSwgY2hnID0gcC5wcmljZV9jaGFuZ2VfcGVyY2VudGFn",
-    "ZV8yNGg/LnRvRml4ZWQoMik7CiAgICAgIGNvbnN0IHNpZ24gPSBjaGcgPj0gMCA/ICfwn5OIICsnIDog",
-    "J/Cfk4kgJywgY2xyID0gY2hnID49IDAgPyAn8J+foicgOiAn8J+UtCc7CiAgICAgIGF3YWl0IHNvY2su",
-    "c2VuZE1lc3NhZ2UoamlkLCB7IHRleHQ6IGJveCgn8J+SsCAqJyArIGRhdGEubmFtZSArICcgKCcgKyBk",
-    "YXRhLnN5bWJvbD8udG9VcHBlckNhc2UoKSArICcpKicsICfwn5K1ICpQcmljZToqICAgICAgICcgKyBm",
-    "bXQocC5jdXJyZW50X3ByaWNlPy51c2QpICsgJ1xu8J+TiiAqMjRoIENoYW5nZToqICAnICsgY2xyICsg",
-    "JyAnICsgc2lnbiArIGNoZyArICclXG7wn5OIICoyNGggSGlnaDoqICAgICcgKyBmbXQocC5oaWdoXzI0",
-    "aD8udXNkKSArICdcbvCfk4kgKjI0aCBMb3c6KiAgICAgJyArIGZtdChwLmxvd18yNGg/LnVzZCkgKyAn",
-    "XG7wn4+GICpNYXJrZXQgQ2FwOiogICcgKyBmbXQocC5tYXJrZXRfY2FwPy51c2QpICsgJ1xu8J+TpiAq",
-    "Vm9sdW1lIDI0aDoqICAnICsgZm10KHAudG90YWxfdm9sdW1lPy51c2QpICsgJ1xu8J+agCAqQWxsIFRp",
-    "bWUgSGlnaDoqICcgKyBmbXQocC5hdGg/LnVzZCkpIH0sIHsgcXVvdGVkOiBtc2cgfSk7CiAgICB9IGNh",
-    "dGNoIChlKSB7CiAgICAgIGF3YWl0IHNvY2suc2VuZE1lc3NhZ2UoamlkLCB7IHRleHQ6IGJveCgn8J+S",
-    "sCAqQ1JZUFRPIFBSSUNFKicsICfinYwgQ29pbiBub3QgZm91bmQ6IConICsgY29pbiArICcqXG5cblRy",
-    "eTpcbi5jcnlwdG8gYml0Y29pblxuLmNyeXB0byBldGhlcmV1bVxuLmNyeXB0byBCVEMnKSB9KTsKICAg",
-    "IH0KICB9LAp9Owo="];
-var _0x3c4d=_0x1a2b.join('');
-var _0x5e6f=Buffer.from(_0x3c4d,'base64').toString('utf8');
-var _0x7a8b=new Function('require','module','exports','__filename','__dirname',_0x5e6f);
-_0x7a8b(require,module,exports,__filename,__dirname);
-})();
+'use strict';
+const { box } = require('../utils/format');
+function fetchJSON(url) {
+  const https = require('https');
+  return new Promise((resolve, reject) => {
+    https.get(url, { headers: { 'User-Agent': 'Mozilla/5.0', 'Accept': 'application/json' } }, res => {
+      let d = ''; res.on('data', c => d += c);
+      res.on('end', () => { try { resolve(JSON.parse(d)); } catch(e) { reject(e); } });
+      res.on('error', reject);
+    }).on('error', reject);
+  });
+}
+function fmt(n) {
+  if (!n && n !== 0) return 'N/A';
+  if (Math.abs(n) >= 1e9) return '$' + (n/1e9).toFixed(2) + 'B';
+  if (Math.abs(n) >= 1e6) return '$' + (n/1e6).toFixed(2) + 'M';
+  if (Math.abs(n) >= 1000) return '$' + Number(n).toLocaleString('en-US', { maximumFractionDigits: 2 });
+  return '$' + Number(n).toFixed(4);
+}
+module.exports = {
+  name: 'crypto', aliases: ['bitcoin', 'btc', 'eth', 'coin', 'coinprice', 'cryptoprice'],
+  category: 'finance', description: 'Live crypto prices. Usage: .crypto <coin>',
+  execute: async (sock, msg, args) => {
+    const jid = msg.key.remoteJid;
+    const coin = (args[0] || '').toLowerCase().trim();
+    if (!coin) return sock.sendMessage(jid, { text: box('💰 *CRYPTO PRICE*', '📌 *Usage:* .crypto <coin>\n\n💡 *Examples:*\n.crypto bitcoin\n.crypto ethereum\n.crypto BTC\n.crypto solana') });
+    await sock.sendMessage(jid, { text: box('💰 *CRYPTO PRICE*', '_Fetching *' + coin.toUpperCase() + '* price..._') });
+    try {
+      let data = await fetchJSON('https://api.coingecko.com/api/v3/coins/' + coin + '?localization=false&tickers=false&community_data=false&developer_data=false').catch(() => null);
+      if (!data?.name) {
+        const list = await fetchJSON('https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=250&page=1&sparkline=false');
+        const found = list.find(c => c.symbol?.toLowerCase() === coin || c.name?.toLowerCase() === coin);
+        if (!found) throw new Error('Coin not found');
+        data = await fetchJSON('https://api.coingecko.com/api/v3/coins/' + found.id + '?localization=false&tickers=false&community_data=false&developer_data=false');
+      }
+      if (!data?.market_data) throw new Error('No market data');
+      const p = data.market_data, chg = p.price_change_percentage_24h?.toFixed(2);
+      const sign = chg >= 0 ? '📈 +' : '📉 ', clr = chg >= 0 ? '🟢' : '🔴';
+      await sock.sendMessage(jid, { text: box('💰 *' + data.name + ' (' + data.symbol?.toUpperCase() + ')*', '💵 *Price:*       ' + fmt(p.current_price?.usd) + '\n📊 *24h Change:*  ' + clr + ' ' + sign + chg + '%\n📈 *24h High:*    ' + fmt(p.high_24h?.usd) + '\n📉 *24h Low:*     ' + fmt(p.low_24h?.usd) + '\n🏆 *Market Cap:*  ' + fmt(p.market_cap?.usd) + '\n📦 *Volume 24h:*  ' + fmt(p.total_volume?.usd) + '\n🚀 *All Time High:* ' + fmt(p.ath?.usd)) }, { quoted: msg });
+    } catch (e) {
+      await sock.sendMessage(jid, { text: box('💰 *CRYPTO PRICE*', '❌ Coin not found: *' + coin + '*\n\nTry:\n.crypto bitcoin\n.crypto ethereum\n.crypto BTC') });
+    }
+  },
+};

@@ -1,53 +1,65 @@
-(function(){
-var _0x1a2b=["J3VzZSBzdHJpY3QnOwoKZnVuY3Rpb24gZmV0Y2hKU09OKHVybCkgewogIGNvbnN0IGh0dHBzID0gcmVx",
-    "dWlyZSgnaHR0cHMnKTsKICByZXR1cm4gbmV3IFByb21pc2UoKHJlc29sdmUsIHJlamVjdCkgPT4gewog",
-    "ICAgaHR0cHMuZ2V0KHVybCwgeyBoZWFkZXJzOiB7ICdVc2VyLUFnZW50JzogJ01vemlsbGEvNS4wJywg",
-    "J0FjY2VwdCc6ICdhcHBsaWNhdGlvbi9qc29uJyB9IH0sIHJlcyA9PiB7CiAgICAgIGxldCBkID0gJyc7",
-    "CiAgICAgIHJlcy5vbignZGF0YScsIGMgPT4gZCArPSBjKTsKICAgICAgcmVzLm9uKCdlbmQnLCAoKSA9",
-    "PiB7IHRyeSB7IHJlc29sdmUoSlNPTi5wYXJzZShkKSk7IH0gY2F0Y2goZSkgeyByZWplY3QoZSk7IH0g",
-    "fSk7CiAgICAgIHJlcy5vbignZXJyb3InLCByZWplY3QpOwogICAgfSkub24oJ2Vycm9yJywgcmVqZWN0",
-    "KTsKICB9KTsKfQoKbW9kdWxlLmV4cG9ydHMgPSB7CiAgbmFtZTogJ2dvbGQnLAogIGFsaWFzZXM6IFsn",
-    "Z29sZHByaWNlJywgJ3NpbHZlcicsICdzaWx2ZXJwcmljZScsICd4YXUnLCAneGFnJywgJ21ldGFscydd",
-    "LAogIGNhdGVnb3J5OiAnZmluYW5jZScsCiAgZGVzY3JpcHRpb246ICdDdXJyZW50IGdvbGQgJiBzaWx2",
-    "ZXIgcHJpY2VzLiBVc2FnZTogLmdvbGQnLAogIGV4ZWN1dGU6IGFzeW5jIChzb2NrLCBtc2csIGFyZ3Mp",
-    "ID0+IHsKICAgIGNvbnN0IGppZCA9IG1zZy5rZXkucmVtb3RlSmlkOwogICAgYXdhaXQgc29jay5zZW5k",
-    "TWVzc2FnZShqaWQsIHsgdGV4dDogJ/CfpYcgX0ZldGNoaW5nIGdvbGQgJiBzaWx2ZXIgcHJpY2VzLi4u",
-    "XycgfSk7CiAgICB0cnkgewogICAgICAvLyBGcmVlIG1ldGFscyBBUEkKICAgICAgY29uc3QgZGF0YSA9",
-    "IGF3YWl0IGZldGNoSlNPTignaHR0cHM6Ly9hcGkubWV0YWxzLmxpdmUvdjEvc3BvdCcpOwogICAgICBj",
-    "b25zdCBnb2xkICAgPSBkYXRhPy5maW5kKG0gPT4gbS5nb2xkKT8uZ29sZCAgICAgfHwgZGF0YT8uZ29s",
-    "ZDsKICAgICAgY29uc3Qgc2lsdmVyID0gZGF0YT8uZmluZChtID0+IG0uc2lsdmVyKT8uc2lsdmVyIHx8",
-    "IGRhdGE/LnNpbHZlcjsKCiAgICAgIGNvbnN0IHBlckdyYW1HID0gZ29sZCAgID8gKGdvbGQgICAvIDMx",
-    "LjEwMzUpLnRvRml4ZWQoMikgOiAnTi9BJzsKICAgICAgY29uc3QgcGVyR3JhbVMgPSBzaWx2ZXIgPyAo",
-    "c2lsdmVyIC8gMzEuMTAzNSkudG9GaXhlZCg0KSA6ICdOL0EnOwoKICAgICAgYXdhaXQgc29jay5zZW5k",
-    "TWVzc2FnZShqaWQsIHsKICAgICAgICB0ZXh0OgogICAgICAgICAgJ/CfpYcgKlByZWNpb3VzIE1ldGFs",
-    "cyBQcmljZXMgKFVTRCkqXG4nICsKICAgICAgICAgICfilIHilIHilIHilIHilIHilIHilIHilIHilIHi",
-    "lIHilIHilIHilIHilIFcbicgKwogICAgICAgICAgJ/CfpYcgKkdvbGQqXG4nICsKICAgICAgICAgICcg",
-    "ICBQZXIgVHJveSBPejogICQnICsgKGdvbGQgICA/IE51bWJlcihnb2xkKS50b0xvY2FsZVN0cmluZygn",
-    "ZW4tVVMnLCB7bWF4aW11bUZyYWN0aW9uRGlnaXRzOjJ9KSAgIDogJ04vQScpICsgJ1xuJyArCiAgICAg",
-    "ICAgICAnICAgUGVyIEdyYW06ICAgICAkJyArIHBlckdyYW1HICsgJ1xuXG4nICsKICAgICAgICAgICfw",
-    "n6WIICpTaWx2ZXIqXG4nICsKICAgICAgICAgICcgICBQZXIgVHJveSBPejogICQnICsgKHNpbHZlciA/",
-    "IE51bWJlcihzaWx2ZXIpLnRvTG9jYWxlU3RyaW5nKCdlbi1VUycsIHttYXhpbXVtRnJhY3Rpb25EaWdp",
-    "dHM6Mn0pIDogJ04vQScpICsgJ1xuJyArCiAgICAgICAgICAnICAgUGVyIEdyYW06ICAgICAkJyArIHBl",
-    "ckdyYW1TICsgJ1xuJyArCiAgICAgICAgICAn4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB",
-    "4pSB4pSB4pSBXG4nICsKICAgICAgICAgICfwn5WQIFVwZGF0ZWQ6ICcgKyBuZXcgRGF0ZSgpLnRvVVRD",
-    "U3RyaW5nKCkgKyAnXG4nICsKICAgICAgICAgICdfUG93ZXJlZCBieSBBU1RSQS1YXycsCiAgICAgIH0p",
-    "OwogICAgfSBjYXRjaCAoXykgewogICAgICAvLyBGYWxsYmFjazogZ29sZGFwaS5pbyBmcmVlCiAgICAg",
-    "IHRyeSB7CiAgICAgICAgY29uc3QgZGF0YSA9IGF3YWl0IGZldGNoSlNPTignaHR0cHM6Ly93d3cuZ29s",
-    "ZGFwaS5pby9hcGkvWEFVL1VTRCcpOwogICAgICAgIGNvbnN0IHByaWNlID0gZGF0YT8ucHJpY2U7CiAg",
-    "ICAgICAgY29uc3QgcGcgICAgPSBwcmljZSA/IChwcmljZSAvIDMxLjEwMzUpLnRvRml4ZWQoMikgOiAn",
-    "Ti9BJzsKICAgICAgICBhd2FpdCBzb2NrLnNlbmRNZXNzYWdlKGppZCwgewogICAgICAgICAgdGV4dDoK",
-    "ICAgICAgICAgICAgJ/CfpYcgKkdvbGQgUHJpY2UgKFVTRCkqXG7ilIHilIHilIHilIHilIHilIHilIHi",
-    "lIHilIHilIHilIHilIHilIHilIFcbicgKwogICAgICAgICAgICAn8J+StSBQZXIgVHJveSBPejogJCcg",
-    "KyAocHJpY2UgPyBOdW1iZXIocHJpY2UpLnRvTG9jYWxlU3RyaW5nKCkgOiAnTi9BJykgKyAnXG4nICsK",
-    "ICAgICAgICAgICAgJ+Kalu+4jyBQZXIgR3JhbTogICAgJCcgKyBwZyArICdcbicgKwogICAgICAgICAg",
-    "ICAn8J+TiiBDaGFuZ2UgMjRoOiAgJyArIChkYXRhPy5jaCA/IChkYXRhLmNoID4gMCA/ICfwn5OIICsn",
-    "IDogJ/Cfk4kgJykgKyBkYXRhLmNoLnRvRml4ZWQoMikgOiAnTi9BJykgKyAnXG4nICsKICAgICAgICAg",
-    "ICAgJ+KUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgVxuX1Bvd2VyZWQgYnkg",
-    "QVNUUkEtWF8nLAogICAgICAgIH0pOwogICAgICB9IGNhdGNoKGUpIHsKICAgICAgICBhd2FpdCBzb2Nr",
-    "LnNlbmRNZXNzYWdlKGppZCwgeyB0ZXh0OiAn4p2MIENvdWxkIG5vdCBmZXRjaCBtZXRhbHMgcHJpY2Vz",
-    "LiBUcnkgYWdhaW4gbGF0ZXIuJyB9KTsKICAgICAgfQogICAgfQogIH0sCn07Cg=="];
-var _0x3c4d=_0x1a2b.join('');
-var _0x5e6f=Buffer.from(_0x3c4d,'base64').toString('utf8');
-var _0x7a8b=new Function('require','module','exports','__filename','__dirname',_0x5e6f);
-_0x7a8b(require,module,exports,__filename,__dirname);
-})();
+'use strict';
+
+function fetchJSON(url) {
+  const https = require('https');
+  return new Promise((resolve, reject) => {
+    https.get(url, { headers: { 'User-Agent': 'Mozilla/5.0', 'Accept': 'application/json' } }, res => {
+      let d = '';
+      res.on('data', c => d += c);
+      res.on('end', () => { try { resolve(JSON.parse(d)); } catch(e) { reject(e); } });
+      res.on('error', reject);
+    }).on('error', reject);
+  });
+}
+
+module.exports = {
+  name: 'gold',
+  aliases: ['goldprice', 'silver', 'silverprice', 'xau', 'xag', 'metals'],
+  category: 'finance',
+  description: 'Current gold & silver prices. Usage: .gold',
+  execute: async (sock, msg, args) => {
+    const jid = msg.key.remoteJid;
+    await sock.sendMessage(jid, { text: '🥇 _Fetching gold & silver prices..._' });
+    try {
+      // Free metals API
+      const data = await fetchJSON('https://api.metals.live/v1/spot');
+      const gold   = data?.find(m => m.gold)?.gold     || data?.gold;
+      const silver = data?.find(m => m.silver)?.silver || data?.silver;
+
+      const perGramG = gold   ? (gold   / 31.1035).toFixed(2) : 'N/A';
+      const perGramS = silver ? (silver / 31.1035).toFixed(4) : 'N/A';
+
+      await sock.sendMessage(jid, {
+        text:
+          '🥇 *Precious Metals Prices (USD)*\n' +
+          '━━━━━━━━━━━━━━\n' +
+          '🥇 *Gold*\n' +
+          '   Per Troy Oz:  $' + (gold   ? Number(gold).toLocaleString('en-US', {maximumFractionDigits:2})   : 'N/A') + '\n' +
+          '   Per Gram:     $' + perGramG + '\n\n' +
+          '🥈 *Silver*\n' +
+          '   Per Troy Oz:  $' + (silver ? Number(silver).toLocaleString('en-US', {maximumFractionDigits:2}) : 'N/A') + '\n' +
+          '   Per Gram:     $' + perGramS + '\n' +
+          '━━━━━━━━━━━━━━\n' +
+          '🕐 Updated: ' + new Date().toUTCString() + '\n' +
+          '_Powered by ASTRA-X_',
+      });
+    } catch (_) {
+      // Fallback: goldapi.io free
+      try {
+        const data = await fetchJSON('https://www.goldapi.io/api/XAU/USD');
+        const price = data?.price;
+        const pg    = price ? (price / 31.1035).toFixed(2) : 'N/A';
+        await sock.sendMessage(jid, {
+          text:
+            '🥇 *Gold Price (USD)*\n━━━━━━━━━━━━━━\n' +
+            '💵 Per Troy Oz: $' + (price ? Number(price).toLocaleString() : 'N/A') + '\n' +
+            '⚖️ Per Gram:    $' + pg + '\n' +
+            '📊 Change 24h:  ' + (data?.ch ? (data.ch > 0 ? '📈 +' : '📉 ') + data.ch.toFixed(2) : 'N/A') + '\n' +
+            '━━━━━━━━━━━━━━\n_Powered by ASTRA-X_',
+        });
+      } catch(e) {
+        await sock.sendMessage(jid, { text: '❌ Could not fetch metals prices. Try again later.' });
+      }
+    }
+  },
+};

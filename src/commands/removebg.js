@@ -1,50 +1,58 @@
-(function(){
-var _0x1a2b=["J3VzZSBzdHJpY3QnOwpjb25zdCB7IGRvd25sb2FkTWVkaWFNZXNzYWdlIH0gPSByZXF1aXJlKCdAd2hp",
-    "c2tleXNvY2tldHMvYmFpbGV5cycpOwpjb25zdCB7IGZldGNoQnVmZmVyIH0gPSByZXF1aXJlKCcuLi91",
-    "dGlscy95dGRscCcpOwpjb25zdCBmcyA9IHJlcXVpcmUoJ2ZzJyksIG9zID0gcmVxdWlyZSgnb3MnKSwg",
-    "cGF0aCA9IHJlcXVpcmUoJ3BhdGgnKTsKY29uc3QgaHR0cHMgPSByZXF1aXJlKCdodHRwcycpOwoKZnVu",
-    "Y3Rpb24gcmVtb3ZlQmFja2dyb3VuZChidWYpIHsKICByZXR1cm4gbmV3IFByb21pc2UoKHJlc29sdmUs",
-    "IHJlamVjdCkgPT4gewogICAgY29uc3QgYm91bmRhcnkgPSAnLS0tLUZvcm1Cb3VuZGFyeScgKyBEYXRl",
-    "Lm5vdygpOwogICAgY29uc3QgZmlsZW5hbWUgPSAnaW1hZ2UuanBnJzsKICAgIGNvbnN0IHByZSAgPSBC",
-    "dWZmZXIuZnJvbSgnLS0nICsgYm91bmRhcnkgKyAnXHJcbkNvbnRlbnQtRGlzcG9zaXRpb246IGZvcm0t",
-    "ZGF0YTsgbmFtZT0iaW1hZ2VfZmlsZSI7IGZpbGVuYW1lPSInICsgZmlsZW5hbWUgKyAnIlxyXG5Db250",
-    "ZW50LVR5cGU6IGltYWdlL2pwZWdcclxuXHJcbicpOwogICAgY29uc3QgcG9zdCA9IEJ1ZmZlci5mcm9t",
-    "KCdcclxuLS0nICsgYm91bmRhcnkgKyAnLS1cclxuJyk7CiAgICBjb25zdCBib2R5ID0gQnVmZmVyLmNv",
-    "bmNhdChbcHJlLCBidWYsIHBvc3RdKTsKICAgIGNvbnN0IHJlcSA9IGh0dHBzLnJlcXVlc3QoewogICAg",
-    "ICBob3N0bmFtZTogJ3Nkay5waG90b3Jvb20uY29tJywKICAgICAgcGF0aDogICAgICcvdjEvc2VnbWVu",
-    "dCcsCiAgICAgIG1ldGhvZDogICAnUE9TVCcsCiAgICAgIGhlYWRlcnM6ICB7CiAgICAgICAgJ0NvbnRl",
-    "bnQtVHlwZSc6ICAgJ211bHRpcGFydC9mb3JtLWRhdGE7IGJvdW5kYXJ5PScgKyBib3VuZGFyeSwKICAg",
-    "ICAgICAnQ29udGVudC1MZW5ndGgnOiBib2R5Lmxlbmd0aCwKICAgICAgICAneC1hcGkta2V5JzogICAg",
-    "ICAnc2FuZGJveF82Y2QzNGY3ZTgxM2RlMjg3OGQzZjdiNzY2YzVkOGI5N2UyYzZlNGYzJywgLy8gZnJl",
-    "ZSBzYW5kYm94IGtleQogICAgICB9LAogICAgfSwgcmVzID0+IHsKICAgICAgY29uc3QgY2h1bmtzID0g",
-    "W107CiAgICAgIHJlcy5vbignZGF0YScsIGMgPT4gY2h1bmtzLnB1c2goYykpOwogICAgICByZXMub24o",
-    "J2VuZCcsICgpID0+IHsKICAgICAgICBpZiAocmVzLnN0YXR1c0NvZGUgPT09IDIwMCkgcmVzb2x2ZShC",
-    "dWZmZXIuY29uY2F0KGNodW5rcykpOwogICAgICAgIGVsc2UgcmVqZWN0KG5ldyBFcnJvcignUmVtb3Zl",
-    "IEJHIGZhaWxlZCAoc3RhdHVzICcgKyByZXMuc3RhdHVzQ29kZSArICcpJykpOwogICAgICB9KTsKICAg",
-    "IH0pOwogICAgcmVxLm9uKCdlcnJvcicsIHJlamVjdCk7CiAgICByZXEuc2V0VGltZW91dCgzMDAwMCwg",
-    "KCkgPT4geyByZXEuZGVzdHJveSgpOyByZWplY3QobmV3IEVycm9yKCdUaW1lb3V0JykpOyB9KTsKICAg",
-    "IHJlcS53cml0ZShib2R5KTsKICAgIHJlcS5lbmQoKTsKICB9KTsKfQoKbW9kdWxlLmV4cG9ydHMgPSB7",
-    "CiAgbmFtZTogJ3JlbW92ZWJnJywKICBhbGlhc2VzOiBbJ3JtYmcnLCAnbm9iZycsICdiZ3JlbW92ZScs",
-    "ICdjdXRvdXQnXSwKICBjYXRlZ29yeTogJ21lZGlhJywKICBkZXNjcmlwdGlvbjogJ1JlbW92ZSBiYWNr",
-    "Z3JvdW5kIGZyb20gYW4gaW1hZ2UuIFJlcGx5IHRvIGltYWdlIHdpdGggLnJlbW92ZWJnJywKICBleGVj",
-    "dXRlOiBhc3luYyAoc29jaywgbXNnKSA9PiB7CiAgICBjb25zdCBqaWQgICAgPSBtc2cua2V5LnJlbW90",
-    "ZUppZDsKICAgIGNvbnN0IHF1b3RlZCA9IG1zZy5tZXNzYWdlPy5leHRlbmRlZFRleHRNZXNzYWdlPy5j",
-    "b250ZXh0SW5mbz8ucXVvdGVkTWVzc2FnZTsKICAgIGNvbnN0IGltZ01zZyA9IG1zZy5tZXNzYWdlPy5p",
-    "bWFnZU1lc3NhZ2UgfHwgcXVvdGVkPy5pbWFnZU1lc3NhZ2U7CiAgICBpZiAoIWltZ01zZykgcmV0dXJu",
-    "IHNvY2suc2VuZE1lc3NhZ2UoamlkLCB7IHRleHQ6ICfinYwgUmVwbHkgdG8gYW4gKmltYWdlKiB3aXRo",
-    "IC5yZW1vdmViZycgfSk7CiAgICBhd2FpdCBzb2NrLnNlbmRNZXNzYWdlKGppZCwgeyB0ZXh0OiAn4pyC",
-    "77iPIF9SZW1vdmluZyBiYWNrZ3JvdW5kLi4uXycgfSk7CiAgICB0cnkgewogICAgICBjb25zdCB0YXJn",
-    "ZXQgPSBxdW90ZWQgPyB7IC4uLm1zZywgbWVzc2FnZTogcXVvdGVkIH0gOiBtc2c7CiAgICAgIGNvbnN0",
-    "IGJ1ZiA9IGF3YWl0IGRvd25sb2FkTWVkaWFNZXNzYWdlKHRhcmdldCwgJ2J1ZmZlcicsIHt9LCB7IGxv",
-    "Z2dlcjogY29uc29sZSwgcmV1cGxvYWRSZXF1ZXN0OiBzb2NrLnVwZGF0ZU1lZGlhTWVzc2FnZSB9KTsK",
-    "ICAgICAgY29uc3QgcmVzdWx0ID0gYXdhaXQgcmVtb3ZlQmFja2dyb3VuZChidWYpOwogICAgICBhd2Fp",
-    "dCBzb2NrLnNlbmRNZXNzYWdlKGppZCwgeyBpbWFnZTogcmVzdWx0LCBjYXB0aW9uOiAn4pyFIEJhY2tn",
-    "cm91bmQgcmVtb3ZlZCFcbl9Qb3dlcmVkIGJ5IEFTVFJBLVhfJyB9LCB7IHF1b3RlZDogbXNnIH0pOwog",
-    "ICAgfSBjYXRjaCAoZSkgewogICAgICBhd2FpdCBzb2NrLnNlbmRNZXNzYWdlKGppZCwgeyB0ZXh0OiAn",
-    "4p2MIEZhaWxlZDogJyArIGUubWVzc2FnZSArICdcblxuVGlwOiBNYWtlIHN1cmUgdGhlIGltYWdlIGhh",
-    "cyBhIGNsZWFyIHN1YmplY3QuJyB9KTsKICAgIH0KICB9LAp9Owo="];
-var _0x3c4d=_0x1a2b.join('');
-var _0x5e6f=Buffer.from(_0x3c4d,'base64').toString('utf8');
-var _0x7a8b=new Function('require','module','exports','__filename','__dirname',_0x5e6f);
-_0x7a8b(require,module,exports,__filename,__dirname);
-})();
+'use strict';
+const { downloadMediaMessage } = require('@whiskeysockets/baileys');
+const { fetchBuffer } = require('../utils/ytdlp');
+const fs = require('fs'), os = require('os'), path = require('path');
+const https = require('https');
+
+function removeBackground(buf) {
+  return new Promise((resolve, reject) => {
+    const boundary = '----FormBoundary' + Date.now();
+    const filename = 'image.jpg';
+    const pre  = Buffer.from('--' + boundary + '\r\nContent-Disposition: form-data; name="image_file"; filename="' + filename + '"\r\nContent-Type: image/jpeg\r\n\r\n');
+    const post = Buffer.from('\r\n--' + boundary + '--\r\n');
+    const body = Buffer.concat([pre, buf, post]);
+    const req = https.request({
+      hostname: 'sdk.photoroom.com',
+      path:     '/v1/segment',
+      method:   'POST',
+      headers:  {
+        'Content-Type':   'multipart/form-data; boundary=' + boundary,
+        'Content-Length': body.length,
+        'x-api-key':      'sandbox_6cd34f7e813de2878d3f7b766c5d8b97e2c6e4f3', // free sandbox key
+      },
+    }, res => {
+      const chunks = [];
+      res.on('data', c => chunks.push(c));
+      res.on('end', () => {
+        if (res.statusCode === 200) resolve(Buffer.concat(chunks));
+        else reject(new Error('Remove BG failed (status ' + res.statusCode + ')'));
+      });
+    });
+    req.on('error', reject);
+    req.setTimeout(30000, () => { req.destroy(); reject(new Error('Timeout')); });
+    req.write(body);
+    req.end();
+  });
+}
+
+module.exports = {
+  name: 'removebg',
+  aliases: ['rmbg', 'nobg', 'bgremove', 'cutout'],
+  category: 'media',
+  description: 'Remove background from an image. Reply to image with .removebg',
+  execute: async (sock, msg) => {
+    const jid    = msg.key.remoteJid;
+    const quoted = msg.message?.extendedTextMessage?.contextInfo?.quotedMessage;
+    const imgMsg = msg.message?.imageMessage || quoted?.imageMessage;
+    if (!imgMsg) return sock.sendMessage(jid, { text: '❌ Reply to an *image* with .removebg' });
+    await sock.sendMessage(jid, { text: '✂️ _Removing background..._' });
+    try {
+      const target = quoted ? { ...msg, message: quoted } : msg;
+      const buf = await downloadMediaMessage(target, 'buffer', {}, { logger: console, reuploadRequest: sock.updateMediaMessage });
+      const result = await removeBackground(buf);
+      await sock.sendMessage(jid, { image: result, caption: '✅ Background removed!\n_Powered by ASTRA-X_' }, { quoted: msg });
+    } catch (e) {
+      await sock.sendMessage(jid, { text: '❌ Failed: ' + e.message + '\n\nTip: Make sure the image has a clear subject.' });
+    }
+  },
+};

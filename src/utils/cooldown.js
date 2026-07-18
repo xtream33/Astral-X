@@ -1,55 +1,84 @@
-(function(){
-var _0x1a2b=["LyoqCiAqIEFTVFJBLVggQ29vbGRvd24gU3lzdGVtCiAqIFByZXZlbnRzIGNvbW1hbmQgc3BhbSBieSB0",
-    "cmFja2luZyB0aGUgbGFzdCB0aW1lIGVhY2ggdXNlciByYW4gZWFjaCBjb21tYW5kLgogKiBBbGwgZGF0",
-    "YSBsaXZlcyBpbiBtZW1vcnkg4oCUIHJlc2V0cyBvbiBib3QgcmVzdGFydCAoaW50ZW50aW9uYWwpLgog",
-    "KgogKiBVc2FnZToKICogICBjb25zdCB7IGNoZWNrQ29vbGRvd24sIHNldENvb2xkb3duLCBERUZBVUxU",
-    "X0NPT0xET1dOUyB9ID0gcmVxdWlyZSgnLi9jb29sZG93bicpOwogKiAgIGNvbnN0IHdhaXQgPSBjaGVj",
-    "a0Nvb2xkb3duKHVzZXJJZCwgJ2pva2UnKTsgIC8vIHJldHVybnMgc2Vjb25kcyByZW1haW5pbmcsIG9y",
-    "IDAKICogICBpZiAod2FpdCA+IDApIHJldHVybiBzb2NrLnNlbmRNZXNzYWdlKGppZCwgeyB0ZXh0OiBg",
-    "4o+zIFdhaXQgJHt3YWl0fXNgIH0pOwogKiAgIHNldENvb2xkb3duKHVzZXJJZCwgJ2pva2UnKTsKICov",
-    "CgovLyBQZXItY29tbWFuZCBjb29sZG93biBpbiBzZWNvbmRzIChvdmVycmlkZSBoZXJlIG9yIGluIGlu",
-    "ZGl2aWR1YWwgY29tbWFuZHMpCmNvbnN0IERFRkFVTFRfQ09PTERPV05TID0gewogIC8vIEluZm8gLyB1",
-    "dGlsaXR5IOKAlCBzaG9ydAogIHBpbmc6IDMsIGFsaXZlOiA1LCBzdGF0czogNSwgdGltZTogMywgaW5m",
-    "bzogNSwgb3duZXI6IDUsIG1lbnU6IDUsCgogIC8vIEZ1biDigJQgbWVkaXVtCiAgam9rZTogMTAsIHF1",
-    "b3RlOiAxMCwgJzhiYWxsJzogNSwgZGljZTogNSwgZmxpcDogNSwgcnBzOiA1LAogIHJvYXN0OiAxNSwg",
-    "Y29tcGxpbWVudDogMTAsIHJhdGU6IDgsIHRydXRoOiAxMCwgZGFyZTogMTAsCiAgZmFjdDogMTAsIHJp",
-    "ZGRsZTogMjAsIHNoaXA6IDEwLCBjaG9vc2U6IDUsCgogIC8vIFRvb2xzIOKAlCBzaG9ydAogIGNhbGM6",
-    "IDMsIHJldmVyc2U6IDMsIHVwcGVyOiAzLCBsb3dlcjogMywgY291bnQ6IDMsCiAgcmVwZWF0OiA1LCBi",
-    "YXNlNjQ6IDUsIGhhc2g6IDUsIHV1aWQ6IDUsCiAgcGFzc3dvcmQ6IDgsCgogIC8vIEdyb3VwIOKAlCBt",
-    "ZWRpdW0gKHByZXZlbnRzIGFkbWluIHNwYW0pCiAgZXZlcnlvbmU6IDMwLCBraWNrOiA1LCBwcm9tb3Rl",
-    "OiA1LCBkZW1vdGU6IDUsCiAgbXV0ZTogMTAsIHVubXV0ZTogMTAsIGdpbmZvOiAxMCwgbGluazogMTUs",
-    "CiAgd2FybjogNSwgd2FybmluZ3M6IDUsIGNsZWFyd2FybjogNSwKCiAgLy8gQW50aSB0b2dnbGVzCiAg",
-    "YW50aWxpbms6IDUsIGFudGliYWR3b3JkOiA1LAoKICAvLyBBdXRvIHRvZ2dsZXMKICBhdXRvcmVhZDog",
-    "NSwgYXV0b3JlYWN0OiA1LCBhdXRvdHlwaW5nOiA1LCBhdXRvcmVjb3JkaW5nOiA1LAoKICAvLyBEb3du",
-    "bG9hZHMg4oCUIGxvbmcgKGhlYXZ5IG9wZXJhdGlvbnMpCiAgeXRtcDM6IDMwLCB5dG1wNDogMzAsIHRp",
-    "a3RvazogMjUsIGlnZGw6IDI1LCB0d2l0dGVyOiAyNSwgbWVkaWFmaXJlOiAyMCwKCiAgLy8gRGVmYXVs",
-    "dCBmYWxsYmFjayBmb3IgYW55IHVubGlzdGVkIGNvbW1hbmQKICBfZGVmYXVsdDogNSwKfTsKCi8vIE1h",
-    "cDogYHVzZXJJZDpjbWROYW1lYCDihpIgdGltZXN0YW1wIChtcykgd2hlbiBjb29sZG93biBleHBpcmVz",
-    "CmNvbnN0IGNvb2xkb3ducyA9IG5ldyBNYXAoKTsKCi8qKgogKiBSZXR1cm5zIHNlY29uZHMgcmVtYWlu",
-    "aW5nIG9uIGNvb2xkb3duLCBvciAwIGlmIHJlYWR5LgogKiBAcGFyYW0ge3N0cmluZ30gdXNlcklkICAt",
-    "IHNlc3Npb24gdXNlcklkCiAqIEBwYXJhbSB7c3RyaW5nfSBjbWROYW1lIC0gY29tbWFuZCBuYW1lIChs",
-    "b3dlcmNhc2UpCiAqIEBwYXJhbSB7bnVtYmVyfSBbb3ZlcnJpZGVdIC0gY3VzdG9tIHNlY29uZHMgKG92",
-    "ZXJyaWRlcyBERUZBVUxUX0NPT0xET1dOUykKICovCmZ1bmN0aW9uIGNoZWNrQ29vbGRvd24odXNlcklk",
-    "LCBjbWROYW1lLCBvdmVycmlkZSkgewogIGNvbnN0IGtleSAgICAgPSBgJHt1c2VySWR9OiR7Y21kTmFt",
-    "ZX1gOwogIGNvbnN0IGV4cGlyZXMgPSBjb29sZG93bnMuZ2V0KGtleSk7CiAgaWYgKCFleHBpcmVzKSBy",
-    "ZXR1cm4gMDsKICBjb25zdCByZW1haW5pbmcgPSBNYXRoLmNlaWwoKGV4cGlyZXMgLSBEYXRlLm5vdygp",
-    "KSAvIDEwMDApOwogIHJldHVybiByZW1haW5pbmcgPiAwID8gcmVtYWluaW5nIDogMDsKfQoKLyoqCiAq",
-    "IFN0YW1wcyB0aGUgY29vbGRvd24gZm9yIGEgdXNlcitjb21tYW5kLgogKiBAcGFyYW0ge3N0cmluZ30g",
-    "dXNlcklkCiAqIEBwYXJhbSB7c3RyaW5nfSBjbWROYW1lCiAqIEBwYXJhbSB7bnVtYmVyfSBbb3ZlcnJp",
-    "ZGVdIC0gY3VzdG9tIGR1cmF0aW9uIGluIHNlY29uZHMKICovCmZ1bmN0aW9uIHNldENvb2xkb3duKHVz",
-    "ZXJJZCwgY21kTmFtZSwgb3ZlcnJpZGUpIHsKICBjb25zdCBzZWNzID0gb3ZlcnJpZGUgPz8gREVGQVVM",
-    "VF9DT09MRE9XTlNbY21kTmFtZV0gPz8gREVGQVVMVF9DT09MRE9XTlMuX2RlZmF1bHQ7CiAgY29uc3Qg",
-    "a2V5ICA9IGAke3VzZXJJZH06JHtjbWROYW1lfWA7CiAgY29vbGRvd25zLnNldChrZXksIERhdGUubm93",
-    "KCkgKyBzZWNzICogMTAwMCk7CiAgLy8gQXV0by1jbGVhbiBhZnRlciBleHBpcnkgc28gdGhlIE1hcCBk",
-    "b2Vzbid0IGdyb3cgZm9yZXZlcgogIHNldFRpbWVvdXQoKCkgPT4gY29vbGRvd25zLmRlbGV0ZShrZXkp",
-    "LCAoc2VjcyArIDEpICogMTAwMCk7Cn0KCi8qKiBDbGVhcnMgYWxsIGNvb2xkb3ducyBmb3IgYSB1c2Vy",
-    "IChlLmcuIGZvciBvd25lci9hZG1pbiBieXBhc3MpLiAqLwpmdW5jdGlvbiBjbGVhclVzZXJDb29sZG93",
-    "bnModXNlcklkKSB7CiAgZm9yIChjb25zdCBrZXkgb2YgY29vbGRvd25zLmtleXMoKSkgewogICAgaWYg",
-    "KGtleS5zdGFydHNXaXRoKGAke3VzZXJJZH06YCkpIGNvb2xkb3ducy5kZWxldGUoa2V5KTsKICB9Cn0K",
-    "Cm1vZHVsZS5leHBvcnRzID0geyBjaGVja0Nvb2xkb3duLCBzZXRDb29sZG93biwgY2xlYXJVc2VyQ29v",
-    "bGRvd25zLCBERUZBVUxUX0NPT0xET1dOUyB9Owo="];
-var _0x3c4d=_0x1a2b.join('');
-var _0x5e6f=Buffer.from(_0x3c4d,'base64').toString('utf8');
-var _0x7a8b=new Function('require','module','exports','__filename','__dirname',_0x5e6f);
-_0x7a8b(require,module,exports,__filename,__dirname);
-})();
+/**
+ * ASTRA-X Cooldown System
+ * Prevents command spam by tracking the last time each user ran each command.
+ * All data lives in memory — resets on bot restart (intentional).
+ *
+ * Usage:
+ *   const { checkCooldown, setCooldown, DEFAULT_COOLDOWNS } = require('./cooldown');
+ *   const wait = checkCooldown(userId, 'joke');  // returns seconds remaining, or 0
+ *   if (wait > 0) return sock.sendMessage(jid, { text: `⏳ Wait ${wait}s` });
+ *   setCooldown(userId, 'joke');
+ */
+
+// Per-command cooldown in seconds (override here or in individual commands)
+const DEFAULT_COOLDOWNS = {
+  // Info / utility — short
+  ping: 3, alive: 5, stats: 5, time: 3, info: 5, owner: 5, menu: 5,
+
+  // Fun — medium
+  joke: 10, quote: 10, '8ball': 5, dice: 5, flip: 5, rps: 5,
+  roast: 15, compliment: 10, rate: 8, truth: 10, dare: 10,
+  fact: 10, riddle: 20, ship: 10, choose: 5,
+
+  // Tools — short
+  calc: 3, reverse: 3, upper: 3, lower: 3, count: 3,
+  repeat: 5, base64: 5, hash: 5, uuid: 5,
+  password: 8,
+
+  // Group — medium (prevents admin spam)
+  everyone: 30, kick: 5, promote: 5, demote: 5,
+  mute: 10, unmute: 10, ginfo: 10, link: 15,
+  warn: 5, warnings: 5, clearwarn: 5,
+
+  // Anti toggles
+  antilink: 5, antibadword: 5,
+
+  // Auto toggles
+  autoread: 5, autoreact: 5, autotyping: 5, autorecording: 5,
+
+  // Downloads — long (heavy operations)
+  ytmp3: 30, ytmp4: 30, tiktok: 25, igdl: 25, twitter: 25, mediafire: 20,
+
+  // Default fallback for any unlisted command
+  _default: 5,
+};
+
+// Map: `userId:cmdName` → timestamp (ms) when cooldown expires
+const cooldowns = new Map();
+
+/**
+ * Returns seconds remaining on cooldown, or 0 if ready.
+ * @param {string} userId  - session userId
+ * @param {string} cmdName - command name (lowercase)
+ * @param {number} [override] - custom seconds (overrides DEFAULT_COOLDOWNS)
+ */
+function checkCooldown(userId, cmdName, override) {
+  const key     = `${userId}:${cmdName}`;
+  const expires = cooldowns.get(key);
+  if (!expires) return 0;
+  const remaining = Math.ceil((expires - Date.now()) / 1000);
+  return remaining > 0 ? remaining : 0;
+}
+
+/**
+ * Stamps the cooldown for a user+command.
+ * @param {string} userId
+ * @param {string} cmdName
+ * @param {number} [override] - custom duration in seconds
+ */
+function setCooldown(userId, cmdName, override) {
+  const secs = override ?? DEFAULT_COOLDOWNS[cmdName] ?? DEFAULT_COOLDOWNS._default;
+  const key  = `${userId}:${cmdName}`;
+  cooldowns.set(key, Date.now() + secs * 1000);
+  // Auto-clean after expiry so the Map doesn't grow forever
+  setTimeout(() => cooldowns.delete(key), (secs + 1) * 1000);
+}
+
+/** Clears all cooldowns for a user (e.g. for owner/admin bypass). */
+function clearUserCooldowns(userId) {
+  for (const key of cooldowns.keys()) {
+    if (key.startsWith(`${userId}:`)) cooldowns.delete(key);
+  }
+}
+
+module.exports = { checkCooldown, setCooldown, clearUserCooldowns, DEFAULT_COOLDOWNS };

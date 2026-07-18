@@ -1,46 +1,70 @@
-(function(){
-var _0x1a2b=["J3VzZSBzdHJpY3QnOwpjb25zdCBzZXR0aW5ncyA9IHJlcXVpcmUoJy4vc2V0dGluZ3MnKTsKCmNvbnN0",
-    "IEggICA9ICfjgJQg4pynIOG0gHPhtJvKgOG0gC14IOG0m+G0h+G0hMqcIOKcpyDjgJUnOwpjb25zdCBU",
-    "T1AgPSAn4pSP4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB",
-    "4pSB4pSB4pajJzsKY29uc3QgRElWID0gJ+KUoOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKU",
-    "gOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgCc7CmNvbnN0IEJPVCA9ICfilJfilIHilIHilIHi",
-    "lIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilqMnOwpjb25zdCBG",
-    "VFIgPSAnX+G0gHPhtJvKgOG0gC14IOG0m+G0h+G0hMqcIPCfjI1fJzsKCmZ1bmN0aW9uIHBhcnNlT25P",
-    "ZmYoYXJnKSB7CiAgY29uc3QgYSA9IChhcmcgfHwgJycpLnRvTG93ZXJDYXNlKCkKICAgIC5yZXBsYWNl",
-    "KC9bXHUyMDBiLVx1MjAwZFx1ZmVmZlx1MDBhMFx1MjA2MF0vZywgJycpCiAgICAudHJpbSgpOwogIGlm",
-    "ICghYSkgcmV0dXJuIG51bGw7CiAgaWYgKFsnb24nLCd5ZXMnLCdlbmFibGUnLCdlbmFibGVkJywnMScs",
-    "J3RydWUnLCdzdGFydCcsJ2FjdGl2YXRlJ10uaW5jbHVkZXMoYSkpICAgIHJldHVybiB0cnVlOwogIGlm",
-    "IChbJ29mZicsJ25vJywnZGlzYWJsZScsJ2Rpc2FibGVkJywnMCcsJ2ZhbHNlJywnc3RvcCcsJ2RlYWN0",
-    "aXZhdGUnXS5pbmNsdWRlcyhhKSkgcmV0dXJuIGZhbHNlOwogIHJldHVybiBudWxsOwp9CgpmdW5jdGlv",
-    "biBzbWFydFRvZ2dsZShrZXksIGZvcmNlT24pIHsKICBjb25zdCBjdXJyZW50ID0gc2V0dGluZ3MuZ2V0",
-    "KGtleSk7CiAgaWYgKGZvcmNlT24gPT09IG51bGwgfHwgZm9yY2VPbiA9PT0gdW5kZWZpbmVkKSB7CiAg",
-    "ICByZXR1cm4geyBzdGF0ZTogY3VycmVudCwgY2hhbmdlZDogZmFsc2UsIHdhc0FscmVhZHk6IGZhbHNl",
-    "LCBzdGF0dXNPbmx5OiB0cnVlIH07CiAgfQogIGlmIChjdXJyZW50ID09PSBmb3JjZU9uKSB7CiAgICBy",
-    "ZXR1cm4geyBzdGF0ZTogY3VycmVudCwgY2hhbmdlZDogZmFsc2UsIHdhc0FscmVhZHk6IHRydWUsIHN0",
-    "YXR1c09ubHk6IGZhbHNlIH07CiAgfQogIHNldHRpbmdzLnNldChrZXksIGZvcmNlT24pOwogIHJldHVy",
-    "biB7IHN0YXRlOiBmb3JjZU9uLCBjaGFuZ2VkOiB0cnVlLCB3YXNBbHJlYWR5OiBmYWxzZSwgc3RhdHVz",
-    "T25seTogZmFsc2UgfTsKfQoKZnVuY3Rpb24gdG9nZ2xlTXNnKGxhYmVsLCBlbW9qaSwgcmVzdWx0LCBv",
-    "bk1zZyA9ICcnLCBvZmZNc2cgPSAnJykgewogIGNvbnN0IHNlID0gcmVzdWx0LnN0YXRlID8gJ/Cfn6In",
-    "IDogJ/CflLQnOwogIGNvbnN0IHN3ID0gcmVzdWx0LnN0YXRlID8gJ0VOQUJMRUQnIDogJ0RJU0FCTEVE",
-    "JzsKCiAgaWYgKHJlc3VsdC5zdGF0dXNPbmx5KSB7CiAgICByZXR1cm4gKAogICAgICBIICsgJ1xuJyAr",
-    "IFRPUCArICdcbicgKwogICAgICAn4pSDICcgKyBlbW9qaSArICcgKicgKyBsYWJlbC50b1VwcGVyQ2Fz",
-    "ZSgpICsgJypcbicgKwogICAgICBESVYgKyAnXG4nICsKICAgICAgJ+KUgyBTdGF0dXM6ICAqJyArIHNl",
-    "ICsgJyAnICsgc3cgKyAnKlxuJyArCiAgICAgIERJViArICdcbicgKwogICAgICAn4pSDIOKAoiBTZW5k",
-    "ICpvbiogIHRvIGVuYWJsZVxuJyArCiAgICAgICfilIMg4oCiIFNlbmQgKm9mZiogdG8gZGlzYWJsZVxu",
-    "JyArCiAgICAgIEJPVCArICdcbicgKyBGVFIKICAgICk7CiAgfQoKICBpZiAocmVzdWx0Lndhc0FscmVh",
-    "ZHkpIHsKICAgIHJldHVybiAoCiAgICAgIEggKyAnXG4nICsgVE9QICsgJ1xuJyArCiAgICAgICfilIMg",
-    "JyArIGVtb2ppICsgJyAqJyArIGxhYmVsLnRvVXBwZXJDYXNlKCkgKyAnKlxuJyArCiAgICAgIERJViAr",
-    "ICdcbicgKwogICAgICAn4pSDIFN0YXR1czogIConICsgc2UgKyAnIEFMUkVBRFkgJyArIHN3ICsgJypc",
-    "bicgKwogICAgICBCT1QgKyAnXG4nICsgRlRSCiAgICApOwogIH0KCiAgcmV0dXJuICgKICAgIEggKyAn",
-    "XG4nICsgVE9QICsgJ1xuJyArCiAgICAn4pSDICcgKyBlbW9qaSArICcgKicgKyBsYWJlbC50b1VwcGVy",
-    "Q2FzZSgpICsgJypcbicgKwogICAgRElWICsgJ1xuJyArCiAgICAn4pSDIFN0YXR1czogIConICsgc2Ug",
-    "KyAnICcgKyBzdyArICcqXG4nICsKICAgICgocmVzdWx0LnN0YXRlICAmJiBvbk1zZykgID8gRElWICsg",
-    "J1xu4pSDICcgKyBvbk1zZyAgKyAnXG4nIDogJycpICsKICAgICgoIXJlc3VsdC5zdGF0ZSAmJiBvZmZN",
-    "c2cpID8gRElWICsgJ1xu4pSDICcgKyBvZmZNc2cgKyAnXG4nIDogJycpICsKICAgIEJPVCArICdcbicg",
-    "KyBGVFIKICApOwp9Cgptb2R1bGUuZXhwb3J0cyA9IHsgc21hcnRUb2dnbGUsIHRvZ2dsZU1zZywgcGFy",
-    "c2VPbk9mZiB9Owo="];
-var _0x3c4d=_0x1a2b.join('');
-var _0x5e6f=Buffer.from(_0x3c4d,'base64').toString('utf8');
-var _0x7a8b=new Function('require','module','exports','__filename','__dirname',_0x5e6f);
-_0x7a8b(require,module,exports,__filename,__dirname);
-})();
+'use strict';
+const settings = require('./settings');
+
+const H   = '〔 ✧ ᴀsᴛʀᴀ-x ᴛᴇᴄʜ ✧ 〕';
+const TOP = '┏━━━━━━━━━━━━━━━━━━━▣';
+const DIV = '┠─────────────────────';
+const BOT = '┗━━━━━━━━━━━━━━━━━━━▣';
+const FTR = '_ᴀsᴛʀᴀ-x ᴛᴇᴄʜ 🌍_';
+
+function parseOnOff(arg) {
+  const a = (arg || '').toLowerCase()
+    .replace(/[\u200b-\u200d\ufeff\u00a0\u2060]/g, '')
+    .trim();
+  if (!a) return null;
+  if (['on','yes','enable','enabled','1','true','start','activate'].includes(a))    return true;
+  if (['off','no','disable','disabled','0','false','stop','deactivate'].includes(a)) return false;
+  return null;
+}
+
+function smartToggle(key, forceOn) {
+  const current = settings.get(key);
+  if (forceOn === null || forceOn === undefined) {
+    return { state: current, changed: false, wasAlready: false, statusOnly: true };
+  }
+  if (current === forceOn) {
+    return { state: current, changed: false, wasAlready: true, statusOnly: false };
+  }
+  settings.set(key, forceOn);
+  return { state: forceOn, changed: true, wasAlready: false, statusOnly: false };
+}
+
+function toggleMsg(label, emoji, result, onMsg = '', offMsg = '') {
+  const se = result.state ? '🟢' : '🔴';
+  const sw = result.state ? 'ENABLED' : 'DISABLED';
+
+  if (result.statusOnly) {
+    return (
+      H + '\n' + TOP + '\n' +
+      '┃ ' + emoji + ' *' + label.toUpperCase() + '*\n' +
+      DIV + '\n' +
+      '┃ Status:  *' + se + ' ' + sw + '*\n' +
+      DIV + '\n' +
+      '┃ • Send *on*  to enable\n' +
+      '┃ • Send *off* to disable\n' +
+      BOT + '\n' + FTR
+    );
+  }
+
+  if (result.wasAlready) {
+    return (
+      H + '\n' + TOP + '\n' +
+      '┃ ' + emoji + ' *' + label.toUpperCase() + '*\n' +
+      DIV + '\n' +
+      '┃ Status:  *' + se + ' ALREADY ' + sw + '*\n' +
+      BOT + '\n' + FTR
+    );
+  }
+
+  return (
+    H + '\n' + TOP + '\n' +
+    '┃ ' + emoji + ' *' + label.toUpperCase() + '*\n' +
+    DIV + '\n' +
+    '┃ Status:  *' + se + ' ' + sw + '*\n' +
+    ((result.state  && onMsg)  ? DIV + '\n┃ ' + onMsg  + '\n' : '') +
+    ((!result.state && offMsg) ? DIV + '\n┃ ' + offMsg + '\n' : '') +
+    BOT + '\n' + FTR
+  );
+}
+
+module.exports = { smartToggle, toggleMsg, parseOnOff };

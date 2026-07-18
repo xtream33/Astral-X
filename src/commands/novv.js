@@ -1,36 +1,46 @@
-(function(){
-var _0x1a2b=["J3VzZSBzdHJpY3QnOwpjb25zdCBzZXR0aW5ncyA9IHJlcXVpcmUoJy4uL3V0aWxzL3NldHRpbmdzJyk7",
-    "CmNvbnN0IHsgc21hcnRUb2dnbGUsIHRvZ2dsZU1zZywgcGFyc2VPbk9mZiB9ID0gcmVxdWlyZSgnLi4v",
-    "dXRpbHMvdG9nZ2xlJyk7Cgptb2R1bGUuZXhwb3J0cyA9IHsKICBuYW1lOiAnbm92dicsCiAgYWxpYXNl",
-    "czogWydhbnRpdmlld29uY2UnLCAnYW50aXZvJywgJ25vdmlld29uY2UnXSwKICBjYXRlZ29yeTogJ3Zp",
-    "ZXdvbmNlJywKICBkZXNjcmlwdGlvbjogJ1RvZ2dsZSBhbnRpLXZpZXdvbmNlIGluIGdyb3Vwcy4gQmxv",
-    "Y2tzIGFuZCBkZWxldGVzIHZpZXctb25jZSBtZXNzYWdlcy4gVXNhZ2U6IC5ub3Z2IG9uIC8gLm5vdnYg",
-    "b2ZmJywKICBleGVjdXRlOiBhc3luYyAoc29jaywgbXNnLCBhcmdzLCB1c2VySWQpID0+IHsKICAgIGNv",
-    "bnN0IGppZCA9IG1zZy5rZXkucmVtb3RlSmlkOwoKICAgIC8vIOKUgOKUgCBHcm91cC1vbmx5IGNvbW1h",
-    "bmQg4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA",
-    "4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA",
-    "4pSA4pSA4pSA4pSACiAgICBpZiAoIWppZC5lbmRzV2l0aCgnQGcudXMnKSkgewogICAgICByZXR1cm4g",
-    "c29jay5zZW5kTWVzc2FnZShqaWQsIHsKICAgICAgICB0ZXh0OgogICAgICAgICAgJ+OAlCDinKcg4bSA",
-    "c+G0m8qA4bSALXgg4bSb4bSH4bSEypwg4pynIOOAlVxuJyArCiAgICAgICAgICAn4pSP4pSB4pSB4pSB",
-    "4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pajXG4nICsKICAg",
-    "ICAgICAgICfilIMg8J+aqyAqTk9WViDigJQgR1JPVVAgT05MWSpcbicgKwogICAgICAgICAgJ+KUoOKU",
-    "gOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKU",
-    "gFxuJyArCiAgICAgICAgICAn4pSDIFRoaXMgY29tbWFuZCBvbmx5IHdvcmtzXG4nICsKICAgICAgICAg",
-    "ICfilIMgaW5zaWRlIGEgZ3JvdXAgY2hhdC5cbicgKwogICAgICAgICAgJ+KUl+KUgeKUgeKUgeKUgeKU",
-    "geKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKWo1xuJyArCiAgICAgICAg",
-    "ICAnX+G0gHPhtJvKgOG0gC14IOG0m+G0h+G0hMqcIPCfjI1fJywKICAgICAgfSk7CiAgICB9CgogICAg",
-    "Y29uc3QgZm9yY2VPbiA9IHBhcnNlT25PZmYoYXJnc1swXSk7CiAgICBjb25zdCByZXN1bHQgID0gc21h",
-    "cnRUb2dnbGUoJ25vdnY6JyArIGppZCwgZm9yY2VPbik7CgogICAgYXdhaXQgc29jay5zZW5kTWVzc2Fn",
-    "ZShqaWQsIHsKICAgICAgdGV4dDoKICAgICAgICB0b2dnbGVNc2coCiAgICAgICAgICAnQW50aSBWaWV3",
-    "T25jZScsICfwn5qrJywKICAgICAgICAgIHJlc3VsdCwKICAgICAgICAgICfigKIgVmlldy1vbmNlIG1l",
-    "c3NhZ2VzIGFyZSAqYmxvY2tlZCpcbicgKwogICAgICAgICAgJ+KUgyDigKIgVGhleSB3aWxsIGJlIGF1",
-    "dG8tZGVsZXRlZFxuJyArCiAgICAgICAgICAn4pSDIOKAoiBTZW5kZXIgZ2V0cyBub3RpZmllZCBwcml2",
-    "YXRlbHlcbicgKwogICAgICAgICAgJ+KUgyDigKIgQWRtaW5zIGFyZSBhbHNvIGJsb2NrZWQnLAogICAg",
-    "ICAgICAgJ+KAoiBNZW1iZXJzIGNhbiBub3cgc2VuZCB2aWV3LW9uY2VcbicgKwogICAgICAgICAgJ+KU",
-    "gyAgIG1lc3NhZ2VzIGluIHRoaXMgZ3JvdXAnCiAgICAgICAgKSArCiAgICAgICAgJ1xuXG5fVG9nZ2xl",
-    "OiAqLm5vdnYgb24qIC8gKi5ub3Z2IG9mZipfJywKICAgIH0pOwogIH0sCn07Cg=="];
-var _0x3c4d=_0x1a2b.join('');
-var _0x5e6f=Buffer.from(_0x3c4d,'base64').toString('utf8');
-var _0x7a8b=new Function('require','module','exports','__filename','__dirname',_0x5e6f);
-_0x7a8b(require,module,exports,__filename,__dirname);
-})();
+'use strict';
+const settings = require('../utils/settings');
+const { smartToggle, toggleMsg, parseOnOff } = require('../utils/toggle');
+
+module.exports = {
+  name: 'novv',
+  aliases: ['antiviewonce', 'antivo', 'noviewonce'],
+  category: 'viewonce',
+  description: 'Toggle anti-viewonce in groups. Blocks and deletes view-once messages. Usage: .novv on / .novv off',
+  execute: async (sock, msg, args, userId) => {
+    const jid = msg.key.remoteJid;
+
+    // ── Group-only command ───────────────────────────────────────────
+    if (!jid.endsWith('@g.us')) {
+      return sock.sendMessage(jid, {
+        text:
+          '〔 ✧ ᴀsᴛʀᴀ-x ᴛᴇᴄʜ ✧ 〕\n' +
+          '┏━━━━━━━━━━━━━━━━━━━▣\n' +
+          '┃ 🚫 *NOVV — GROUP ONLY*\n' +
+          '┠─────────────────────\n' +
+          '┃ This command only works\n' +
+          '┃ inside a group chat.\n' +
+          '┗━━━━━━━━━━━━━━━━━━━▣\n' +
+          '_ᴀsᴛʀᴀ-x ᴛᴇᴄʜ 🌍_',
+      });
+    }
+
+    const forceOn = parseOnOff(args[0]);
+    const result  = smartToggle('novv:' + jid, forceOn);
+
+    await sock.sendMessage(jid, {
+      text:
+        toggleMsg(
+          'Anti ViewOnce', '🚫',
+          result,
+          '• View-once messages are *blocked*\n' +
+          '┃ • They will be auto-deleted\n' +
+          '┃ • Sender gets notified privately\n' +
+          '┃ • Admins are also blocked',
+          '• Members can now send view-once\n' +
+          '┃   messages in this group'
+        ) +
+        '\n\n_Toggle: *.novv on* / *.novv off*_',
+    });
+  },
+};

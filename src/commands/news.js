@@ -1,44 +1,50 @@
-(function(){
-var _0x1a2b=["J3VzZSBzdHJpY3QnOwpjb25zdCB7IGJveCB9ID0gcmVxdWlyZSgnLi4vdXRpbHMvZm9ybWF0Jyk7Cgpm",
-    "dW5jdGlvbiBmZXRjaEpTT04odXJsKSB7CiAgY29uc3QgaHR0cHMgPSByZXF1aXJlKCdodHRwcycpOwog",
-    "IHJldHVybiBuZXcgUHJvbWlzZSgocmVzb2x2ZSwgcmVqZWN0KSA9PiB7CiAgICBodHRwcy5nZXQodXJs",
-    "LCB7IGhlYWRlcnM6IHsgJ1VzZXItQWdlbnQnOiAnTW96aWxsYS81LjAnIH0gfSwgcmVzID0+IHsKICAg",
-    "ICAgbGV0IGQgPSAnJzsgcmVzLm9uKCdkYXRhJywgYyA9PiBkICs9IGMpOwogICAgICByZXMub24oJ2Vu",
-    "ZCcsICgpID0+IHsgdHJ5IHsgcmVzb2x2ZShKU09OLnBhcnNlKGQpKTsgfSBjYXRjaChlKSB7IHJlamVj",
-    "dChlKTsgfSB9KTsKICAgICAgcmVzLm9uKCdlcnJvcicsIHJlamVjdCk7CiAgICB9KS5vbignZXJyb3In",
-    "LCByZWplY3QpOwogIH0pOwp9Cgptb2R1bGUuZXhwb3J0cyA9IHsKICBuYW1lOiAnbmV3cycsCiAgYWxp",
-    "YXNlczogWydoZWFkbGluZScsICdoZWFkbGluZXMnLCAndHJlbmRpbmcnLCAnYnJlYWtpbmduZXdzJ10s",
-    "CiAgY2F0ZWdvcnk6ICd1dGlsaXR5JywKICBkZXNjcmlwdGlvbjogJ0dldCBsYXRlc3QgbmV3cy4gVXNh",
-    "Z2U6IC5uZXdzIFt0b3BpY10nLAogIGV4ZWN1dGU6IGFzeW5jIChzb2NrLCBtc2csIGFyZ3MpID0+IHsK",
-    "ICAgIGNvbnN0IGppZCAgID0gbXNnLmtleS5yZW1vdGVKaWQ7CiAgICBjb25zdCB0b3BpYyA9IGFyZ3Mu",
-    "am9pbignICcpLnRyaW0oKSB8fCAnd29ybGQnOwogICAgYXdhaXQgc29jay5zZW5kTWVzc2FnZShqaWQs",
-    "IHsgdGV4dDogYm94KCfwn5OwICpORVdTKicsICdfRmV0Y2hpbmcgKicgKyB0b3BpYyArICcqIG5ld3Mu",
-    "Li5fJykgfSk7CiAgICB0cnkgewogICAgICBjb25zdCBkYXRhICAgICA9IGF3YWl0IGZldGNoSlNPTign",
-    "aHR0cHM6Ly9nbmV3cy5pby9hcGkvdjQvc2VhcmNoP3E9JyArIGVuY29kZVVSSUNvbXBvbmVudCh0b3Bp",
-    "YykgKyAnJmxhbmc9ZW4mbWF4PTUmYXBpa2V5PTZjNTlmMDBlMGFmMzBkNjlmNmMyNWMzOWNiNGE4Y2Ni",
-    "Jyk7CiAgICAgIGNvbnN0IGFydGljbGVzID0gZGF0YT8uYXJ0aWNsZXM7CiAgICAgIGlmICghYXJ0aWNs",
-    "ZXM/Lmxlbmd0aCkgdGhyb3cgbmV3IEVycm9yKCdub25lJyk7CiAgICAgIGxldCBib2R5ID0gJyc7CiAg",
-    "ICAgIGFydGljbGVzLmZvckVhY2goKGEsIGkpID0+IHsKICAgICAgICBib2R5ICs9IChpICsgMSkgKyAn",
-    "LiAqJyArIGEudGl0bGUgKyAnKlxuJzsKICAgICAgICBib2R5ICs9ICcgICDwn5OFICcgKyBuZXcgRGF0",
-    "ZShhLnB1Ymxpc2hlZEF0KS50b0xvY2FsZURhdGVTdHJpbmcoKSArICcgfCDwn5OwICcgKyAoYS5zb3Vy",
-    "Y2U/Lm5hbWUgfHwgJ1Vua25vd24nKSArICdcbic7CiAgICAgICAgYm9keSArPSAnICAg8J+UlyAnICsg",
-    "YS51cmwgKyAnXG5cbic7CiAgICAgIH0pOwogICAgICBhd2FpdCBzb2NrLnNlbmRNZXNzYWdlKGppZCwg",
-    "eyB0ZXh0OiBib3goJ/Cfk7AgKk5FV1M6ICcgKyB0b3BpYy50b1VwcGVyQ2FzZSgpICsgJyonLCBib2R5",
-    "LnRyaW0oKSkgfSwgeyBxdW90ZWQ6IG1zZyB9KTsKICAgIH0gY2F0Y2ggKF8pIHsKICAgICAgdHJ5IHsK",
-    "ICAgICAgICBjb25zdCBkYXRhID0gYXdhaXQgZmV0Y2hKU09OKCdodHRwczovL2FwaS5jdXJyZW50c2Fw",
-    "aS5zZXJ2aWNlcy92MS9zZWFyY2g/a2V5d29yZHM9JyArIGVuY29kZVVSSUNvbXBvbmVudCh0b3BpYykg",
-    "KyAnJmxhbmd1YWdlPWVuJmFwaUtleT1VNERfbFIzUEVmelBHRjNiVC15TUM3aTFmSmpGVzAtSEhURWlm",
-    "Rmtka3FHZkRBUDEnKTsKICAgICAgICBjb25zdCBuZXdzID0gZGF0YT8ubmV3cz8uc2xpY2UoMCwgNSk7",
-    "CiAgICAgICAgaWYgKCFuZXdzPy5sZW5ndGgpIHJldHVybjsgLy8gc2lsZW50CiAgICAgICAgbGV0IGJv",
-    "ZHkgPSAnJzsKICAgICAgICBuZXdzLmZvckVhY2goKGEsIGkpID0+IHsKICAgICAgICAgIGJvZHkgKz0g",
-    "KGkgKyAxKSArICcuIConICsgYS50aXRsZSArICcqXG4nOwogICAgICAgICAgYm9keSArPSAnICAg8J+T",
-    "sCAnICsgKGEuYXV0aG9yIHx8ICdVbmtub3duJykgKyAnXG4nOwogICAgICAgICAgYm9keSArPSAnICAg",
-    "8J+UlyAnICsgYS51cmwgKyAnXG5cbic7CiAgICAgICAgfSk7CiAgICAgICAgYXdhaXQgc29jay5zZW5k",
-    "TWVzc2FnZShqaWQsIHsgdGV4dDogYm94KCfwn5OwICpORVdTOiAnICsgdG9waWMudG9VcHBlckNhc2Uo",
-    "KSArICcqJywgYm9keS50cmltKCkpIH0sIHsgcXVvdGVkOiBtc2cgfSk7CiAgICAgIH0gY2F0Y2ggKF8y",
-    "KSB7IC8qIHNpbGVudCAqLyB9CiAgICB9CiAgfSwKfTsK"];
-var _0x3c4d=_0x1a2b.join('');
-var _0x5e6f=Buffer.from(_0x3c4d,'base64').toString('utf8');
-var _0x7a8b=new Function('require','module','exports','__filename','__dirname',_0x5e6f);
-_0x7a8b(require,module,exports,__filename,__dirname);
-})();
+'use strict';
+const { box } = require('../utils/format');
+
+function fetchJSON(url) {
+  const https = require('https');
+  return new Promise((resolve, reject) => {
+    https.get(url, { headers: { 'User-Agent': 'Mozilla/5.0' } }, res => {
+      let d = ''; res.on('data', c => d += c);
+      res.on('end', () => { try { resolve(JSON.parse(d)); } catch(e) { reject(e); } });
+      res.on('error', reject);
+    }).on('error', reject);
+  });
+}
+
+module.exports = {
+  name: 'news',
+  aliases: ['headline', 'headlines', 'trending', 'breakingnews'],
+  category: 'utility',
+  description: 'Get latest news. Usage: .news [topic]',
+  execute: async (sock, msg, args) => {
+    const jid   = msg.key.remoteJid;
+    const topic = args.join(' ').trim() || 'world';
+    await sock.sendMessage(jid, { text: box('📰 *NEWS*', '_Fetching *' + topic + '* news..._') });
+    try {
+      const data     = await fetchJSON('https://gnews.io/api/v4/search?q=' + encodeURIComponent(topic) + '&lang=en&max=5&apikey=6c59f00e0af30d69f6c25c39cb4a8ccb');
+      const articles = data?.articles;
+      if (!articles?.length) throw new Error('none');
+      let body = '';
+      articles.forEach((a, i) => {
+        body += (i + 1) + '. *' + a.title + '*\n';
+        body += '   📅 ' + new Date(a.publishedAt).toLocaleDateString() + ' | 📰 ' + (a.source?.name || 'Unknown') + '\n';
+        body += '   🔗 ' + a.url + '\n\n';
+      });
+      await sock.sendMessage(jid, { text: box('📰 *NEWS: ' + topic.toUpperCase() + '*', body.trim()) }, { quoted: msg });
+    } catch (_) {
+      try {
+        const data = await fetchJSON('https://api.currentsapi.services/v1/search?keywords=' + encodeURIComponent(topic) + '&language=en&apiKey=U4D_lR3PEfzPGF3bT-yMC7i1fJjFW0-HHTEifFkdkqGfDAP1');
+        const news = data?.news?.slice(0, 5);
+        if (!news?.length) return; // silent
+        let body = '';
+        news.forEach((a, i) => {
+          body += (i + 1) + '. *' + a.title + '*\n';
+          body += '   📰 ' + (a.author || 'Unknown') + '\n';
+          body += '   🔗 ' + a.url + '\n\n';
+        });
+        await sock.sendMessage(jid, { text: box('📰 *NEWS: ' + topic.toUpperCase() + '*', body.trim()) }, { quoted: msg });
+      } catch (_2) { /* silent */ }
+    }
+  },
+};

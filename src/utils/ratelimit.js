@@ -1,31 +1,53 @@
-(function(){
-var _0x1a2b=["LyoqCiAqIEFTVFJBLVggUmF0ZSBMaW1pdGVyCiAqIExpZ2h0d2VpZ2h0IGluLW1lbW9yeSByYXRlIGxp",
-    "bWl0ZXIg4oCUIG5vIGV4dHJhIG5wbSBwYWNrYWdlcyBuZWVkZWQuCiAqCiAqIFVzYWdlOgogKiAgIGNv",
-    "bnN0IGxpbWl0ZXIgPSByZXF1aXJlKCcuL3JhdGVsaW1pdCcpOwogKiAgIGFwcC5wb3N0KCcvYXBpL3Bh",
-    "aXInLCBsaW1pdGVyKHsgbWF4OiA1LCB3aW5kb3c6IDYwIH0pLCBoYW5kbGVyKTsKICovCgovLyBNYXA6",
-    "IElQIOKGkiB7IGNvdW50LCByZXNldEF0IH0KY29uc3QgYnVja2V0cyA9IG5ldyBNYXAoKTsKCi8qKgog",
-    "KiBSZXR1cm5zIEV4cHJlc3MgbWlkZGxld2FyZSB0aGF0IHJhdGUtbGltaXRzIGJ5IElQLgogKiBAcGFy",
-    "YW0ge29iamVjdH0gb3B0cwogKiBAcGFyYW0ge251bWJlcn0gb3B0cy5tYXggICAg4oCUIG1heCByZXF1",
-    "ZXN0cyBpbiB0aGUgd2luZG93CiAqIEBwYXJhbSB7bnVtYmVyfSBvcHRzLndpbmRvdyDigJQgd2luZG93",
-    "IGluIHNlY29uZHMKICogQHBhcmFtIHtzdHJpbmd9IFtvcHRzLm1lc3NhZ2VdIOKAlCBjdXN0b20gZXJy",
-    "b3IgbWVzc2FnZQogKi8KZnVuY3Rpb24gcmF0ZUxpbWl0ZXIoeyBtYXggPSAxMCwgd2luZG93ID0gNjAs",
-    "IG1lc3NhZ2UgfSA9IHt9KSB7CiAgcmV0dXJuIChyZXEsIHJlcywgbmV4dCkgPT4gewogICAgY29uc3Qg",
-    "aXAgID0gcmVxLmlwIHx8IHJlcS5jb25uZWN0aW9uLnJlbW90ZUFkZHJlc3MgfHwgJ3Vua25vd24nOwog",
-    "ICAgY29uc3Qgbm93ID0gRGF0ZS5ub3coKTsKICAgIGxldCAgIGIgICA9IGJ1Y2tldHMuZ2V0KGlwKTsK",
-    "CiAgICBpZiAoIWIgfHwgbm93ID4gYi5yZXNldEF0KSB7CiAgICAgIGIgPSB7IGNvdW50OiAwLCByZXNl",
-    "dEF0OiBub3cgKyB3aW5kb3cgKiAxMDAwIH07CiAgICB9CgogICAgYi5jb3VudCsrOwogICAgYnVja2V0",
-    "cy5zZXQoaXAsIGIpOwoKICAgIC8vIENsZWFuIG9sZCBlbnRyaWVzIHBlcmlvZGljYWxseSAoZXZlcnkg",
-    "NTAwIHJlcXVlc3RzKQogICAgaWYgKGJ1Y2tldHMuc2l6ZSA+IDUwMCkgewogICAgICBmb3IgKGNvbnN0",
-    "IFtrLCB2XSBvZiBidWNrZXRzKSB7CiAgICAgICAgaWYgKG5vdyA+IHYucmVzZXRBdCkgYnVja2V0cy5k",
-    "ZWxldGUoayk7CiAgICAgIH0KICAgIH0KCiAgICBpZiAoYi5jb3VudCA+IG1heCkgewogICAgICBjb25z",
-    "dCByZXRyeUFmdGVyID0gTWF0aC5jZWlsKChiLnJlc2V0QXQgLSBub3cpIC8gMTAwMCk7CiAgICAgIHJl",
-    "cy5zZXQoJ1JldHJ5LUFmdGVyJywgU3RyaW5nKHJldHJ5QWZ0ZXIpKTsKICAgICAgcmV0dXJuIHJlcy5z",
-    "dGF0dXMoNDI5KS5qc29uKHsKICAgICAgICBzdWNjZXNzOiBmYWxzZSwKICAgICAgICBtZXNzYWdlOiBt",
-    "ZXNzYWdlIHx8IGDij7MgVG9vIG1hbnkgcmVxdWVzdHMuIFBsZWFzZSB3YWl0ICR7cmV0cnlBZnRlcn0g",
-    "c2Vjb25kcyBhbmQgdHJ5IGFnYWluLmAsCiAgICAgIH0pOwogICAgfQoKICAgIG5leHQoKTsKICB9Owp9",
-    "Cgptb2R1bGUuZXhwb3J0cyA9IHJhdGVMaW1pdGVyOwo="];
-var _0x3c4d=_0x1a2b.join('');
-var _0x5e6f=Buffer.from(_0x3c4d,'base64').toString('utf8');
-var _0x7a8b=new Function('require','module','exports','__filename','__dirname',_0x5e6f);
-_0x7a8b(require,module,exports,__filename,__dirname);
-})();
+/**
+ * ASTRA-X Rate Limiter
+ * Lightweight in-memory rate limiter — no extra npm packages needed.
+ *
+ * Usage:
+ *   const limiter = require('./ratelimit');
+ *   app.post('/api/pair', limiter({ max: 5, window: 60 }), handler);
+ */
+
+// Map: IP → { count, resetAt }
+const buckets = new Map();
+
+/**
+ * Returns Express middleware that rate-limits by IP.
+ * @param {object} opts
+ * @param {number} opts.max    — max requests in the window
+ * @param {number} opts.window — window in seconds
+ * @param {string} [opts.message] — custom error message
+ */
+function rateLimiter({ max = 10, window = 60, message } = {}) {
+  return (req, res, next) => {
+    const ip  = req.ip || req.connection.remoteAddress || 'unknown';
+    const now = Date.now();
+    let   b   = buckets.get(ip);
+
+    if (!b || now > b.resetAt) {
+      b = { count: 0, resetAt: now + window * 1000 };
+    }
+
+    b.count++;
+    buckets.set(ip, b);
+
+    // Clean old entries periodically (every 500 requests)
+    if (buckets.size > 500) {
+      for (const [k, v] of buckets) {
+        if (now > v.resetAt) buckets.delete(k);
+      }
+    }
+
+    if (b.count > max) {
+      const retryAfter = Math.ceil((b.resetAt - now) / 1000);
+      res.set('Retry-After', String(retryAfter));
+      return res.status(429).json({
+        success: false,
+        message: message || `⏳ Too many requests. Please wait ${retryAfter} seconds and try again.`,
+      });
+    }
+
+    next();
+  };
+}
+
+module.exports = rateLimiter;

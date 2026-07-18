@@ -1,54 +1,69 @@
-(function(){
-var _0x1a2b=["J3VzZSBzdHJpY3QnOwpjb25zdCBodHRwcyA9IHJlcXVpcmUoJ2h0dHBzJyk7CmNvbnN0IHsgYm94IH0g",
-    "PSByZXF1aXJlKCcuLi91dGlscy9mb3JtYXQnKTsKCmZ1bmN0aW9uIGRkZ1NlYXJjaChxdWVyeSkgewog",
-    "IHJldHVybiBuZXcgUHJvbWlzZSgocmVzb2x2ZSwgcmVqZWN0KSA9PiB7CiAgICBjb25zdCB1cmwgPSAn",
-    "aHR0cHM6Ly9hcGkuZHVja2R1Y2tnby5jb20vP3E9JyArIGVuY29kZVVSSUNvbXBvbmVudChxdWVyeSkg",
-    "KyAnJmZvcm1hdD1qc29uJm5vX2h0bWw9MSZza2lwX2Rpc2FtYmlnPTEnOwogICAgaHR0cHMuZ2V0KHVy",
-    "bCwgeyBoZWFkZXJzOiB7ICdVc2VyLUFnZW50JzogJ0FTVFJBLVggQm90LzQuMCcgfSB9LCByZXMgPT4g",
-    "ewogICAgICBsZXQgZGF0YSA9ICcnOwogICAgICByZXMub24oJ2RhdGEnLCBjID0+IGRhdGEgKz0gYyk7",
-    "CiAgICAgIHJlcy5vbignZW5kJywgKCkgPT4gewogICAgICAgIHRyeSB7IHJlc29sdmUoSlNPTi5wYXJz",
-    "ZShkYXRhKSk7IH0KICAgICAgICBjYXRjaCAoZSkgeyByZWplY3QoZSk7IH0KICAgICAgfSk7CiAgICB9",
-    "KS5vbignZXJyb3InLCByZWplY3QpOwogIH0pOwp9Cgptb2R1bGUuZXhwb3J0cyA9IHsKICBuYW1lOiAn",
-    "bm9vcnNlYXJjaCcsCiAgYWxpYXNlczogWyduc2VhcmNoJywgJ25vb3J3ZWInLCAnd2Vic2VhcmNoJywg",
-    "J253ZWInXSwKICBjYXRlZ29yeTogJ2FzdHJhLXgtYWknLAogIGRlc2NyaXB0aW9uOiAnU2VhcmNoIHRo",
-    "ZSB3ZWIgaW5zdGFudGx5LiBVc2FnZTogLm5vb3JzZWFyY2ggPHF1ZXJ5PicsCiAgZXhlY3V0ZTogYXN5",
-    "bmMgKHNvY2ssIG1zZywgYXJncykgPT4gewogICAgY29uc3QgamlkID0gbXNnLmtleS5yZW1vdGVKaWQ7",
-    "CiAgICBjb25zdCBxdWVyeSA9IGFyZ3Muam9pbignICcpLnRyaW0oKTsKICAgIGlmICghcXVlcnkpIHJl",
-    "dHVybiBzb2NrLnNlbmRNZXNzYWdlKGppZCwgewogICAgICB0ZXh0OiBib3goJ/CflI4gKkFTVFJBLVgg",
-    "U0VBUkNIKicsCiAgICAgICAgJ+KdkyBQbGVhc2UgcHJvdmlkZSBhIHNlYXJjaCBxdWVyeSFcblxu8J+T",
-    "jCAqVXNhZ2U6KiAubm9vcnNlYXJjaCA8cXVlcnk+XG5cbvCfkqEgKkV4YW1wbGVzOipcbi5ub29yc2Vh",
-    "cmNoIGxhdGVzdCBpUGhvbmVcbi5ub29yc2VhcmNoIGhvdyBkb2VzIFdpRmkgd29ya1xuLm5vb3JzZWFy",
-    "Y2ggVWdhbmRhIGNhcGl0YWwgY2l0eScKICAgICAgKSwKICAgIH0pOwoKICAgIGF3YWl0IHNvY2suc2Vu",
-    "ZE1lc3NhZ2UoamlkLCB7CiAgICAgIHRleHQ6ICfjgJQg4pynIOG0gHPhtJvKgOG0gC14IOG0m+G0h+G0",
-    "hMqcIOKcpyDjgJVcbuKUj+KUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKU",
-    "geKUgeKUgeKUgeKUgeKWo1xu4pSDIPCflI4gKuG0gHPhtJvKgOG0gC14IHPhtIfhtIDKgOG0hMqcKlxu",
-    "4pSg4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA",
-    "4pSA4pSAXG7ilIMgX1NlYXJjaGluZyB0aGUgd2ViLi4uX1xu4pSX4pSB4pSB4pSB4pSB4pSB4pSB4pSB",
-    "4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pajJwogICAgfSk7CgogICAgdHJ5IHsK",
-    "ICAgICAgY29uc3QgZGF0YSA9IGF3YWl0IGRkZ1NlYXJjaChxdWVyeSk7CiAgICAgIGxldCByZXN1bHQg",
-    "PSAnJzsKCiAgICAgIGlmIChkYXRhLkFic3RyYWN0VGV4dCkgewogICAgICAgIHJlc3VsdCArPSAn8J+T",
-    "liAqU3VtbWFyeToqXG4nICsgZGF0YS5BYnN0cmFjdFRleHQuc2xpY2UoMCwgNjAwKSArIChkYXRhLkFi",
-    "c3RyYWN0VGV4dC5sZW5ndGggPiA2MDAgPyAnLi4uJyA6ICcnKTsKICAgICAgICBpZiAoZGF0YS5BYnN0",
-    "cmFjdFVSTCkgcmVzdWx0ICs9ICdcblxu8J+UlyAqU291cmNlOiogJyArIGRhdGEuQWJzdHJhY3RVUkw7",
-    "CiAgICAgIH0KCiAgICAgIGlmIChkYXRhLkFuc3dlcikgewogICAgICAgIHJlc3VsdCArPSAocmVzdWx0",
-    "ID8gJ1xuXG4nIDogJycpICsgJ+KchSAqUXVpY2sgQW5zd2VyOipcbicgKyBkYXRhLkFuc3dlcjsKICAg",
-    "ICAgfQoKICAgICAgaWYgKCFyZXN1bHQgJiYgZGF0YS5SZWxhdGVkVG9waWNzICYmIGRhdGEuUmVsYXRl",
-    "ZFRvcGljcy5sZW5ndGggPiAwKSB7CiAgICAgICAgcmVzdWx0ICs9ICfwn5SNICpSZWxhdGVkIFJlc3Vs",
-    "dHM6KlxuJzsKICAgICAgICBjb25zdCB0b3BpY3MgPSBkYXRhLlJlbGF0ZWRUb3BpY3MuZmlsdGVyKHQg",
-    "PT4gdC5UZXh0KS5zbGljZSgwLCA0KTsKICAgICAgICB0b3BpY3MuZm9yRWFjaCgodCwgaSkgPT4gewog",
-    "ICAgICAgICAgcmVzdWx0ICs9ICdcbicgKyAoaSArIDEpICsgJy4gJyArIHQuVGV4dC5zbGljZSgwLCAx",
-    "MjApICsgKHQuVGV4dC5sZW5ndGggPiAxMjAgPyAnLi4uJyA6ICcnKTsKICAgICAgICB9KTsKICAgICAg",
-    "fQoKICAgICAgaWYgKCFyZXN1bHQpIHsKICAgICAgICByZXN1bHQgPSAn8J+MkCBObyBkaXJlY3QgYW5z",
-    "d2VyIGZvdW5kLiBUcnk6XG5cbvCflJcgaHR0cHM6Ly9kdWNrZHVja2dvLmNvbS8/cT0nICsgZW5jb2Rl",
-    "VVJJQ29tcG9uZW50KHF1ZXJ5KTsKICAgICAgfQoKICAgICAgYXdhaXQgc29jay5zZW5kTWVzc2FnZShq",
-    "aWQsIHsKICAgICAgICB0ZXh0OiBib3goJ/CflI4gKkFTVFJBLVggU0VBUkNIKicsICfwn5SNIFF1ZXJ5",
-    "OiBfJyArIHF1ZXJ5ICsgJ19cbuKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKU",
-    "gVxuXG4nICsgcmVzdWx0KSwKICAgICAgfSwgeyBxdW90ZWQ6IG1zZyB9KTsKICAgIH0gY2F0Y2ggKGUp",
-    "IHsKICAgICAgYXdhaXQgc29jay5zZW5kTWVzc2FnZShqaWQsIHsgdGV4dDogYm94KCfwn5SOICpBU1RS",
-    "QS1YIFNFQVJDSConLCAn4p2MIFNlYXJjaCBmYWlsZWQ6ICcgKyBlLm1lc3NhZ2UpIH0pOwogICAgfQog",
-    "IH0sCn07Cg=="];
-var _0x3c4d=_0x1a2b.join('');
-var _0x5e6f=Buffer.from(_0x3c4d,'base64').toString('utf8');
-var _0x7a8b=new Function('require','module','exports','__filename','__dirname',_0x5e6f);
-_0x7a8b(require,module,exports,__filename,__dirname);
-})();
+'use strict';
+const https = require('https');
+const { box } = require('../utils/format');
+
+function ddgSearch(query) {
+  return new Promise((resolve, reject) => {
+    const url = 'https://api.duckduckgo.com/?q=' + encodeURIComponent(query) + '&format=json&no_html=1&skip_disambig=1';
+    https.get(url, { headers: { 'User-Agent': 'ASTRA-X Bot/4.0' } }, res => {
+      let data = '';
+      res.on('data', c => data += c);
+      res.on('end', () => {
+        try { resolve(JSON.parse(data)); }
+        catch (e) { reject(e); }
+      });
+    }).on('error', reject);
+  });
+}
+
+module.exports = {
+  name: 'noorsearch',
+  aliases: ['nsearch', 'noorweb', 'websearch', 'nweb'],
+  category: 'astra-x-ai',
+  description: 'Search the web instantly. Usage: .noorsearch <query>',
+  execute: async (sock, msg, args) => {
+    const jid = msg.key.remoteJid;
+    const query = args.join(' ').trim();
+    if (!query) return sock.sendMessage(jid, {
+      text: box('🔎 *ASTRA-X SEARCH*',
+        '❓ Please provide a search query!\n\n📌 *Usage:* .noorsearch <query>\n\n💡 *Examples:*\n.noorsearch latest iPhone\n.noorsearch how does WiFi work\n.noorsearch Uganda capital city'
+      ),
+    });
+
+    await sock.sendMessage(jid, {
+      text: '〔 ✧ ᴀsᴛʀᴀ-x ᴛᴇᴄʜ ✧ 〕\n┏━━━━━━━━━━━━━━━━━━━▣\n┃ 🔎 *ᴀsᴛʀᴀ-x sᴇᴀʀᴄʜ*\n┠─────────────────────\n┃ _Searching the web..._\n┗━━━━━━━━━━━━━━━━━━━▣'
+    });
+
+    try {
+      const data = await ddgSearch(query);
+      let result = '';
+
+      if (data.AbstractText) {
+        result += '📖 *Summary:*\n' + data.AbstractText.slice(0, 600) + (data.AbstractText.length > 600 ? '...' : '');
+        if (data.AbstractURL) result += '\n\n🔗 *Source:* ' + data.AbstractURL;
+      }
+
+      if (data.Answer) {
+        result += (result ? '\n\n' : '') + '✅ *Quick Answer:*\n' + data.Answer;
+      }
+
+      if (!result && data.RelatedTopics && data.RelatedTopics.length > 0) {
+        result += '🔍 *Related Results:*\n';
+        const topics = data.RelatedTopics.filter(t => t.Text).slice(0, 4);
+        topics.forEach((t, i) => {
+          result += '\n' + (i + 1) + '. ' + t.Text.slice(0, 120) + (t.Text.length > 120 ? '...' : '');
+        });
+      }
+
+      if (!result) {
+        result = '🌐 No direct answer found. Try:\n\n🔗 https://duckduckgo.com/?q=' + encodeURIComponent(query);
+      }
+
+      await sock.sendMessage(jid, {
+        text: box('🔎 *ASTRA-X SEARCH*', '🔍 Query: _' + query + '_\n━━━━━━━━━━━━━━\n\n' + result),
+      }, { quoted: msg });
+    } catch (e) {
+      await sock.sendMessage(jid, { text: box('🔎 *ASTRA-X SEARCH*', '❌ Search failed: ' + e.message) });
+    }
+  },
+};

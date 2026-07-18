@@ -1,44 +1,51 @@
-(function(){
-var _0x1a2b=["J3VzZSBzdHJpY3QnOwpjb25zdCB7IG1ha2VUYWJsZUNtZCB9ID0gcmVxdWlyZSgnLi9lcGx0YWJsZScp",
-    "OyAvLyByZXVzZSBmYWN0b3J5IHBhdHRlcm4KCmNvbnN0IExFQUdVRVMgPSB7CiAgdWNsdGFibGU6ICAg",
-    "ICAgICB7IGlkOiAnNDQ4MCcsIG5hbWU6ICfwn4+GIFVFRkEgQ2hhbXBpb25zIExlYWd1ZScgfSwKICBs",
-    "YWxpZ2F0YWJsZTogICAgIHsgaWQ6ICc0MzM1JywgbmFtZTogJ/Cfh6rwn4e4IExhIExpZ2EnIH0sCiAg",
-    "c2VyaWF0YWJsZTogICAgICB7IGlkOiAnNDMzMicsIG5hbWU6ICfwn4eu8J+HuSBTZXJpZSBBJyB9LAog",
-    "IGJ1bmRlc2xpZ2F0YWJsZTogeyBpZDogJzQzMzEnLCBuYW1lOiAn8J+HqfCfh6ogQnVuZGVzbGlnYScg",
-    "fSwKICBsaWd1ZTF0YWJsZTogICAgIHsgaWQ6ICc0MzM0JywgbmFtZTogJ/Cfh6vwn4e3IExpZ3VlIDEn",
-    "IH0sCn07CmNvbnN0IGh0dHBzID0gcmVxdWlyZSgnaHR0cHMnKTsKZnVuY3Rpb24gZmV0Y2hKU09OKHVy",
-    "bCkgewogIHJldHVybiBuZXcgUHJvbWlzZSgocmVzb2x2ZSwgcmVqZWN0KSA9PiB7CiAgICBodHRwcy5n",
-    "ZXQodXJsLCB7IGhlYWRlcnM6IHsgJ1VzZXItQWdlbnQnOiAnTW96aWxsYS81LjAnIH0gfSwgcmVzID0+",
-    "IHsKICAgICAgbGV0IGQgPSAnJzsKICAgICAgcmVzLm9uKCdkYXRhJywgYyA9PiBkICs9IGMpOwogICAg",
-    "ICByZXMub24oJ2VuZCcsICgpID0+IHsgdHJ5IHsgcmVzb2x2ZShKU09OLnBhcnNlKGQpKTsgfSBjYXRj",
-    "aChlKSB7IHJlamVjdChlKTsgfSB9KTsKICAgICAgcmVzLm9uKCdlcnJvcicsIHJlamVjdCk7CiAgICB9",
-    "KS5vbignZXJyb3InLCByZWplY3QpOwogIH0pOwp9CmNvbnN0IGxlYWd1ZSA9IExFQUdVRVNbJ2J1bmRl",
-    "c2xpZ2F0YWJsZSddOwptb2R1bGUuZXhwb3J0cyA9IHsKICBuYW1lOiAnYnVuZGVzbGlnYXRhYmxlJywK",
-    "ICBjYXRlZ29yeTogJ3Nwb3J0cycsCiAgZGVzY3JpcHRpb246ICdHZXQgJyArIGxlYWd1ZS5uYW1lICsg",
-    "JyBzdGFuZGluZ3MgdGFibGUnLAogIGV4ZWN1dGU6IGFzeW5jIChzb2NrLCBtc2cpID0+IHsKICAgIGNv",
-    "bnN0IGppZCA9IG1zZy5rZXkucmVtb3RlSmlkOwogICAgYXdhaXQgc29jay5zZW5kTWVzc2FnZShqaWQs",
-    "IHsgdGV4dDogbGVhZ3VlLm5hbWUgKyAnXG7ij7MgX0ZldGNoaW5nIHN0YW5kaW5ncy4uLl8nIH0pOwog",
-    "ICAgdHJ5IHsKICAgICAgY29uc3QgZGF0YSA9IGF3YWl0IGZldGNoSlNPTignaHR0cHM6Ly93d3cudGhl",
-    "c3BvcnRzZGIuY29tL2FwaS92MS9qc29uLzMvbG9va3VwdGFibGUucGhwP2w9JyArIGxlYWd1ZS5pZCAr",
-    "ICcmcz0yMDI0LTIwMjUnKTsKICAgICAgY29uc3QgdGFibGUgPSBkYXRhPy50YWJsZTsKICAgICAgaWYg",
-    "KCF0YWJsZT8ubGVuZ3RoKSB0aHJvdyBuZXcgRXJyb3IoJ05vIHRhYmxlIGRhdGEnKTsKICAgICAgbGV0",
-    "IHRleHQgPSBsZWFndWUubmFtZSArICcgKlNUQU5ESU5HUypcbuKUgeKUgeKUgeKUgeKUgeKUgeKUgeKU",
-    "geKUgeKUgeKUgeKUgeKUgeKUgVxuXG4nOwogICAgICB0ZXh0ICs9ICdgIyAgVGVhbSAgICAgICAgICAg",
-    "ICAgICAgIFAgIFcgIEQgIEwgIFB0c2Bcbic7CiAgICAgIHRhYmxlLnNsaWNlKDAsIDIwKS5mb3JFYWNo",
-    "KHQgPT4gewogICAgICAgIGNvbnN0IHBvcyAgPSBTdHJpbmcodC5pbnRSYW5rKS5wYWRTdGFydCgyKTsK",
-    "ICAgICAgICBjb25zdCBuYW1lID0gKHQuc3RyVGVhbSB8fCAnJykuc2xpY2UoMCwyMCkucGFkRW5kKDIw",
-    "KTsKICAgICAgICBjb25zdCBwICAgID0gU3RyaW5nKHQuaW50UGxheWVkfHwwKS5wYWRTdGFydCgyKTsK",
-    "ICAgICAgICBjb25zdCB3ICAgID0gU3RyaW5nKHQuaW50V2lufHwwKS5wYWRTdGFydCgyKTsKICAgICAg",
-    "ICBjb25zdCBkICAgID0gU3RyaW5nKHQuaW50RHJhd3x8MCkucGFkU3RhcnQoMik7CiAgICAgICAgY29u",
-    "c3QgbCAgICA9IFN0cmluZyh0LmludExvc3N8fDApLnBhZFN0YXJ0KDIpOwogICAgICAgIGNvbnN0IHB0",
-    "cyAgPSBTdHJpbmcodC5pbnRQb2ludHN8fDApLnBhZFN0YXJ0KDMpOwogICAgICAgIHRleHQgKz0gJ2An",
-    "ICsgcG9zICsgJyAnICsgbmFtZSArICcgJyArIHAgKyAnICcgKyB3ICsgJyAnICsgZCArICcgJyArIGwg",
-    "KyAnICcgKyBwdHMgKyAnYFxuJzsKICAgICAgfSk7CiAgICAgIGF3YWl0IHNvY2suc2VuZE1lc3NhZ2Uo",
-    "amlkLCB7IHRleHQgfSwgeyBxdW90ZWQ6IG1zZyB9KTsKICAgIH0gY2F0Y2ggKGUpIHsKICAgICAgYXdh",
-    "aXQgc29jay5zZW5kTWVzc2FnZShqaWQsIHsgdGV4dDogJ+KdjCBDb3VsZCBub3QgZmV0Y2ggdGFibGU6",
-    "ICcgKyBlLm1lc3NhZ2UgfSk7CiAgICB9CiAgfSwKfTsK"];
-var _0x3c4d=_0x1a2b.join('');
-var _0x5e6f=Buffer.from(_0x3c4d,'base64').toString('utf8');
-var _0x7a8b=new Function('require','module','exports','__filename','__dirname',_0x5e6f);
-_0x7a8b(require,module,exports,__filename,__dirname);
-})();
+'use strict';
+const { makeTableCmd } = require('./epltable'); // reuse factory pattern
+
+const LEAGUES = {
+  ucltable:        { id: '4480', name: '🏆 UEFA Champions League' },
+  laligatable:     { id: '4335', name: '🇪🇸 La Liga' },
+  seriatable:      { id: '4332', name: '🇮🇹 Serie A' },
+  bundesligatable: { id: '4331', name: '🇩🇪 Bundesliga' },
+  ligue1table:     { id: '4334', name: '🇫🇷 Ligue 1' },
+};
+const https = require('https');
+function fetchJSON(url) {
+  return new Promise((resolve, reject) => {
+    https.get(url, { headers: { 'User-Agent': 'Mozilla/5.0' } }, res => {
+      let d = '';
+      res.on('data', c => d += c);
+      res.on('end', () => { try { resolve(JSON.parse(d)); } catch(e) { reject(e); } });
+      res.on('error', reject);
+    }).on('error', reject);
+  });
+}
+const league = LEAGUES['bundesligatable'];
+module.exports = {
+  name: 'bundesligatable',
+  category: 'sports',
+  description: 'Get ' + league.name + ' standings table',
+  execute: async (sock, msg) => {
+    const jid = msg.key.remoteJid;
+    await sock.sendMessage(jid, { text: league.name + '\n⏳ _Fetching standings..._' });
+    try {
+      const data = await fetchJSON('https://www.thesportsdb.com/api/v1/json/3/lookuptable.php?l=' + league.id + '&s=2024-2025');
+      const table = data?.table;
+      if (!table?.length) throw new Error('No table data');
+      let text = league.name + ' *STANDINGS*\n━━━━━━━━━━━━━━\n\n';
+      text += '`#  Team                  P  W  D  L  Pts`\n';
+      table.slice(0, 20).forEach(t => {
+        const pos  = String(t.intRank).padStart(2);
+        const name = (t.strTeam || '').slice(0,20).padEnd(20);
+        const p    = String(t.intPlayed||0).padStart(2);
+        const w    = String(t.intWin||0).padStart(2);
+        const d    = String(t.intDraw||0).padStart(2);
+        const l    = String(t.intLoss||0).padStart(2);
+        const pts  = String(t.intPoints||0).padStart(3);
+        text += '`' + pos + ' ' + name + ' ' + p + ' ' + w + ' ' + d + ' ' + l + ' ' + pts + '`\n';
+      });
+      await sock.sendMessage(jid, { text }, { quoted: msg });
+    } catch (e) {
+      await sock.sendMessage(jid, { text: '❌ Could not fetch table: ' + e.message });
+    }
+  },
+};

@@ -1,24 +1,17 @@
-(function(){
-var _0x1a2b=["bW9kdWxlLmV4cG9ydHMgPSB7CiAgUE9SVDogcHJvY2Vzcy5lbnYuUE9SVCB8fCAzMDAwLAogIC8vIEFk",
-    "bWluIGNyZWRlbnRpYWxzIOKAlCBlbnYgdmFycyBtdXN0IG1hdGNoIHdoYXQgYWRtaW4uanMgcmVhZHMg",
-    "KEFETUlOX1VTRVIsIEFETUlOX1BBU1MpCiAgQURNSU5fVVNFUjogICAgIHByb2Nlc3MuZW52LkFETUlO",
-    "X1VTRVIgICAgIHx8ICdhZG1pbicsCiAgQURNSU5fVVNFUk5BTUU6IHByb2Nlc3MuZW52LkFETUlOX1VT",
-    "RVIgICAgIHx8ICdhZG1pbicsIC8vIGxlZ2FjeSBhbGlhcwogIEFETUlOX1BBU1M6ICAgICBwcm9jZXNz",
-    "LmVudi5BRE1JTl9QQVNTICAgICB8fCAnYXN0cmF4MjAyNCcsCiAgQURNSU5fUEFTU1dPUkQ6IHByb2Nl",
-    "c3MuZW52LkFETUlOX1BBU1MgICAgIHx8ICdhc3RyYXgyMDI0JywgLy8gbGVnYWN5IGFsaWFzCiAgQURN",
-    "SU5fQVVUSF9LRVk6IHByb2Nlc3MuZW52LkFETUlOX0FVVEhfS0VZIHx8ICdOT09SNycsCiAgU0VTU0lP",
-    "Tl9TRUNSRVQ6IHByb2Nlc3MuZW52LlNFU1NJT05fU0VDUkVUIHx8ICdhc3RyYXhfc2VjcmV0X2tleV8y",
-    "MDI0JywKICAvLyBDaGFubmVsIEpJRCDigJQgLmVudiB1c2VzIFdIQVRTQVBQX0NIQU5ORUxfSklELCBm",
-    "YWxsYmFjayB0byBvbGQgbmFtZQogIFdIQVRTQVBQX0NIQU5ORUxfSUQ6IHByb2Nlc3MuZW52LldIQVRT",
-    "QVBQX0NIQU5ORUxfSklEIHx8IHByb2Nlc3MuZW52LldIQVRTQVBQX0NIQU5ORUxfSUQgfHwgJycsCiAg",
-    "Ly8gQ0hBTk5FTF9DSEVDS19JTlRFUlZBTCBpbiAuZW52IGlzIGluIGhvdXJzOyBjb252ZXJ0IHRvIG1z",
-    "CiAgQ0hBTk5FTF9DSEVDS19JTlRFUlZBTDogKHBhcnNlSW50KHByb2Nlc3MuZW52LkNIQU5ORUxfQ0hF",
-    "Q0tfSU5URVJWQUwpIHx8IDEwKSAqIDYwICogNjAgKiAxMDAwLAogIFBBSVJJTkdfVElNRU9VVDogICAg",
-    "ICAyICogNjAgKiAxMDAwLCAvLyAyIG1pbnV0ZXMKICBQQUlSSU5HX0NPREVfVElNRU9VVDogNSAqIDYw",
-    "ICogMTAwMCwgLy8gNSBtaW51dGVzIGZvciBjb2RlIHZhbGlkaXR5CiAgTk9ERV9FTlY6IHByb2Nlc3Mu",
-    "ZW52Lk5PREVfRU5WIHx8ICdwcm9kdWN0aW9uJywKfTsK"];
-var _0x3c4d=_0x1a2b.join('');
-var _0x5e6f=Buffer.from(_0x3c4d,'base64').toString('utf8');
-var _0x7a8b=new Function('require','module','exports','__filename','__dirname',_0x5e6f);
-_0x7a8b(require,module,exports,__filename,__dirname);
-})();
+module.exports = {
+  PORT: process.env.PORT || 3000,
+  // Admin credentials — env vars must match what admin.js reads (ADMIN_USER, ADMIN_PASS)
+  ADMIN_USER:     process.env.ADMIN_USER     || 'admin',
+  ADMIN_USERNAME: process.env.ADMIN_USER     || 'admin', // legacy alias
+  ADMIN_PASS:     process.env.ADMIN_PASS     || 'astrax2024',
+  ADMIN_PASSWORD: process.env.ADMIN_PASS     || 'astrax2024', // legacy alias
+  ADMIN_AUTH_KEY: process.env.ADMIN_AUTH_KEY || 'NOOR7',
+  SESSION_SECRET: process.env.SESSION_SECRET || 'astrax_secret_key_2024',
+  // Channel JID — .env uses WHATSAPP_CHANNEL_JID, fallback to old name
+  WHATSAPP_CHANNEL_ID: process.env.WHATSAPP_CHANNEL_JID || process.env.WHATSAPP_CHANNEL_ID || '',
+  // CHANNEL_CHECK_INTERVAL in .env is in hours; convert to ms
+  CHANNEL_CHECK_INTERVAL: (parseInt(process.env.CHANNEL_CHECK_INTERVAL) || 10) * 60 * 60 * 1000,
+  PAIRING_TIMEOUT:      2 * 60 * 1000, // 2 minutes
+  PAIRING_CODE_TIMEOUT: 5 * 60 * 1000, // 5 minutes for code validity
+  NODE_ENV: process.env.NODE_ENV || 'production',
+};

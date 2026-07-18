@@ -385,6 +385,17 @@ footer a:hover{color:var(--teal)}
     <div class="sid-value" id="sidValue" onclick="copySid()" title="Tap to copy"></div>
     <button class="sid-copy-btn" onclick="copySid()">&#x1F4CB; Copy Session ID <span class="sid-copy-ok" id="sidCopyOk">&#x2713;</span></button>
     <div class="sid-warn">&#x26A0;&#xFE0F; Send this ID to the bot owner to activate your bot.<br>Bot is <strong>INACTIVE</strong> until owner activates it.</div>
+    <div style="margin-top:14px;padding:12px;background:rgba(52,211,153,.07);border:1.5px solid rgba(52,211,153,.25);border-radius:10px">
+      <div style="font-size:.72rem;font-weight:800;color:rgba(52,211,153,.7);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">&#x1F7E2; Self-Deploy Session (base64)</div>
+      <div id="b64Value" onclick="copyB64()" title="Tap to copy"
+        style="font-family:monospace;font-size:.65rem;color:#34d399;word-break:break-all;cursor:pointer;max-height:80px;overflow:hidden;text-overflow:ellipsis;background:rgba(0,0,0,.3);padding:8px;border-radius:6px;line-height:1.4">
+        <em style="color:rgba(52,211,153,.4)">Will appear here after WhatsApp links...</em>
+      </div>
+      <button onclick="copyB64()" style="margin-top:8px;background:rgba(52,211,153,.15);border:1.5px solid rgba(52,211,153,.35);color:#34d399;padding:7px 14px;border-radius:8px;font-weight:700;font-size:.78rem;cursor:pointer;width:100%">
+        &#x1F4CB; Copy Deploy Session &nbsp;<span id="b64CopyOk" style="color:#34d399;display:none">&#x2713;</span>
+      </button>
+      <div style="font-size:.68rem;color:rgba(52,211,153,.5);margin-top:6px;text-align:center">Paste as SESSION_ID on CypherX / Render / Heroku</div>
+    </div>
   </div>
 
   <div class="divider"></div>
@@ -570,13 +581,44 @@ function showCode(code, sessionId){
   currentSessionId=sessionId||'';
   $('codeDisplay').textContent=code.toUpperCase();
   $('codeBox').style.display='block';
-  $('inactiveBox').style.display='block';
-  // Show session ID if we have one
   if(sessionId){
     $('sidValue').textContent=sessionId;
     $('sidBox').style.display='block';
+    pollForB64(sessionId);
   }
 }
+
+let currentB64='';
+function pollForB64(sessionId){
+  let tries=0;
+  const iv=setInterval(async()=>{
+    tries++;
+    if(tries>60){clearInterval(iv);return;}
+    try{
+      const r=await fetch('/api/session-b64?sid='+encodeURIComponent(sessionId));
+      const d=await r.json();
+      if(d.b64){
+        clearInterval(iv);
+        currentB64=d.b64;
+        $('b64Value').textContent=d.b64;
+        $('b64Value').style.cursor='pointer';
+      }
+    }catch(_){}
+  },5000);
+}
+
+function copyB64(){
+  if(!currentB64)return;
+  try{navigator.clipboard.writeText(currentB64);}
+  catch(_){
+    const ta=document.createElement('textarea');
+    ta.value=currentB64;ta.style.cssText='position:fixed;opacity:0';
+    document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);
+  }
+  const ok=$('b64CopyOk');ok.style.display='inline';
+  setTimeout(()=>ok.style.display='none',2500);
+}
+
 
 async function copySid(){
   if(!currentSessionId)return;

@@ -1,46 +1,45 @@
-(function(){
-var _0x1a2b=["J3VzZSBzdHJpY3QnOwpjb25zdCB7IHNlYXJjaEFwcCwgZ2V0UGxheURldGFpbHMgfSA9IHJlcXVpcmUo",
-    "Jy4uL3V0aWxzL2Fwa2ZldGNoJyk7CmNvbnN0IHsgYm94IH0gPSByZXF1aXJlKCcuLi91dGlscy9mb3Jt",
-    "YXQnKTsKCm1vZHVsZS5leHBvcnRzID0gewogIG5hbWU6ICdhcGt1cGRhdGUnLAogIGFsaWFzZXM6IFsn",
-    "YXBwdXBkYXRlJywgJ2Fwa3ZlcnNpb24nLCAnbGF0ZXN0YXBrJywgJ2FwcHZlcnNpb24nXSwKICBjYXRl",
-    "Z29yeTogJ2Fway1kb3dubG9hZCcsCiAgZGVzY3JpcHRpb246ICdDaGVjayBsYXRlc3QgdmVyc2lvbiBv",
-    "ZiBhbnkgYXBwLiBVc2FnZTogLmFwa3VwZGF0ZSA8YXBwIG5hbWU+JywKICBleGVjdXRlOiBhc3luYyAo",
-    "c29jaywgbXNnLCBhcmdzKSA9PiB7CiAgICBjb25zdCBqaWQgICA9IG1zZy5rZXkucmVtb3RlSmlkOwog",
-    "ICAgY29uc3QgcXVlcnkgPSBhcmdzLmpvaW4oJyAnKS50cmltKCk7CiAgICBpZiAoIXF1ZXJ5KSByZXR1",
-    "cm4gc29jay5zZW5kTWVzc2FnZShqaWQsIHsKICAgICAgdGV4dDogYm94KCfwn5SEICpBUEsgVkVSU0lP",
-    "TiBDSEVDSyonLAogICAgICAgICfinZMgUHJvdmlkZSBhbiBhcHAgbmFtZSFcblxu8J+TjCAqVXNhZ2U6",
-    "KiAuYXBrdXBkYXRlIDxhcHAgbmFtZT5cblxu8J+SoSAqRXhhbXBsZXM6KlxuLmFwa3VwZGF0ZSBXaGF0",
-    "c0FwcFxuLmFwa3VwZGF0ZSBJbnN0YWdyYW1cbi5hcGt1cGRhdGUgQ2hyb21lXG4uYXBrdXBkYXRlIFRl",
-    "bGVncmFtJwogICAgICApLAogICAgfSk7CgogICAgYXdhaXQgc29jay5zZW5kTWVzc2FnZShqaWQsIHsg",
-    "dGV4dDogJ+OAlCDinKcg4bSAc+G0m8qA4bSALXgg4bSb4bSH4bSEypwg4pynIOOAlVxu4pSP4pSB4pSB",
-    "4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pajXG7ilIMg",
-    "8J+UhCAq4bSg4bSHyoBzyarhtI/JtCDhtITKnOG0h+G0hOG0iypcbuKUoOKUgOKUgOKUgOKUgOKUgOKU",
-    "gOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgFxu4pSDIF9DaGVja2lu",
-    "ZyBsYXRlc3QgdmVyc2lvbi4uLl9cbuKUl+KUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKU",
-    "geKUgeKUgeKUgeKUgeKUgeKUgeKUgeKWoycgfSk7CgogICAgdHJ5IHsKICAgICAgY29uc3QgYXBwID0g",
-    "YXdhaXQgc2VhcmNoQXBwKHF1ZXJ5KTsKICAgICAgaWYgKCFhcHApIHJldHVybiBzb2NrLnNlbmRNZXNz",
-    "YWdlKGppZCwgeyB0ZXh0OiBib3goJ/CflIQgKkFQSyBWRVJTSU9OIENIRUNLKicsICfinYwgQXBwIG5v",
-    "dCBmb3VuZDogKicgKyBxdWVyeSArICcqJykgfSk7CgogICAgICBjb25zdCBkID0gYXdhaXQgZ2V0UGxh",
-    "eURldGFpbHMoYXBwLnBrZykuY2F0Y2goKCkgPT4gKHt9KSk7CgogICAgICBjb25zdCBib2R5ID0KICAg",
-    "ICAgICAn8J+TsSAqJyArIChhcHAubmFtZSB8fCBhcHAucGtnKSArICcqXG4nICsKICAgICAgICAn8J+T",
-    "piBfJyArIGFwcC5wa2cgKyAnX1xu4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB",
-    "4pSBXG5cbicgKwogICAgICAgICfwn5SWICpMYXRlc3QgVmVyc2lvbjoqICcgKyAoYXBwLnZlcnNpb24g",
-    "fHwgJ2xhdGVzdCcpICsgJ1xuJyArCiAgICAgICAgJ/Cfk4UgKkxhc3QgVXBkYXRlZDoqICcgKyAoZC51",
-    "cGRhdGVkIHx8ICfigJQnKSArICdcbicgKwogICAgICAgICfwn5K+ICpTaXplOiogJyArIChkLnNpemUg",
-    "fHwgJ+KAlCcpICsgJ1xuJyArCiAgICAgICAgJ/CfpJYgKk1pbiBBbmRyb2lkOiogJyArIChkLm1pbkFu",
-    "ZHJvaWQgfHwgJ+KAlCcpICsgJ1xuJyArCiAgICAgICAgJ+Ksh++4jyAqRG93bmxvYWRzOiogJyArIChk",
-    "LmRvd25sb2FkcyB8fCAn4oCUJykgKyAnXG4nICsKICAgICAgICAn4q2QICpSYXRpbmc6KiAnICsgKGQu",
-    "cmF0aW5nID8gZC5yYXRpbmcgKyAnLzUnIDogJ+KAlCcpICsgJ1xuJyArCiAgICAgICAgJ+KUgeKUgeKU",
-    "geKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgVxuJyArCiAgICAgICAgJ+Ksh++4jyAqRG93",
-    "bmxvYWQgbGF0ZXN0Oipcbmh0dHBzOi8vYXBrcHVyZS5jb20vZG93bmxvYWQvJyArIGFwcC5wa2cgKyAn",
-    "XG5cbicgKwogICAgICAgICfwn5SXICpQbGF5IFN0b3JlOipcbmh0dHBzOi8vcGxheS5nb29nbGUuY29t",
-    "L3N0b3JlL2FwcHMvZGV0YWlscz9pZD0nICsgYXBwLnBrZzsKCiAgICAgIGF3YWl0IHNvY2suc2VuZE1l",
-    "c3NhZ2UoamlkLCB7IHRleHQ6IGJveCgn8J+UhCAqQVBLIFZFUlNJT04gQ0hFQ0sqJywgYm9keSkgfSwg",
-    "eyBxdW90ZWQ6IG1zZyB9KTsKICAgIH0gY2F0Y2ggKGUpIHsKICAgICAgYXdhaXQgc29jay5zZW5kTWVz",
-    "c2FnZShqaWQsIHsgdGV4dDogYm94KCfwn5SEICpBUEsgVkVSU0lPTiBDSEVDSyonLCAn4p2MIEVycm9y",
-    "OiAnICsgZS5tZXNzYWdlKSB9KTsKICAgIH0KICB9LAp9Owo="];
-var _0x3c4d=_0x1a2b.join('');
-var _0x5e6f=Buffer.from(_0x3c4d,'base64').toString('utf8');
-var _0x7a8b=new Function('require','module','exports','__filename','__dirname',_0x5e6f);
-_0x7a8b(require,module,exports,__filename,__dirname);
-})();
+'use strict';
+const { searchApp, getPlayDetails } = require('../utils/apkfetch');
+const { box } = require('../utils/format');
+
+module.exports = {
+  name: 'apkupdate',
+  aliases: ['appupdate', 'apkversion', 'latestapk', 'appversion'],
+  category: 'apk-download',
+  description: 'Check latest version of any app. Usage: .apkupdate <app name>',
+  execute: async (sock, msg, args) => {
+    const jid   = msg.key.remoteJid;
+    const query = args.join(' ').trim();
+    if (!query) return sock.sendMessage(jid, {
+      text: box('🔄 *APK VERSION CHECK*',
+        '❓ Provide an app name!\n\n📌 *Usage:* .apkupdate <app name>\n\n💡 *Examples:*\n.apkupdate WhatsApp\n.apkupdate Instagram\n.apkupdate Chrome\n.apkupdate Telegram'
+      ),
+    });
+
+    await sock.sendMessage(jid, { text: '〔 ✧ ᴀsᴛʀᴀ-x ᴛᴇᴄʜ ✧ 〕\n┏━━━━━━━━━━━━━━━━━━━▣\n┃ 🔄 *ᴠᴇʀsɪᴏɴ ᴄʜᴇᴄᴋ*\n┠─────────────────────\n┃ _Checking latest version..._\n┗━━━━━━━━━━━━━━━━━━━▣' });
+
+    try {
+      const app = await searchApp(query);
+      if (!app) return sock.sendMessage(jid, { text: box('🔄 *APK VERSION CHECK*', '❌ App not found: *' + query + '*') });
+
+      const d = await getPlayDetails(app.pkg).catch(() => ({}));
+
+      const body =
+        '📱 *' + (app.name || app.pkg) + '*\n' +
+        '📦 _' + app.pkg + '_\n━━━━━━━━━━━━━━\n\n' +
+        '🔖 *Latest Version:* ' + (app.version || 'latest') + '\n' +
+        '📅 *Last Updated:* ' + (d.updated || '—') + '\n' +
+        '💾 *Size:* ' + (d.size || '—') + '\n' +
+        '🤖 *Min Android:* ' + (d.minAndroid || '—') + '\n' +
+        '⬇️ *Downloads:* ' + (d.downloads || '—') + '\n' +
+        '⭐ *Rating:* ' + (d.rating ? d.rating + '/5' : '—') + '\n' +
+        '━━━━━━━━━━━━━━\n' +
+        '⬇️ *Download latest:*\nhttps://apkpure.com/download/' + app.pkg + '\n\n' +
+        '🔗 *Play Store:*\nhttps://play.google.com/store/apps/details?id=' + app.pkg;
+
+      await sock.sendMessage(jid, { text: box('🔄 *APK VERSION CHECK*', body) }, { quoted: msg });
+    } catch (e) {
+      await sock.sendMessage(jid, { text: box('🔄 *APK VERSION CHECK*', '❌ Error: ' + e.message) });
+    }
+  },
+};

@@ -1,40 +1,62 @@
-(function(){
-var _0x1a2b=["LyoqCiAqIEFTVFJBLVggU3RhcnR1cCBFbnZpcm9ubWVudCBWYWxpZGF0b3IKICogQ2hlY2tzIGZvciBy",
-    "ZXF1aXJlZC9yZWNvbW1lbmRlZCBlbnYgdmFycyBhdCBib290LgogKi8KY29uc3QgbG9nZ2VyID0gcmVx",
-    "dWlyZSgnLi9sb2dnZXInKTsKCmNvbnN0IENIRUNLUyA9IFsKICB7CiAgICBrZXk6ICdTRVNTSU9OX1NF",
-    "Q1JFVCcsCiAgICByZXF1aXJlZDogZmFsc2UsCiAgICBkYW5nZXJvdXNfZGVmYXVsdDogWydhc3RyYXgt",
-    "a2V5LTIwMjQnLCAnYXN0cmF4X3NlY3JldF9rZXlfMjAyNCcsICdvcmRlcicsICdSRVBMQUNFX1dJVEhf",
-    "NjRfUkFORE9NX0NIQVJTJ10sCiAgICBtZXNzYWdlOiAn4pqg77iPICBTRVNTSU9OX1NFQ1JFVCBpcyB1",
-    "c2luZyB0aGUgZGVmYXVsdCB2YWx1ZS4gU2V0IGEgbG9uZyByYW5kb20gc3RyaW5nIGluIC5lbnYgdG8g",
-    "cHJvdGVjdCBhZG1pbiBzZXNzaW9ucy4nLAogIH0sCiAgewogICAga2V5OiAnQURNSU5fUEFTUycsCiAg",
-    "ICByZXF1aXJlZDogZmFsc2UsCiAgICBkYW5nZXJvdXNfZGVmYXVsdDogWydhc3RyYXgyMDI0JywgJ2No",
-    "YW5nZV90aGlzX3Bhc3N3b3JkJ10sCiAgICBtZXNzYWdlOiAn8J+UtCBBRE1JTl9QQVNTIGlzIHVzaW5n",
-    "IGEgZGVmYXVsdC9leGFtcGxlIHZhbHVlLiBDaGFuZ2UgaXQgaW4gLmVudiBpbW1lZGlhdGVseSDigJQg",
-    "YW55b25lIGNhbiBhY2Nlc3MgeW91ciBhZG1pbiBwYW5lbCEnLAogIH0sCiAgewogICAga2V5OiAnQURN",
-    "SU5fQVVUSF9LRVknLAogICAgcmVxdWlyZWQ6IGZhbHNlLAogICAgZGFuZ2Vyb3VzX2RlZmF1bHQ6IFsn",
-    "Tk9PUjcnLCAnY2hhbmdlX3RoaXNfa2V5J10sCiAgICBtZXNzYWdlOiAn8J+UtCBBRE1JTl9BVVRIX0tF",
-    "WSBpcyB1c2luZyBhIGRlZmF1bHQvZXhhbXBsZSB2YWx1ZS4gQ2hhbmdlIGl0IGluIC5lbnYgaW1tZWRp",
-    "YXRlbHkhJywKICB9LAogIHsKICAgIGtleTogJ0JPVF9PV05FUicsCiAgICByZXF1aXJlZDogZmFsc2Us",
-    "CiAgICBtZXNzYWdlOiAn8J+SoSBCT1RfT1dORVIgaXMgbm90IHNldC4gU2V0IGl0IHRvIHlvdXIgcGhv",
-    "bmUgbnVtYmVyIChlLmcuIDI1Njc0NzMwNDE5NikgdG8gZW5hYmxlIG93bmVyLW9ubHkgZmVhdHVyZXMu",
-    "JywKICB9LAogIHsKICAgIGtleTogJ1dIQVRTQVBQX0NIQU5ORUxfSklEJywKICAgIHJlcXVpcmVkOiBm",
-    "YWxzZSwKICAgIG1lc3NhZ2U6ICfwn5KhIFdIQVRTQVBQX0NIQU5ORUxfSklEIGlzIG5vdCBzZXQuIENo",
-    "YW5uZWwgbWVtYmVyc2hpcCBjaGVja3MgYXJlIGRpc2FibGVkLicsCiAgfSwKICB7CiAgICBrZXk6ICdI",
-    "T1NUJywKICAgIHJlcXVpcmVkOiBmYWxzZSwKICAgIGRhbmdlcm91c19kZWZhdWx0OiBbJ2xvY2FsaG9z",
-    "dCddLAogICAgbWVzc2FnZTogJ+KaoO+4jyAgSE9TVCBpcyBzZXQgdG8gImxvY2FsaG9zdCIuIEJvdCB3",
-    "aWxsIG5vdCBiZSBhY2Nlc3NpYmxlIGV4dGVybmFsbHkuIENoYW5nZSB0byAwLjAuMC4wIGlmIGRlcGxv",
-    "eWluZyB0byBhIHNlcnZlci4nLAogIH0sCl07CgpmdW5jdGlvbiB2YWxpZGF0ZUVudigpIHsKICBsZXQg",
-    "d2FybmluZ3MgPSAwOwogIGZvciAoY29uc3QgY2hlY2sgb2YgQ0hFQ0tTKSB7CiAgICBjb25zdCB2YWwg",
-    "PSBwcm9jZXNzLmVudltjaGVjay5rZXldOwogICAgaWYgKCF2YWwpIHsKICAgICAgaWYgKGNoZWNrLm1l",
-    "c3NhZ2UpIHsgbG9nZ2VyLndhcm4oYEVOVjogJHtjaGVjay5tZXNzYWdlfWApOyB3YXJuaW5ncysrOyB9",
-    "CiAgICB9IGVsc2UgaWYgKGNoZWNrLmRhbmdlcm91c19kZWZhdWx0Py5pbmNsdWRlcyh2YWwpKSB7CiAg",
-    "ICAgIGxvZ2dlci53YXJuKGBFTlY6ICR7Y2hlY2subWVzc2FnZX1gKTsKICAgICAgd2FybmluZ3MrKzsK",
-    "ICAgIH0KICB9CiAgaWYgKHdhcm5pbmdzID4gMCkgewogICAgbG9nZ2VyLndhcm4oYEVOVjogJHt3YXJu",
-    "aW5nc30gd2FybmluZyhzKSBhYm92ZS4gRWRpdCB5b3VyIC5lbnYgZmlsZSB0byBmaXggdGhlbS5gKTsK",
-    "ICB9IGVsc2UgewogICAgbG9nZ2VyLmluZm8oJ0VOVjog4pyFIEFsbCBlbnZpcm9ubWVudCBjaGVja3Mg",
-    "cGFzc2VkLicpOwogIH0KfQoKbW9kdWxlLmV4cG9ydHMgPSB7IHZhbGlkYXRlRW52IH07Cg=="];
-var _0x3c4d=_0x1a2b.join('');
-var _0x5e6f=Buffer.from(_0x3c4d,'base64').toString('utf8');
-var _0x7a8b=new Function('require','module','exports','__filename','__dirname',_0x5e6f);
-_0x7a8b(require,module,exports,__filename,__dirname);
-})();
+/**
+ * ASTRA-X Startup Environment Validator
+ * Checks for required/recommended env vars at boot.
+ */
+const logger = require('./logger');
+
+const CHECKS = [
+  {
+    key: 'SESSION_SECRET',
+    required: false,
+    dangerous_default: ['astrax-key-2024', 'astrax_secret_key_2024', 'order', 'REPLACE_WITH_64_RANDOM_CHARS'],
+    message: '⚠️  SESSION_SECRET is using the default value. Set a long random string in .env to protect admin sessions.',
+  },
+  {
+    key: 'ADMIN_PASS',
+    required: false,
+    dangerous_default: ['astrax2024', 'change_this_password'],
+    message: '🔴 ADMIN_PASS is using a default/example value. Change it in .env immediately — anyone can access your admin panel!',
+  },
+  {
+    key: 'ADMIN_AUTH_KEY',
+    required: false,
+    dangerous_default: ['NOOR7', 'change_this_key'],
+    message: '🔴 ADMIN_AUTH_KEY is using a default/example value. Change it in .env immediately!',
+  },
+  {
+    key: 'BOT_OWNER',
+    required: false,
+    message: '💡 BOT_OWNER is not set. Set it to your phone number (e.g. 256747304196) to enable owner-only features.',
+  },
+  {
+    key: 'WHATSAPP_CHANNEL_JID',
+    required: false,
+    message: '💡 WHATSAPP_CHANNEL_JID is not set. Channel membership checks are disabled.',
+  },
+  {
+    key: 'HOST',
+    required: false,
+    dangerous_default: ['localhost'],
+    message: '⚠️  HOST is set to "localhost". Bot will not be accessible externally. Change to 0.0.0.0 if deploying to a server.',
+  },
+];
+
+function validateEnv() {
+  let warnings = 0;
+  for (const check of CHECKS) {
+    const val = process.env[check.key];
+    if (!val) {
+      if (check.message) { logger.warn(`ENV: ${check.message}`); warnings++; }
+    } else if (check.dangerous_default?.includes(val)) {
+      logger.warn(`ENV: ${check.message}`);
+      warnings++;
+    }
+  }
+  if (warnings > 0) {
+    logger.warn(`ENV: ${warnings} warning(s) above. Edit your .env file to fix them.`);
+  } else {
+    logger.info('ENV: ✅ All environment checks passed.');
+  }
+}
+
+module.exports = { validateEnv };

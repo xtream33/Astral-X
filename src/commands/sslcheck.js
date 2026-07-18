@@ -1,41 +1,42 @@
-(function(){
-var _0x1a2b=["J3VzZSBzdHJpY3QnOwpjb25zdCB0bHMgID0gcmVxdWlyZSgndGxzJyk7CmNvbnN0IGh0dHBzID0gcmVx",
-    "dWlyZSgnaHR0cHMnKTsKCm1vZHVsZS5leHBvcnRzID0gewogIG5hbWU6ICdzc2xjaGVjaycsCiAgYWxp",
-    "YXNlczogWydzc2wnLCAnY2VydGNoZWNrJywgJ2h0dHBzY2hlY2snXSwKICBjYXRlZ29yeTogJ3V0aWxp",
-    "dHknLAogIGRlc2NyaXB0aW9uOiAnQ2hlY2sgU1NMIGNlcnRpZmljYXRlIGZvciBhIGRvbWFpbi4gVXNh",
-    "Z2U6IC5zc2xjaGVjayA8ZG9tYWluPicsCiAgZXhlY3V0ZTogYXN5bmMgKHNvY2ssIG1zZywgYXJncykg",
-    "PT4gewogICAgY29uc3QgamlkICAgID0gbXNnLmtleS5yZW1vdGVKaWQ7CiAgICBjb25zdCBkb21haW4g",
-    "PSAoYXJnc1swXSB8fCAnJykucmVwbGFjZSgvaHR0cHM/OlwvXC8vLCcnKS5zcGxpdCgnLycpWzBdOwog",
-    "ICAgaWYgKCFkb21haW4pIHJldHVybiBzb2NrLnNlbmRNZXNzYWdlKGppZCwgeyB0ZXh0OiAn8J+UkiBV",
-    "c2FnZTogLnNzbGNoZWNrIDxkb21haW4+XG7wn5KhIEV4YW1wbGU6IC5zc2xjaGVjayBnb29nbGUuY29t",
-    "JyB9KTsKICAgIGF3YWl0IHNvY2suc2VuZE1lc3NhZ2UoamlkLCB7IHRleHQ6ICfwn5SSIF9DaGVja2lu",
-    "ZyBTU0wgZm9yIConICsgZG9tYWluICsgJyouLi5fJyB9KTsKICAgIHRyeSB7CiAgICAgIGF3YWl0IG5l",
-    "dyBQcm9taXNlKChyZXNvbHZlLCByZWplY3QpID0+IHsKICAgICAgICBjb25zdCBzb2NrZXQgPSB0bHMu",
-    "Y29ubmVjdCg0NDMsIGRvbWFpbiwgeyBzZXJ2ZXJuYW1lOiBkb21haW4sIHRpbWVvdXQ6IDEwMDAwIH0s",
-    "ICgpID0+IHsKICAgICAgICAgIGNvbnN0IGNlcnQgID0gc29ja2V0LmdldFBlZXJDZXJ0aWZpY2F0ZSgp",
-    "OwogICAgICAgICAgY29uc3QgdmFsaWQgPSBzb2NrZXQuYXV0aG9yaXplZDsKICAgICAgICAgIGNvbnN0",
-    "IGV4cGlyeSA9IG5ldyBEYXRlKGNlcnQudmFsaWRfdG8pOwogICAgICAgICAgY29uc3Qgbm93ICAgID0g",
-    "bmV3IERhdGUoKTsKICAgICAgICAgIGNvbnN0IGRheXNMZWZ0ID0gTWF0aC5mbG9vcigoZXhwaXJ5IC0g",
-    "bm93KSAvICgxMDAwICogNjAgKiA2MCAqIDI0KSk7CiAgICAgICAgICBjb25zdCBlbW9qaSAgPSBkYXlz",
-    "TGVmdCA+IDMwID8gJ+KchScgOiBkYXlzTGVmdCA+IDcgPyAn4pqg77iPJyA6ICfinYwnOwogICAgICAg",
-    "ICAgc29jay5zZW5kTWVzc2FnZShqaWQsIHsKICAgICAgICAgICAgdGV4dDogJ/CflJIgKlNTTCBDZXJ0",
-    "aWZpY2F0ZTogJyArIGRvbWFpbiArICcqXG7ilIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilIHi",
-    "lIHilIHilIFcblxuJyArCiAgICAgICAgICAgICAgICAgICfwn5OLIFN1YmplY3Q6IConICsgKGNlcnQu",
-    "c3ViamVjdD8uQ04gfHwgZG9tYWluKSArICcqXG4nICsKICAgICAgICAgICAgICAgICAgJ/Cfj6IgSXNz",
-    "dWVyOiAnICsgKGNlcnQuaXNzdWVyPy5PIHx8ICfigJQnKSArICdcbicgKwogICAgICAgICAgICAgICAg",
-    "ICAn8J+ThSBWYWxpZCBGcm9tOiAnICsgbmV3IERhdGUoY2VydC52YWxpZF9mcm9tKS50b0RhdGVTdHJp",
-    "bmcoKSArICdcbicgKwogICAgICAgICAgICAgICAgICAn8J+ThSBFeHBpcmVzOiAnICsgZXhwaXJ5LnRv",
-    "RGF0ZVN0cmluZygpICsgJ1xuJyArCiAgICAgICAgICAgICAgICAgIGVtb2ppICsgJyBEYXlzIExlZnQ6",
-    "IConICsgZGF5c0xlZnQgKyAnKlxuJyArCiAgICAgICAgICAgICAgICAgICfwn5SRIFZhbGlkOiAnICsg",
-    "KHZhbGlkID8gJ+KchSBZZXMnIDogJ+KdjCBObycpLAogICAgICAgICAgfSwgeyBxdW90ZWQ6IG1zZyB9",
-    "KS50aGVuKHJlc29sdmUpOwogICAgICAgICAgc29ja2V0LmRlc3Ryb3koKTsKICAgICAgICB9KTsKICAg",
-    "ICAgICBzb2NrZXQub24oJ2Vycm9yJywgcmVqZWN0KTsKICAgICAgICBzb2NrZXQuc2V0VGltZW91dCgx",
-    "MDAwMCwgKCkgPT4geyBzb2NrZXQuZGVzdHJveSgpOyByZWplY3QobmV3IEVycm9yKCdUaW1lb3V0Jykp",
-    "OyB9KTsKICAgICAgfSk7CiAgICB9IGNhdGNoIChlKSB7CiAgICAgIGF3YWl0IHNvY2suc2VuZE1lc3Nh",
-    "Z2UoamlkLCB7IHRleHQ6ICfinYwgU1NMIGNoZWNrIGZhaWxlZDogJyArIGUubWVzc2FnZSB9KTsKICAg",
-    "IH0KICB9LAp9Owo="];
-var _0x3c4d=_0x1a2b.join('');
-var _0x5e6f=Buffer.from(_0x3c4d,'base64').toString('utf8');
-var _0x7a8b=new Function('require','module','exports','__filename','__dirname',_0x5e6f);
-_0x7a8b(require,module,exports,__filename,__dirname);
-})();
+'use strict';
+const tls  = require('tls');
+const https = require('https');
+
+module.exports = {
+  name: 'sslcheck',
+  aliases: ['ssl', 'certcheck', 'httpscheck'],
+  category: 'utility',
+  description: 'Check SSL certificate for a domain. Usage: .sslcheck <domain>',
+  execute: async (sock, msg, args) => {
+    const jid    = msg.key.remoteJid;
+    const domain = (args[0] || '').replace(/https?:\/\//,'').split('/')[0];
+    if (!domain) return sock.sendMessage(jid, { text: '🔒 Usage: .sslcheck <domain>\n💡 Example: .sslcheck google.com' });
+    await sock.sendMessage(jid, { text: '🔒 _Checking SSL for *' + domain + '*..._' });
+    try {
+      await new Promise((resolve, reject) => {
+        const socket = tls.connect(443, domain, { servername: domain, timeout: 10000 }, () => {
+          const cert  = socket.getPeerCertificate();
+          const valid = socket.authorized;
+          const expiry = new Date(cert.valid_to);
+          const now    = new Date();
+          const daysLeft = Math.floor((expiry - now) / (1000 * 60 * 60 * 24));
+          const emoji  = daysLeft > 30 ? '✅' : daysLeft > 7 ? '⚠️' : '❌';
+          sock.sendMessage(jid, {
+            text: '🔒 *SSL Certificate: ' + domain + '*\n━━━━━━━━━━━━━━\n\n' +
+                  '📋 Subject: *' + (cert.subject?.CN || domain) + '*\n' +
+                  '🏢 Issuer: ' + (cert.issuer?.O || '—') + '\n' +
+                  '📅 Valid From: ' + new Date(cert.valid_from).toDateString() + '\n' +
+                  '📅 Expires: ' + expiry.toDateString() + '\n' +
+                  emoji + ' Days Left: *' + daysLeft + '*\n' +
+                  '🔑 Valid: ' + (valid ? '✅ Yes' : '❌ No'),
+          }, { quoted: msg }).then(resolve);
+          socket.destroy();
+        });
+        socket.on('error', reject);
+        socket.setTimeout(10000, () => { socket.destroy(); reject(new Error('Timeout')); });
+      });
+    } catch (e) {
+      await sock.sendMessage(jid, { text: '❌ SSL check failed: ' + e.message });
+    }
+  },
+};

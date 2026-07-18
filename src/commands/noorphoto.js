@@ -1,47 +1,48 @@
-(function(){
-var _0x1a2b=["J3VzZSBzdHJpY3QnOwpjb25zdCBodHRwcyA9IHJlcXVpcmUoJ2h0dHBzJyk7CmNvbnN0IHsgYm94IH0g",
-    "PSByZXF1aXJlKCcuLi91dGlscy9mb3JtYXQnKTsKCi8vIEZyZWUgaW1hZ2UgZ2VuZXJhdGlvbiB2aWEg",
-    "cG9sbGluYXRpb25zLmFpIChubyBBUEkga2V5IG5lZWRlZCkKZnVuY3Rpb24gZ2VuZXJhdGVJbWFnZShw",
-    "cm9tcHQpIHsKICByZXR1cm4gbmV3IFByb21pc2UoKHJlc29sdmUsIHJlamVjdCkgPT4gewogICAgY29u",
-    "c3QgZW5jb2RlZCA9IGVuY29kZVVSSUNvbXBvbmVudCgnQVNUUkEtWCBBSSBnZW5lcmF0ZWQgaW1hZ2Us",
-    "IGhpZ2ggcXVhbGl0eSwgZGV0YWlsZWQ6ICcgKyBwcm9tcHQpOwogICAgY29uc3QgdXJsID0gJ2h0dHBz",
-    "Oi8vaW1hZ2UucG9sbGluYXRpb25zLmFpL3Byb21wdC8nICsgZW5jb2RlZCArICc/d2lkdGg9NzY4Jmhl",
-    "aWdodD03Njgmbm9sb2dvPXRydWUnOwogICAgaHR0cHMuZ2V0KHVybCwgeyBoZWFkZXJzOiB7ICdVc2Vy",
-    "LUFnZW50JzogJ0FTVFJBLVggQm90LzQuMCcgfSB9LCByZXMgPT4gewogICAgICBpZiAocmVzLnN0YXR1",
-    "c0NvZGUgIT09IDIwMCkgcmV0dXJuIHJlamVjdChuZXcgRXJyb3IoJ0ltYWdlIEFQSSByZXR1cm5lZCBz",
-    "dGF0dXMgJyArIHJlcy5zdGF0dXNDb2RlKSk7CiAgICAgIGNvbnN0IGNodW5rcyA9IFtdOwogICAgICBy",
-    "ZXMub24oJ2RhdGEnLCBjID0+IGNodW5rcy5wdXNoKGMpKTsKICAgICAgcmVzLm9uKCdlbmQnLCAoKSA9",
-    "PiByZXNvbHZlKEJ1ZmZlci5jb25jYXQoY2h1bmtzKSkpOwogICAgfSkub24oJ2Vycm9yJywgcmVqZWN0",
-    "KTsKICB9KTsKfQoKbW9kdWxlLmV4cG9ydHMgPSB7CiAgbmFtZTogJ25vb3JwaG90bycsCiAgYWxpYXNl",
-    "czogWyducGhvdG8nLCAnbmltYWdlJywgJ25vb3JpbWFnZScsICducGljJywgJ25vb3JwaWMnXSwKICBj",
-    "YXRlZ29yeTogJ2FzdHJhLXgtYWknLAogIGRlc2NyaXB0aW9uOiAnR2VuZXJhdGUgQUkgaW1hZ2VzIGZv",
-    "ciBmcmVlLiBVc2FnZTogLm5vb3JwaG90byA8ZGVzY3JpcHRpb24+JywKICBleGVjdXRlOiBhc3luYyAo",
-    "c29jaywgbXNnLCBhcmdzKSA9PiB7CiAgICBjb25zdCBqaWQgICAgPSBtc2cua2V5LnJlbW90ZUppZDsK",
-    "ICAgIGNvbnN0IHByb21wdCA9IGFyZ3Muam9pbignICcpLnRyaW0oKTsKCiAgICBpZiAoIXByb21wdCkg",
-    "cmV0dXJuIHNvY2suc2VuZE1lc3NhZ2UoamlkLCB7CiAgICAgIHRleHQ6IGJveCgn8J+WvO+4jyAqQVNU",
-    "UkEtWCBQSE9UTyonLAogICAgICAgICfinZMgUGxlYXNlIGRlc2NyaWJlIHRoZSBpbWFnZSFcblxu8J+T",
-    "jCAqVXNhZ2U6KiAubm9vcnBob3RvIDxkZXNjcmlwdGlvbj5cblxu8J+SoSAqRXhhbXBsZXM6KlxuLm5v",
-    "b3JwaG90byBzdW5zZXQgb3ZlciB0aGUgb2NlYW5cbi5ub29ycGhvdG8gY3V0ZSBjYXJ0b29uIHBhbmRh",
-    "IGVhdGluZyBiYW1ib29cbi5ub29ycGhvdG8gZnV0dXJpc3RpYyBjaXR5IGF0IG5pZ2h0IHdpdGggbmVv",
-    "biBsaWdodHNcbi5ub29ycGhvdG8gYSB3b2xmIGhvd2xpbmcgYXQgdGhlIG1vb24nCiAgICAgICksCiAg",
-    "ICB9KTsKCiAgICBhd2FpdCBzb2NrLnNlbmRNZXNzYWdlKGppZCwgewogICAgICB0ZXh0OiAn44CUIOKc",
-    "pyDhtIBz4bSbyoDhtIAteCDhtJvhtIfhtITKnCDinKcg44CVXG7ilI/ilIHilIHilIHilIHilIHilIHi",
-    "lIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilqNcbuKUgyDwn5a877iPICrhtIBz",
-    "4bSbyoDhtIAteCDhtJjKnOG0j+G0m+G0jypcbuKUoOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKU",
-    "gOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgFxu4pSDIF9HZW5lcmF0aW5nIHlvdXIgaW1h",
-    "Z2UuLi5fXG7ilIMgXyhUaGlzIG1heSB0YWtlIH4xMCBzZWNvbmRzKV9cbuKUl+KUgeKUgeKUgeKUgeKU",
-    "geKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKWoycKICAgIH0pOwoKICAg",
-    "IHRyeSB7CiAgICAgIGNvbnN0IGltZ0J1ZmZlciA9IGF3YWl0IGdlbmVyYXRlSW1hZ2UocHJvbXB0KTsK",
-    "ICAgICAgYXdhaXQgc29jay5zZW5kTWVzc2FnZShqaWQsIHsKICAgICAgICBpbWFnZTogaW1nQnVmZmVy",
-    "LAogICAgICAgIGNhcHRpb246ICfjgJQg4pynIOG0gHPhtJvKgOG0gC14IOG0m+G0h+G0hMqcIOKcpyDj",
-    "gJVcbvCflrzvuI8gKkFTVFJBLVggUEhPVE8qXG5cbvCfjqggUHJvbXB0OiBfJyArIHByb21wdCArICdf",
-    "XG5cbl9HZW5lcmF0ZWQgYnkgQVNUUkEtWCBBSSDigKIgRnJlZSBTZXJ2aWNlXyDwn4yNJywKICAgICAg",
-    "fSwgeyBxdW90ZWQ6IG1zZyB9KTsKICAgIH0gY2F0Y2ggKGUpIHsKICAgICAgYXdhaXQgc29jay5zZW5k",
-    "TWVzc2FnZShqaWQsIHsgdGV4dDogYm94KCfwn5a877iPICpBU1RSQS1YIFBIT1RPKicsICfinYwgSW1h",
-    "Z2UgZ2VuZXJhdGlvbiBmYWlsZWQ6ICcgKyBlLm1lc3NhZ2UgKyAnXG5cblRyeSBhIHNpbXBsZXIgZGVz",
-    "Y3JpcHRpb24gb3IgdHJ5IGFnYWluLicpIH0pOwogICAgfQogIH0sCn07Cg=="];
-var _0x3c4d=_0x1a2b.join('');
-var _0x5e6f=Buffer.from(_0x3c4d,'base64').toString('utf8');
-var _0x7a8b=new Function('require','module','exports','__filename','__dirname',_0x5e6f);
-_0x7a8b(require,module,exports,__filename,__dirname);
-})();
+'use strict';
+const https = require('https');
+const { box } = require('../utils/format');
+
+// Free image generation via pollinations.ai (no API key needed)
+function generateImage(prompt) {
+  return new Promise((resolve, reject) => {
+    const encoded = encodeURIComponent('ASTRA-X AI generated image, high quality, detailed: ' + prompt);
+    const url = 'https://image.pollinations.ai/prompt/' + encoded + '?width=768&height=768&nologo=true';
+    https.get(url, { headers: { 'User-Agent': 'ASTRA-X Bot/4.0' } }, res => {
+      if (res.statusCode !== 200) return reject(new Error('Image API returned status ' + res.statusCode));
+      const chunks = [];
+      res.on('data', c => chunks.push(c));
+      res.on('end', () => resolve(Buffer.concat(chunks)));
+    }).on('error', reject);
+  });
+}
+
+module.exports = {
+  name: 'noorphoto',
+  aliases: ['nphoto', 'nimage', 'noorimage', 'npic', 'noorpic'],
+  category: 'astra-x-ai',
+  description: 'Generate AI images for free. Usage: .noorphoto <description>',
+  execute: async (sock, msg, args) => {
+    const jid    = msg.key.remoteJid;
+    const prompt = args.join(' ').trim();
+
+    if (!prompt) return sock.sendMessage(jid, {
+      text: box('🖼️ *ASTRA-X PHOTO*',
+        '❓ Please describe the image!\n\n📌 *Usage:* .noorphoto <description>\n\n💡 *Examples:*\n.noorphoto sunset over the ocean\n.noorphoto cute cartoon panda eating bamboo\n.noorphoto futuristic city at night with neon lights\n.noorphoto a wolf howling at the moon'
+      ),
+    });
+
+    await sock.sendMessage(jid, {
+      text: '〔 ✧ ᴀsᴛʀᴀ-x ᴛᴇᴄʜ ✧ 〕\n┏━━━━━━━━━━━━━━━━━━━▣\n┃ 🖼️ *ᴀsᴛʀᴀ-x ᴘʜᴏᴛᴏ*\n┠─────────────────────\n┃ _Generating your image..._\n┃ _(This may take ~10 seconds)_\n┗━━━━━━━━━━━━━━━━━━━▣'
+    });
+
+    try {
+      const imgBuffer = await generateImage(prompt);
+      await sock.sendMessage(jid, {
+        image: imgBuffer,
+        caption: '〔 ✧ ᴀsᴛʀᴀ-x ᴛᴇᴄʜ ✧ 〕\n🖼️ *ASTRA-X PHOTO*\n\n🎨 Prompt: _' + prompt + '_\n\n_Generated by ASTRA-X AI • Free Service_ 🌍',
+      }, { quoted: msg });
+    } catch (e) {
+      await sock.sendMessage(jid, { text: box('🖼️ *ASTRA-X PHOTO*', '❌ Image generation failed: ' + e.message + '\n\nTry a simpler description or try again.') });
+    }
+  },
+};

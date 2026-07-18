@@ -1,40 +1,49 @@
-(function(){
-var _0x1a2b=["J3VzZSBzdHJpY3QnOwpjb25zdCB7IGJveCB9ID0gcmVxdWlyZSgnLi4vdXRpbHMvZm9ybWF0Jyk7Cgpm",
-    "dW5jdGlvbiBmZXRjaEpTT04odXJsKSB7CiAgY29uc3QgaHR0cHMgPSByZXF1aXJlKCdodHRwcycpOwog",
-    "IHJldHVybiBuZXcgUHJvbWlzZSgocmVzb2x2ZSwgcmVqZWN0KSA9PiB7CiAgICBodHRwcy5nZXQodXJs",
-    "LCB7IGhlYWRlcnM6IHsgJ1VzZXItQWdlbnQnOiAnTW96aWxsYS81LjAnIH0gfSwgcmVzID0+IHsKICAg",
-    "ICAgbGV0IGQgPSAnJzsKICAgICAgcmVzLm9uKCdkYXRhJywgYyA9PiBkICs9IGMpOwogICAgICByZXMu",
-    "b24oJ2VuZCcsICgpID0+IHsgdHJ5IHsgcmVzb2x2ZShKU09OLnBhcnNlKGQpKTsgfSBjYXRjaChlKSB7",
-    "IHJlamVjdChlKTsgfSB9KTsKICAgICAgcmVzLm9uKCdlcnJvcicsIHJlamVjdCk7CiAgICB9KS5vbign",
-    "ZXJyb3InLCByZWplY3QpOwogIH0pOwp9Cgpjb25zdCBGQUxMQkFDS19GQUNUUyA9IFsKICAnSG9uZXkg",
-    "bmV2ZXIgc3BvaWxzLiBBcmNoYWVvbG9naXN0cyBoYXZlIGZvdW5kIDMsMDAwLXllYXItb2xkIGhvbmV5",
-    "IGluIEVneXB0aWFuIHRvbWJzIHRoYXQgd2FzIHN0aWxsIGVkaWJsZS4nLAogICdBIGdyb3VwIG9mIGZs",
-    "YW1pbmdvcyBpcyBjYWxsZWQgYSBmbGFtYm95YW5jZS4nLAogICdCYW5hbmFzIGFyZSBzbGlnaHRseSBy",
-    "YWRpb2FjdGl2ZSBkdWUgdG8gdGhlIHBvdGFzc2l1bS00MCB0aGV5IGNvbnRhaW4uJywKICAnVGhlIGF2",
-    "ZXJhZ2UgcGVyc29uIHdhbGtzIGFib3V0IDEwMCwwMDAgbWlsZXMgaW4gdGhlaXIgbGlmZXRpbWUuJywK",
-    "ICAnT2N0b3B1c2VzIGhhdmUgdGhyZWUgaGVhcnRzIGFuZCBibHVlIGJsb29kLicsCiAgJ0EgZGF5IG9u",
-    "IFZlbnVzIGlzIGxvbmdlciB0aGFuIGEgeWVhciBvbiBWZW51cy4nLAogICdUaGUgc2hvcnRlc3Qgd2Fy",
-    "IGluIGhpc3RvcnkgbGFzdGVkIG9ubHkgMzggdG8gNDUgbWludXRlcyDigJQgYmV0d2VlbiBCcml0YWlu",
-    "IGFuZCBaYW56aWJhciBpbiAxODk2LicsCiAgJ0NsZW9wYXRyYSBsaXZlZCBjbG9zZXIgaW4gdGltZSB0",
-    "byB0aGUgTW9vbiBsYW5kaW5nIHRoYW4gdG8gdGhlIGNvbnN0cnVjdGlvbiBvZiB0aGUgR3JlYXQgUHly",
-    "YW1pZC4nLAogICdUaGVyZSBhcmUgbW9yZSBwb3NzaWJsZSBnYW1lcyBvZiBjaGVzcyB0aGFuIGF0b21z",
-    "IGluIHRoZSBvYnNlcnZhYmxlIHVuaXZlcnNlLicsCiAgJ1RoZSBFaWZmZWwgVG93ZXIgZ3Jvd3MgYWJv",
-    "dXQgNiBpbmNoZXMgdGFsbGVyIGluIHN1bW1lciBkdWUgdG8gdGhlcm1hbCBleHBhbnNpb24uJywKXTsK",
-    "Cm1vZHVsZS5leHBvcnRzID0gewogIG5hbWU6ICdmYWN0JywKICBhbGlhc2VzOiBbJ2ZhY3RzJywgJ3Jh",
-    "bmRvbWZhY3QnLCAnZnVuZmFjdCcsICdkaWRmYWN0a25vdyddLAogIGNhdGVnb3J5OiAnZnVuJywKICBk",
-    "ZXNjcmlwdGlvbjogJ0dldCBhIHJhbmRvbSBpbnRlcmVzdGluZyBmYWN0LiBVc2FnZTogLmZhY3QnLAog",
-    "IGV4ZWN1dGU6IGFzeW5jIChzb2NrLCBtc2csIGFyZ3MpID0+IHsKICAgIGNvbnN0IGppZCA9IG1zZy5r",
-    "ZXkucmVtb3RlSmlkOwogICAgdHJ5IHsKICAgICAgY29uc3QgZGF0YSA9IGF3YWl0IGZldGNoSlNPTign",
-    "aHR0cHM6Ly91c2VsZXNzZmFjdHMuanNwaC5wbC9hcGkvdjIvZmFjdHMvcmFuZG9tP2xhbmd1YWdlPWVu",
-    "Jyk7CiAgICAgIGNvbnN0IGZhY3QgID0gZGF0YT8udGV4dCB8fCBGQUxMQkFDS19GQUNUU1tNYXRoLmZs",
-    "b29yKE1hdGgucmFuZG9tKCkgKiBGQUxMQkFDS19GQUNUUy5sZW5ndGgpXTsKICAgICAgYXdhaXQgc29j",
-    "ay5zZW5kTWVzc2FnZShqaWQsIHsKICAgICAgICB0ZXh0OiBib3goJ/Cfp6AgKlJBTkRPTSBGQUNUKics",
-    "IGZhY3QpLAogICAgICB9KTsKICAgIH0gY2F0Y2ggKF8pIHsKICAgICAgY29uc3QgZmFjdCA9IEZBTExC",
-    "QUNLX0ZBQ1RTW01hdGguZmxvb3IoTWF0aC5yYW5kb20oKSAqIEZBTExCQUNLX0ZBQ1RTLmxlbmd0aCld",
-    "OwogICAgICBhd2FpdCBzb2NrLnNlbmRNZXNzYWdlKGppZCwgewogICAgICAgIHRleHQ6IGJveCgn8J+n",
-    "oCAqUkFORE9NIEZBQ1QqJywgZmFjdCksCiAgICAgIH0pOwogICAgfQogIH0sCn07Cg=="];
-var _0x3c4d=_0x1a2b.join('');
-var _0x5e6f=Buffer.from(_0x3c4d,'base64').toString('utf8');
-var _0x7a8b=new Function('require','module','exports','__filename','__dirname',_0x5e6f);
-_0x7a8b(require,module,exports,__filename,__dirname);
-})();
+'use strict';
+const { box } = require('../utils/format');
+
+function fetchJSON(url) {
+  const https = require('https');
+  return new Promise((resolve, reject) => {
+    https.get(url, { headers: { 'User-Agent': 'Mozilla/5.0' } }, res => {
+      let d = '';
+      res.on('data', c => d += c);
+      res.on('end', () => { try { resolve(JSON.parse(d)); } catch(e) { reject(e); } });
+      res.on('error', reject);
+    }).on('error', reject);
+  });
+}
+
+const FALLBACK_FACTS = [
+  'Honey never spoils. Archaeologists have found 3,000-year-old honey in Egyptian tombs that was still edible.',
+  'A group of flamingos is called a flamboyance.',
+  'Bananas are slightly radioactive due to the potassium-40 they contain.',
+  'The average person walks about 100,000 miles in their lifetime.',
+  'Octopuses have three hearts and blue blood.',
+  'A day on Venus is longer than a year on Venus.',
+  'The shortest war in history lasted only 38 to 45 minutes — between Britain and Zanzibar in 1896.',
+  'Cleopatra lived closer in time to the Moon landing than to the construction of the Great Pyramid.',
+  'There are more possible games of chess than atoms in the observable universe.',
+  'The Eiffel Tower grows about 6 inches taller in summer due to thermal expansion.',
+];
+
+module.exports = {
+  name: 'fact',
+  aliases: ['facts', 'randomfact', 'funfact', 'didfactknow'],
+  category: 'fun',
+  description: 'Get a random interesting fact. Usage: .fact',
+  execute: async (sock, msg, args) => {
+    const jid = msg.key.remoteJid;
+    try {
+      const data = await fetchJSON('https://uselessfacts.jsph.pl/api/v2/facts/random?language=en');
+      const fact  = data?.text || FALLBACK_FACTS[Math.floor(Math.random() * FALLBACK_FACTS.length)];
+      await sock.sendMessage(jid, {
+        text: box('🧠 *RANDOM FACT*', fact),
+      });
+    } catch (_) {
+      const fact = FALLBACK_FACTS[Math.floor(Math.random() * FALLBACK_FACTS.length)];
+      await sock.sendMessage(jid, {
+        text: box('🧠 *RANDOM FACT*', fact),
+      });
+    }
+  },
+};

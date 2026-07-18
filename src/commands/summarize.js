@@ -1,50 +1,37 @@
-(function(){
-var _0x1a2b=["J3VzZSBzdHJpY3QnOwpjb25zdCB7IGFzayB9ID0gcmVxdWlyZSgnLi4vdXRpbHMvZ2VtaW5pJyk7CmNv",
-    "bnN0IHsgYm94IH0gPSByZXF1aXJlKCcuLi91dGlscy9mb3JtYXQnKTsKCmZ1bmN0aW9uIGdldFF1b3Rl",
-    "ZFRleHQobXNnKSB7CiAgcmV0dXJuIG1zZy5tZXNzYWdlPy5leHRlbmRlZFRleHRNZXNzYWdlPy5jb250",
-    "ZXh0SW5mbz8ucXVvdGVkTWVzc2FnZT8uY29udmVyc2F0aW9uCiAgICAgIHx8IG1zZy5tZXNzYWdlPy5l",
-    "eHRlbmRlZFRleHRNZXNzYWdlPy5jb250ZXh0SW5mbz8ucXVvdGVkTWVzc2FnZT8uZXh0ZW5kZWRUZXh0",
-    "TWVzc2FnZT8udGV4dAogICAgICB8fCBudWxsOwp9Cgpjb25zdCBNQVAgPSB7CiAgaW1wcm92ZTogICB7",
-    "IGVtb2ppOifinI3vuI8nLCBsYWJlbDonSU1QUk9WRSBURVhUJywgICAgdXNhZ2U6J1JlcGx5IHRvIGEg",
-    "bWVzc2FnZSB3aXRoICouaW1wcm92ZSogb3IgdHlwZTogKi5pbXByb3ZlIDx0ZXh0PionLCBwcm9tcHQ6",
-    "J1Jld3JpdGUgYW5kIGltcHJvdmUgdGhpcyB0ZXh0LiBNYWtlIGl0IGNsZWFyZXIsIG1vcmUgcHJvZmVz",
-    "c2lvbmFsIGFuZCBiZXR0ZXIgd3JpdHRlbi4gS2VlcCB0aGUgc2FtZSBtZWFuaW5nIGFuZCBsYW5ndWFn",
-    "ZS4gT25seSByZXR1cm4gdGhlIGltcHJvdmVkIHRleHQsIG5vdGhpbmcgZWxzZTonIH0sCiAgc3VtbWFy",
-    "aXplOiB7IGVtb2ppOifwn5OEJywgbGFiZWw6J1NVTU1BUlknLCAgICAgICAgICB1c2FnZTonUmVwbHkg",
-    "dG8gYSBsb25nIG1lc3NhZ2Ugd2l0aCAqLnN1bW1hcml6ZSonLCBwcm9tcHQ6J1N1bW1hcml6ZSB0aGUg",
-    "Zm9sbG93aW5nIHRleHQgaW50byBjbGVhciwgc2hvcnQgYnVsbGV0IHBvaW50cy4gS2VlcCBvbmx5IHRo",
-    "ZSBtb3N0IGltcG9ydGFudCBpbmZvcm1hdGlvbjonIH0sCiAgZ3JhbW1hcjogICB7IGVtb2ppOifwn5Od",
-    "JywgbGFiZWw6J0dSQU1NQVIgQ0hFQ0snLCAgICB1c2FnZTonUmVwbHkgdG8gYSBtZXNzYWdlIHdpdGgg",
-    "Ki5ncmFtbWFyKiBvciB0eXBlOiAqLmdyYW1tYXIgPHRleHQ+KicsIHByb21wdDonRml4IGFsbCBncmFt",
-    "bWFyLCBzcGVsbGluZyBhbmQgcHVuY3R1YXRpb24gZXJyb3JzIGluIHRoaXMgdGV4dC4gT25seSByZXR1",
-    "cm4gdGhlIGNvcnJlY3RlZCB0ZXh0LCBub3RoaW5nIGVsc2U6JyB9LAogIGZvcm1hbDogICAgeyBlbW9q",
-    "aTon8J+RlCcsIGxhYmVsOidGT1JNQUwgVkVSU0lPTicsICAgdXNhZ2U6J1JlcGx5IHRvIGEgbWVzc2Fn",
-    "ZSB3aXRoICouZm9ybWFsKiBvciB0eXBlOiAqLmZvcm1hbCA8dGV4dD4qJywgcHJvbXB0OidSZXdyaXRl",
-    "IHRoaXMgdGV4dCBpbiBhIGZvcm1hbCwgcHJvZmVzc2lvbmFsIHRvbmUuIE9ubHkgcmV0dXJuIHRoZSBy",
-    "ZXdyaXR0ZW4gdGV4dDonIH0sCiAgY2FzdWFsOiAgICB7IGVtb2ppOifwn5iKJywgbGFiZWw6J0NBU1VB",
-    "TCBWRVJTSU9OJywgICB1c2FnZTonUmVwbHkgdG8gYSBtZXNzYWdlIHdpdGggKi5jYXN1YWwqIG9yIHR5",
-    "cGU6ICouY2FzdWFsIDx0ZXh0PionLCBwcm9tcHQ6J1Jld3JpdGUgdGhpcyB0ZXh0IGluIGEgY2FzdWFs",
-    "LCBmcmllbmRseSBhbmQgY29udmVyc2F0aW9uYWwgdG9uZS4gT25seSByZXR1cm4gdGhlIHJld3JpdHRl",
-    "biB0ZXh0OicgfSwKfTsKCmNvbnN0IEMgPSBNQVBbJ3N1bW1hcml6ZSddOwoKbW9kdWxlLmV4cG9ydHMg",
-    "PSB7CiAgbmFtZTogJ3N1bW1hcml6ZScsCiAgY2F0ZWdvcnk6ICdhaScsCiAgZGVzY3JpcHRpb246IEMu",
-    "dXNhZ2UsCiAgZXhlY3V0ZTogYXN5bmMgKHNvY2ssIG1zZywgYXJncykgPT4gewogICAgY29uc3Qgamlk",
-    "ICA9IG1zZy5rZXkucmVtb3RlSmlkOwogICAgY29uc3QgdGV4dCA9IGFyZ3Muam9pbignICcpLnRyaW0o",
-    "KSB8fCBnZXRRdW90ZWRUZXh0KG1zZyk7CiAgICBpZiAoIXRleHQpIHJldHVybiBzb2NrLnNlbmRNZXNz",
-    "YWdlKGppZCwgeyB0ZXh0OiBib3goQy5lbW9qaSArICcgKicgKyBDLmxhYmVsICsgJyonLCBDLnVzYWdl",
-    "KSB9KTsKICAgIGF3YWl0IHNvY2suc2VuZE1lc3NhZ2UoamlkLCB7IHRleHQ6ICfjgJQg4pynIOG0gHPh",
-    "tJvKgOG0gC14IOG0m+G0h+G0hMqcIOKcpyDjgJVcbuKUj+KUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKU",
-    "geKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKWo1xu4pSDICcgKyBDLmVtb2ppICsgJyAqJyAr",
-    "IEMubGFiZWwgKyAnKlxu4pSg4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA",
-    "4pSA4pSA4pSA4pSA4pSA4pSA4pSAXG7ilIMgX1Byb2Nlc3NpbmcuLi5fXG7ilJfilIHilIHilIHilIHi",
-    "lIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilqMnIH0pOwogICAgdHJ5",
-    "IHsKICAgICAgY29uc3QgcmVwbHkgPSBhd2FpdCBhc2soQy5wcm9tcHQgKyAnXG5cbicgKyB0ZXh0KTsK",
-    "ICAgICAgYXdhaXQgc29jay5zZW5kTWVzc2FnZShqaWQsIHsgdGV4dDogYm94KEMuZW1vamkgKyAnICon",
-    "ICsgQy5sYWJlbCArICcqJywgcmVwbHkpIH0sIHsgcXVvdGVkOiBtc2cgfSk7CiAgICB9IGNhdGNoIChl",
-    "KSB7CiAgICAgIGF3YWl0IHNvY2suc2VuZE1lc3NhZ2UoamlkLCB7IHRleHQ6IGJveChDLmVtb2ppICsg",
-    "JyAqJyArIEMubGFiZWwgKyAnKicsICfinYwgRXJyb3I6ICcgKyBlLm1lc3NhZ2UpIH0pOwogICAgfQog",
-    "IH0sCn07Cg=="];
-var _0x3c4d=_0x1a2b.join('');
-var _0x5e6f=Buffer.from(_0x3c4d,'base64').toString('utf8');
-var _0x7a8b=new Function('require','module','exports','__filename','__dirname',_0x5e6f);
-_0x7a8b(require,module,exports,__filename,__dirname);
-})();
+'use strict';
+const { ask } = require('../utils/gemini');
+const { box } = require('../utils/format');
+
+function getQuotedText(msg) {
+  return msg.message?.extendedTextMessage?.contextInfo?.quotedMessage?.conversation
+      || msg.message?.extendedTextMessage?.contextInfo?.quotedMessage?.extendedTextMessage?.text
+      || null;
+}
+
+const MAP = {
+  improve:   { emoji:'✍️', label:'IMPROVE TEXT',    usage:'Reply to a message with *.improve* or type: *.improve <text>*', prompt:'Rewrite and improve this text. Make it clearer, more professional and better written. Keep the same meaning and language. Only return the improved text, nothing else:' },
+  summarize: { emoji:'📄', label:'SUMMARY',          usage:'Reply to a long message with *.summarize*', prompt:'Summarize the following text into clear, short bullet points. Keep only the most important information:' },
+  grammar:   { emoji:'📝', label:'GRAMMAR CHECK',    usage:'Reply to a message with *.grammar* or type: *.grammar <text>*', prompt:'Fix all grammar, spelling and punctuation errors in this text. Only return the corrected text, nothing else:' },
+  formal:    { emoji:'👔', label:'FORMAL VERSION',   usage:'Reply to a message with *.formal* or type: *.formal <text>*', prompt:'Rewrite this text in a formal, professional tone. Only return the rewritten text:' },
+  casual:    { emoji:'😊', label:'CASUAL VERSION',   usage:'Reply to a message with *.casual* or type: *.casual <text>*', prompt:'Rewrite this text in a casual, friendly and conversational tone. Only return the rewritten text:' },
+};
+
+const C = MAP['summarize'];
+
+module.exports = {
+  name: 'summarize',
+  category: 'ai',
+  description: C.usage,
+  execute: async (sock, msg, args) => {
+    const jid  = msg.key.remoteJid;
+    const text = args.join(' ').trim() || getQuotedText(msg);
+    if (!text) return sock.sendMessage(jid, { text: box(C.emoji + ' *' + C.label + '*', C.usage) });
+    await sock.sendMessage(jid, { text: '〔 ✧ ᴀsᴛʀᴀ-x ᴛᴇᴄʜ ✧ 〕\n┏━━━━━━━━━━━━━━━━━━━▣\n┃ ' + C.emoji + ' *' + C.label + '*\n┠─────────────────────\n┃ _Processing..._\n┗━━━━━━━━━━━━━━━━━━━▣' });
+    try {
+      const reply = await ask(C.prompt + '\n\n' + text);
+      await sock.sendMessage(jid, { text: box(C.emoji + ' *' + C.label + '*', reply) }, { quoted: msg });
+    } catch (e) {
+      await sock.sendMessage(jid, { text: box(C.emoji + ' *' + C.label + '*', '❌ Error: ' + e.message) });
+    }
+  },
+};

@@ -1,0 +1,68 @@
+{
+  "name": "ASTRA-X Bot",
+  "description": "Advanced WhatsApp AI Bot with 100+ commands. Just paste your Session ID and deploy — bot starts instantly.",
+  "logo": "https://raw.githubusercontent.com/xtream33/Astral-X/main/Astralogo.png",
+  "keywords": ["whatsapp", "bot", "ai", "astra-x", "baileys"],
+  "env": {
+    "SESSION_ID": {
+      "description": "Your ASTRA-X Session ID. Get it free at https://redesigned-octo-spoon-pc5m.onrender.com — paste it here and your bot starts immediately.",
+      "required": true,
+      "value": ""
+    },
+    "BOT_OWNER": {
+      "description": "Your WhatsApp number with country code. Example: 256747304196",
+      "required": true,
+      "value": ""
+    },
+    "BOT_PREFIX": {
+      "description": "Command prefix. Default is dot (.)",
+      "required": false,
+      "value": "."
+    },
+    "ADMIN_USER": {
+      "description": "Admin panel username for /admin page",
+      "required": false,
+      "value": "admin"
+    },
+    "ADMIN_PASS": {
+      "description": "Admin panel password for /admin page",
+      "required": false,
+      "value": "admin123"
+    },
+    "ADMIN_AUTH_KEY": {
+      "description": "Random secret key for admin security",
+      "required": false,
+      "value": "astrax2026"
+    },
+    "SESSION_SECRET": {
+      "description": "Random secret for session encryption. Minimum 32 characters.",
+      "required": false,
+      "value": "astrax_super_secret_session_key_2026"
+    },
+    "GEMINI_API_KEY": {
+      "description": "Google Gemini AI key for AI commands. Free at https://aistudio.google.com. Optional.",
+      "required": false,
+      "value": ""
+    },
+    "TELEGRAM_BOT_TOKEN": {
+      "description": "Telegram bot token from @BotFather. Optional.",
+      "required": false,
+      "value": ""
+    },
+    "RENDER_EXTERNAL_URL": {
+      "description": "Your deployment URL to keep bot alive. Example: https://your-bot.onrender.com",
+      "required": false,
+      "value": ""
+    },
+    "PORT": {
+      "description": "Server port.",
+      "required": false,
+      "value": "3000"
+    },
+    "NODE_ENV": {
+      "description": "Node environment.",
+      "required": false,
+      "value": "production"
+    }
+  }
+}

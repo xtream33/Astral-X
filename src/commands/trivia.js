@@ -1,56 +1,44 @@
-(function(){
-var _0x1a2b=["J3VzZSBzdHJpY3QnOwpjb25zdCB7IGJveCB9ID0gcmVxdWlyZSgnLi4vdXRpbHMvZm9ybWF0Jyk7CmNv",
-    "bnN0IGFjdGl2ZSA9IG5ldyBNYXAoKTsKbW9kdWxlLmV4cG9ydHMgPSB7CiAgbmFtZTogJ3RyaXZpYScs",
-    "IGFsaWFzZXM6IFsncXVpejInLCAncW5hJywgJ3RyaXZpYXRpbWUnXSwKICBjYXRlZ29yeTogJ2Z1bics",
-    "IGRlc2NyaXB0aW9uOiAnQW5zd2VyIHRyaXZpYSEgVXNhZ2U6IC50cml2aWEgW2Vhc3l8bWVkaXVtfGhh",
-    "cmRdJywKICBleGVjdXRlOiBhc3luYyAoc29jaywgbXNnLCBhcmdzKSA9PiB7CiAgICBjb25zdCBqaWQg",
-    "PSBtc2cua2V5LnJlbW90ZUppZDsKICAgIGlmIChhY3RpdmUuaGFzKGppZCkpIHJldHVybiBzb2NrLnNl",
-    "bmRNZXNzYWdlKGppZCwgeyB0ZXh0OiBib3goJ/Cfp6AgKlRSSVZJQSonLCAn4p2TIEEgcXVlc3Rpb24g",
-    "aXMgYWxyZWFkeSBhY3RpdmUhXG5BbnN3ZXIgaXQgZmlyc3QsIHRoZW4gc3RhcnQgYSBuZXcgb25lLicp",
-    "IH0pOwogICAgY29uc3QgZGlmZiA9IFsnZWFzeScsICdtZWRpdW0nLCAnaGFyZCddLmluY2x1ZGVzKGFy",
-    "Z3NbMF0pID8gYXJnc1swXSA6ICdtZWRpdW0nOwogICAgYXdhaXQgc29jay5zZW5kTWVzc2FnZShqaWQs",
-    "IHsgdGV4dDogYm94KCfwn6egICpUUklWSUEqJywgJ19GZXRjaGluZyBhIConICsgZGlmZiArICcqIHF1",
-    "ZXN0aW9uLi4uXycpIH0pOwogICAgdHJ5IHsKICAgICAgY29uc3QgcmVzICA9IGF3YWl0IGZldGNoKCdo",
-    "dHRwczovL29wZW50ZGIuY29tL2FwaS5waHA/YW1vdW50PTEmdHlwZT1tdWx0aXBsZSZkaWZmaWN1bHR5",
-    "PScgKyBkaWZmLCB7IHNpZ25hbDogQWJvcnRTaWduYWwudGltZW91dCgxMDAwMCkgfSk7CiAgICAgIGNv",
-    "bnN0IGRhdGEgPSBhd2FpdCByZXMuanNvbigpOwogICAgICBpZiAoZGF0YS5yZXNwb25zZV9jb2RlICE9",
-    "PSAwIHx8ICFkYXRhLnJlc3VsdHM/LlswXSkgcmV0dXJuOyAvLyBzaWxlbnQKICAgICAgY29uc3QgcSA9",
-    "IGRhdGEucmVzdWx0c1swXTsKICAgICAgY29uc3QgZGVjID0gcyA9PiBzLnJlcGxhY2UoLyZhbXA7L2cs",
-    "JyYnKS5yZXBsYWNlKC8mbHQ7L2csJzwnKS5yZXBsYWNlKC8mZ3Q7L2csJz4nKS5yZXBsYWNlKC8mcXVv",
-    "dDsvZywnIicpLnJlcGxhY2UoLyYjMDM5Oy9nLCInIik7CiAgICAgIGNvbnN0IGNvcnJlY3QgPSBkZWMo",
-    "cS5jb3JyZWN0X2Fuc3dlcik7CiAgICAgIGNvbnN0IG9wdHMgPSBbLi4ucS5pbmNvcnJlY3RfYW5zd2Vy",
-    "cy5tYXAoZGVjKSwgY29ycmVjdF0uc29ydCgoKSA9PiBNYXRoLnJhbmRvbSgpIC0gMC41KTsKICAgICAg",
-    "Y29uc3QgbGV0dGVycyA9IFsnQScsICdCJywgJ0MnLCAnRCddOwogICAgICBjb25zdCBjb3JyZWN0TGV0",
-    "dGVyID0gbGV0dGVyc1tvcHRzLmluZGV4T2YoY29ycmVjdCldOwogICAgICBhY3RpdmUuc2V0KGppZCwg",
-    "eyBjb3JyZWN0LCBjb3JyZWN0TGV0dGVyLCB0b3V0OiBudWxsIH0pOwogICAgICBhd2FpdCBzb2NrLnNl",
-    "bmRNZXNzYWdlKGppZCwgeyB0ZXh0OiBib3goJ/Cfp6AgKlRSSVZJQSBbJyArIGRpZmYudG9VcHBlckNh",
-    "c2UoKSArICddKicsICfwn5OCIF8nICsgZGVjKHEuY2F0ZWdvcnkpICsgJ19cbuKUgeKUgeKUgeKUgeKU",
-    "geKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgVxuXG4nICsgZGVjKHEucXVlc3Rpb24pICsgJ1xuXG4n",
-    "ICsgb3B0cy5tYXAoKG8sIGkpID0+IGxldHRlcnNbaV0gKyAnKSAnICsgbykuam9pbignXG4nKSArICdc",
-    "buKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgVxuX1JlcGx5IEEsIEIsIEMg",
-    "b3IgRCDigJQgMzAgc2Vjb25kcyFfJykgfSk7CiAgICAgIGNvbnN0IHRvdXQgPSBzZXRUaW1lb3V0KGFz",
-    "eW5jICgpID0+IHsKICAgICAgICBhY3RpdmUuZGVsZXRlKGppZCk7CiAgICAgICAgYXdhaXQgc29jay5z",
-    "ZW5kTWVzc2FnZShqaWQsIHsgdGV4dDogYm94KCfwn6egICpUUklWSUEg4oCUIFRJTUVcJ1MgVVAhKics",
-    "ICfij7AgVGltZSBpcyB1cCFcblxu4pyFICpBbnN3ZXI6KiAnICsgY29ycmVjdExldHRlciArICcpICcg",
-    "KyBjb3JyZWN0KSB9KS5jYXRjaCgoKSA9PiB7fSk7CiAgICAgIH0sIDMwMDAwKTsKICAgICAgYWN0aXZl",
-    "LmdldChqaWQpLnRvdXQgPSB0b3V0OwogICAgICBjb25zdCBsaXN0ZW5lciA9IGFzeW5jICh7IG1lc3Nh",
-    "Z2VzLCB0eXBlIH0pID0+IHsKICAgICAgICBpZiAodHlwZSAhPT0gJ25vdGlmeScpIHJldHVybjsKICAg",
-    "ICAgICBmb3IgKGNvbnN0IG0gb2YgbWVzc2FnZXMpIHsKICAgICAgICAgIGlmIChtLmtleS5yZW1vdGVK",
-    "aWQgIT09IGppZCB8fCBtLmtleS5mcm9tTWUpIGNvbnRpbnVlOwogICAgICAgICAgY29uc3QgYW5zID0g",
-    "KG0ubWVzc2FnZT8uY29udmVyc2F0aW9uIHx8IG0ubWVzc2FnZT8uZXh0ZW5kZWRUZXh0TWVzc2FnZT8u",
-    "dGV4dCB8fCAnJykudHJpbSgpLnRvVXBwZXJDYXNlKCk7CiAgICAgICAgICBpZiAoIWxldHRlcnMuaW5j",
-    "bHVkZXMoYW5zKSkgY29udGludWU7CiAgICAgICAgICBjb25zdCB0ID0gYWN0aXZlLmdldChqaWQpOyBp",
-    "ZiAoIXQpIHJldHVybjsKICAgICAgICAgIGNsZWFyVGltZW91dCh0LnRvdXQpOyBhY3RpdmUuZGVsZXRl",
-    "KGppZCk7IHNvY2suZXYub2ZmKCdtZXNzYWdlcy51cHNlcnQnLCBsaXN0ZW5lcik7CiAgICAgICAgICBj",
-    "b25zdCBjb3JyZWN0MiA9IGFucyA9PT0gdC5jb3JyZWN0TGV0dGVyOwogICAgICAgICAgYXdhaXQgc29j",
-    "ay5zZW5kTWVzc2FnZShqaWQsIHsgdGV4dDogYm94KCfwn6egICpUUklWSUEg4oCUICcgKyAoY29ycmVj",
-    "dDIgPyAnQ09SUkVDVCEg8J+OiScgOiAnV1JPTkchIOKdjCcpICsgJyonLCAoY29ycmVjdDIgPyAn8J+P",
-    "hiBXZWxsIGRvbmUhJyA6ICfinYwgTm90IHF1aXRlIScpICsgJ1xuXG7inIUgKkFuc3dlcjoqICcgKyB0",
-    "LmNvcnJlY3RMZXR0ZXIgKyAnKSAnICsgdC5jb3JyZWN0KSB9KS5jYXRjaCgoKSA9PiB7fSk7CiAgICAg",
-    "ICAgfQogICAgICB9OwogICAgICBzb2NrLmV2Lm9uKCdtZXNzYWdlcy51cHNlcnQnLCBsaXN0ZW5lcik7",
-    "CiAgICB9IGNhdGNoIChfKSB7IC8qIHNpbGVudCAqLyB9CiAgfSwKfTsK"];
-var _0x3c4d=_0x1a2b.join('');
-var _0x5e6f=Buffer.from(_0x3c4d,'base64').toString('utf8');
-var _0x7a8b=new Function('require','module','exports','__filename','__dirname',_0x5e6f);
-_0x7a8b(require,module,exports,__filename,__dirname);
-})();
+'use strict';
+const { box } = require('../utils/format');
+const active = new Map();
+module.exports = {
+  name: 'trivia', aliases: ['quiz2', 'qna', 'triviatime'],
+  category: 'fun', description: 'Answer trivia! Usage: .trivia [easy|medium|hard]',
+  execute: async (sock, msg, args) => {
+    const jid = msg.key.remoteJid;
+    if (active.has(jid)) return sock.sendMessage(jid, { text: box('🧠 *TRIVIA*', '❓ A question is already active!\nAnswer it first, then start a new one.') });
+    const diff = ['easy', 'medium', 'hard'].includes(args[0]) ? args[0] : 'medium';
+    await sock.sendMessage(jid, { text: box('🧠 *TRIVIA*', '_Fetching a *' + diff + '* question..._') });
+    try {
+      const res  = await fetch('https://opentdb.com/api.php?amount=1&type=multiple&difficulty=' + diff, { signal: AbortSignal.timeout(10000) });
+      const data = await res.json();
+      if (data.response_code !== 0 || !data.results?.[0]) return; // silent
+      const q = data.results[0];
+      const dec = s => s.replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&quot;/g,'"').replace(/&#039;/g,"'");
+      const correct = dec(q.correct_answer);
+      const opts = [...q.incorrect_answers.map(dec), correct].sort(() => Math.random() - 0.5);
+      const letters = ['A', 'B', 'C', 'D'];
+      const correctLetter = letters[opts.indexOf(correct)];
+      active.set(jid, { correct, correctLetter, tout: null });
+      await sock.sendMessage(jid, { text: box('🧠 *TRIVIA [' + diff.toUpperCase() + ']*', '📂 _' + dec(q.category) + '_\n━━━━━━━━━━━━━━\n\n' + dec(q.question) + '\n\n' + opts.map((o, i) => letters[i] + ') ' + o).join('\n') + '\n━━━━━━━━━━━━━━\n_Reply A, B, C or D — 30 seconds!_') });
+      const tout = setTimeout(async () => {
+        active.delete(jid);
+        await sock.sendMessage(jid, { text: box('🧠 *TRIVIA — TIME\'S UP!*', '⏰ Time is up!\n\n✅ *Answer:* ' + correctLetter + ') ' + correct) }).catch(() => {});
+      }, 30000);
+      active.get(jid).tout = tout;
+      const listener = async ({ messages, type }) => {
+        if (type !== 'notify') return;
+        for (const m of messages) {
+          if (m.key.remoteJid !== jid || m.key.fromMe) continue;
+          const ans = (m.message?.conversation || m.message?.extendedTextMessage?.text || '').trim().toUpperCase();
+          if (!letters.includes(ans)) continue;
+          const t = active.get(jid); if (!t) return;
+          clearTimeout(t.tout); active.delete(jid); sock.ev.off('messages.upsert', listener);
+          const correct2 = ans === t.correctLetter;
+          await sock.sendMessage(jid, { text: box('🧠 *TRIVIA — ' + (correct2 ? 'CORRECT! 🎉' : 'WRONG! ❌') + '*', (correct2 ? '🏆 Well done!' : '❌ Not quite!') + '\n\n✅ *Answer:* ' + t.correctLetter + ') ' + t.correct) }).catch(() => {});
+        }
+      };
+      sock.ev.on('messages.upsert', listener);
+    } catch (_) { /* silent */ }
+  },
+};

@@ -1,12 +1,11 @@
 {
-  "name": "xtream7",
-  "version": "5.0.0",
-  "description": "NOOR-X TECH \u2014 Advanced WhatsApp Bot",
+  "name": "astra-x-bot",
+  "version": "6.6.6",
+  "description": "Advanced WhatsApp AI Bot \u2014 ASTRA-X TECH",
   "main": "src/index.js",
   "scripts": {
     "start": "node src/index.js",
-    "dev": "nodemon src/index.js",
-    "setup": "node -e \"['data','sessions','public'].forEach(d=>{const fs=require('fs'),path=require('path');const p=path.join(__dirname,d);if(!fs.existsSync(p)){fs.mkdirSync(p,{recursive:true});console.log('Created:',d);}}); ['data/settings.json','data/restrictions.json','data/users.json'].forEach(f=>{const fs=require('fs'),path=require('path');const p=path.join(__dirname,f);if(!fs.existsSync(p)){fs.writeFileSync(p,'[]');console.log('Created:',f);}});\""
+    "dev": "node src/index.js"
   },
   "dependencies": {
     "@whiskeysockets/baileys": "^6.5.0",
@@ -19,12 +18,17 @@
     "pino": "^8.13.0",
     "pino-pretty": "^10.2.0",
     "qrcode": "^1.5.3",
-    "sharp": "^0.33.0"
+    "sharp": "^0.33.0",
+    "node-telegram-bot-api": "^0.66.0",
+    "axios": "^1.6.7"
   },
   "devDependencies": {
     "nodemon": "^3.0.1"
   },
   "engines": {
-    "node": ">=18.0.0"
-  }
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
+  },
+  "author": "Xtream Noor",
+  "license": "MIT"
 }

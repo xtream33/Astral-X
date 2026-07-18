@@ -1,46 +1,42 @@
-(function(){
-var _0x1a2b=["Y29uc3Qgc2V0dGluZ3MgPSByZXF1aXJlKCcuLi91dGlscy9zZXR0aW5ncycpOwptb2R1bGUuZXhwb3J0",
-    "cyA9IHsKICBuYW1lOiAnYmxhY2tsaXN0JywgY2F0ZWdvcnk6ICdwcm90ZWN0aW9uJywKICBkZXNjcmlw",
-    "dGlvbjogJ01hbmFnZSBibGFja2xpc3RlZCB3b3Jkcy4gVXNhZ2U6ICFibGFja2xpc3QgYWRkL3JlbW92",
-    "ZS9saXN0IDx3b3JkPicsCiAgZXhlY3V0ZTogYXN5bmMgKHNvY2ssIG1zZywgYXJncykgPT4gewogICAg",
-    "Y29uc3QgamlkID0gbXNnLmtleS5yZW1vdGVKaWQ7CiAgICBpZiAoIWppZC5lbmRzV2l0aCgnQGcudXMn",
-    "KSkgcmV0dXJuIHNvY2suc2VuZE1lc3NhZ2UoamlkLCB7IHRleHQ6ICfinYwgR3JvdXBzIG9ubHkuJyB9",
-    "KTsKICAgIGNvbnN0IGxpc3RLZXkgPSBgYmxhY2tsaXN0OiR7amlkfWA7CiAgICBjb25zdCBvbktleSAg",
-    "ID0gYGJsYWNrbGlzdG9uOiR7amlkfWA7CiAgICBjb25zdCBnZXRMaXN0ID0gKCkgPT4gKHNldHRpbmdz",
-    "LmdldChsaXN0S2V5KSB8fCAnJykuc3BsaXQoJywnKS5maWx0ZXIoQm9vbGVhbik7CgogICAgaWYgKCFh",
-    "cmdzWzBdIHx8IGFyZ3NbMF0gPT09ICdsaXN0JykgewogICAgICBjb25zdCBsaXN0ID0gZ2V0TGlzdCgp",
-    "OwogICAgICBjb25zdCBvbiA9IHNldHRpbmdzLmdldChvbktleSk7CiAgICAgIHJldHVybiBzb2NrLnNl",
-    "bmRNZXNzYWdlKGppZCwgewogICAgICAgIHRleHQ6ICfjgJQg4pynIOG0gHPhtJvKgOG0gC14IOKcpyDj",
-    "gJVcbuKUj+KUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgeKW",
-    "o1xu4pSDIPCfmqsgKsqZyp/htIDhtIThtIvKn8mqc+G0mypcbuKUoOKUgOKUgOKUgOKUgOKUgOKUgOKU",
-    "gOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgFxu4pSDIFN0YXR1czogKicgKyAob24g",
-    "PyAn8J+foiBPTicgOiAn8J+UtCBPRkYnKSArICcqXG7ilIMgV29yZHM6ICcgKyAobGlzdC5sZW5ndGgg",
-    "PyBsaXN0LmpvaW4oJywgJykgOiAnbm9uZScpICsgJ1xu4pSg4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA",
-    "4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSAXG7ilIMgIWJsYWNrbGlzdCBhZGQgPHdvcmQ+",
-    "XG7ilIMgIWJsYWNrbGlzdCByZW1vdmUgPHdvcmQ+XG7ilIMgIWJsYWNrbGlzdCBvbiAvIG9mZlxu4pSX",
-    "4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pajJwogICAg",
-    "ICB9KTsKICAgIH0KICAgIGNvbnN0IHN1YiAgPSBhcmdzWzBdLnRvTG93ZXJDYXNlKCk7CiAgICBjb25z",
-    "dCB3b3JkID0gYXJncy5zbGljZSgxKS5qb2luKCcgJykudG9Mb3dlckNhc2UoKS50cmltKCk7CgogICAg",
-    "aWYgKHN1YiA9PT0gJ29uJykgIHsgc2V0dGluZ3Muc2V0KG9uS2V5LCB0cnVlKTsgIHJldHVybiBzb2Nr",
-    "LnNlbmRNZXNzYWdlKGppZCwgeyB0ZXh0OiAn4pyFIEJsYWNrbGlzdCBlbmZvcmNlbWVudCBPTi4nIH0p",
-    "OyB9CiAgICBpZiAoc3ViID09PSAnb2ZmJykgeyBzZXR0aW5ncy5kZWwob25LZXkpOyAgICAgICAgICBy",
-    "ZXR1cm4gc29jay5zZW5kTWVzc2FnZShqaWQsIHsgdGV4dDogJ/CflLQgQmxhY2tsaXN0IGVuZm9yY2Vt",
-    "ZW50IE9GRi4nIH0pOyB9CgogICAgaWYgKCF3b3JkKSByZXR1cm4gc29jay5zZW5kTWVzc2FnZShqaWQs",
-    "IHsgdGV4dDogJ+KdjCBQcm92aWRlIGEgd29yZC4gIWJsYWNrbGlzdCBhZGQvcmVtb3ZlIDx3b3JkPicg",
-    "fSk7CgogICAgaWYgKHN1YiA9PT0gJ2FkZCcpIHsKICAgICAgY29uc3QgbGlzdCA9IGdldExpc3QoKTsK",
-    "ICAgICAgaWYgKGxpc3QuaW5jbHVkZXMod29yZCkpIHJldHVybiBzb2NrLnNlbmRNZXNzYWdlKGppZCwg",
-    "eyB0ZXh0OiBg4p2MICIke3dvcmR9IiBpcyBhbHJlYWR5IGJsYWNrbGlzdGVkLmAgfSk7CiAgICAgIGxp",
-    "c3QucHVzaCh3b3JkKTsKICAgICAgc2V0dGluZ3Muc2V0KGxpc3RLZXksIGxpc3Quam9pbignLCcpKTsK",
-    "ICAgICAgc2V0dGluZ3Muc2V0KG9uS2V5LCB0cnVlKTsKICAgICAgcmV0dXJuIHNvY2suc2VuZE1lc3Nh",
-    "Z2UoamlkLCB7IHRleHQ6IGDinIUgQWRkZWQgKiIke3dvcmR9IiogdG8gYmxhY2tsaXN0LmAgfSk7CiAg",
-    "ICB9CiAgICBpZiAoc3ViID09PSAncmVtb3ZlJykgewogICAgICBjb25zdCBsaXN0ID0gZ2V0TGlzdCgp",
-    "LmZpbHRlcih3ID0+IHcgIT09IHdvcmQpOwogICAgICBzZXR0aW5ncy5zZXQobGlzdEtleSwgbGlzdC5q",
-    "b2luKCcsJykpOwogICAgICByZXR1cm4gc29jay5zZW5kTWVzc2FnZShqaWQsIHsgdGV4dDogYOKchSBS",
-    "ZW1vdmVkICoiJHt3b3JkfSIqIGZyb20gYmxhY2tsaXN0LmAgfSk7CiAgICB9CiAgICBhd2FpdCBzb2Nr",
-    "LnNlbmRNZXNzYWdlKGppZCwgeyB0ZXh0OiAn4p2MIFVua25vd24gc3ViY29tbWFuZC4gVXNlOiBhZGQs",
-    "IHJlbW92ZSwgbGlzdCwgb24sIG9mZicgfSk7CiAgfQp9Owo="];
-var _0x3c4d=_0x1a2b.join('');
-var _0x5e6f=Buffer.from(_0x3c4d,'base64').toString('utf8');
-var _0x7a8b=new Function('require','module','exports','__filename','__dirname',_0x5e6f);
-_0x7a8b(require,module,exports,__filename,__dirname);
-})();
+const settings = require('../utils/settings');
+module.exports = {
+  name: 'blacklist', category: 'protection',
+  description: 'Manage blacklisted words. Usage: !blacklist add/remove/list <word>',
+  execute: async (sock, msg, args) => {
+    const jid = msg.key.remoteJid;
+    if (!jid.endsWith('@g.us')) return sock.sendMessage(jid, { text: '❌ Groups only.' });
+    const listKey = `blacklist:${jid}`;
+    const onKey   = `blackliston:${jid}`;
+    const getList = () => (settings.get(listKey) || '').split(',').filter(Boolean);
+
+    if (!args[0] || args[0] === 'list') {
+      const list = getList();
+      const on = settings.get(onKey);
+      return sock.sendMessage(jid, {
+        text: '〔 ✧ ᴀsᴛʀᴀ-x ✧ 〕\n┏━━━━━━━━━━━━━━━━━▣\n┃ 🚫 *ʙʟᴀᴄᴋʟɪsᴛ*\n┠───────────────────\n┃ Status: *' + (on ? '🟢 ON' : '🔴 OFF') + '*\n┃ Words: ' + (list.length ? list.join(', ') : 'none') + '\n┠───────────────────\n┃ !blacklist add <word>\n┃ !blacklist remove <word>\n┃ !blacklist on / off\n┗━━━━━━━━━━━━━━━━━▣'
+      });
+    }
+    const sub  = args[0].toLowerCase();
+    const word = args.slice(1).join(' ').toLowerCase().trim();
+
+    if (sub === 'on')  { settings.set(onKey, true);  return sock.sendMessage(jid, { text: '✅ Blacklist enforcement ON.' }); }
+    if (sub === 'off') { settings.del(onKey);          return sock.sendMessage(jid, { text: '🔴 Blacklist enforcement OFF.' }); }
+
+    if (!word) return sock.sendMessage(jid, { text: '❌ Provide a word. !blacklist add/remove <word>' });
+
+    if (sub === 'add') {
+      const list = getList();
+      if (list.includes(word)) return sock.sendMessage(jid, { text: `❌ "${word}" is already blacklisted.` });
+      list.push(word);
+      settings.set(listKey, list.join(','));
+      settings.set(onKey, true);
+      return sock.sendMessage(jid, { text: `✅ Added *"${word}"* to blacklist.` });
+    }
+    if (sub === 'remove') {
+      const list = getList().filter(w => w !== word);
+      settings.set(listKey, list.join(','));
+      return sock.sendMessage(jid, { text: `✅ Removed *"${word}"* from blacklist.` });
+    }
+    await sock.sendMessage(jid, { text: '❌ Unknown subcommand. Use: add, remove, list, on, off' });
+  }
+};

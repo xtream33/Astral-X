@@ -1,41 +1,36 @@
-(function(){
-var _0x1a2b=["J3VzZSBzdHJpY3QnOwpjb25zdCBodHRwcyA9IHJlcXVpcmUoJ2h0dHBzJyk7CmNvbnN0IHsgYm94IH0g",
-    "PSByZXF1aXJlKCcuLi91dGlscy9mb3JtYXQnKTsKbW9kdWxlLmV4cG9ydHMgPSB7CiAgbmFtZTogJ2Rl",
-    "ZmluZScsIGFsaWFzZXM6IFsnZGljdCcsICdkaWN0aW9uYXJ5JywgJ2RlZmluaXRpb24nLCAnd2hhdGlz",
-    "J10sCiAgY2F0ZWdvcnk6ICd1dGlsaXR5JywgZGVzY3JpcHRpb246ICdEaWN0aW9uYXJ5IGRlZmluaXRp",
-    "b24uIFVzYWdlOiAuZGVmaW5lIDx3b3JkPicsCiAgZXhlY3V0ZTogYXN5bmMgKHNvY2ssIG1zZywgYXJn",
-    "cykgPT4gewogICAgY29uc3QgamlkID0gbXNnLmtleS5yZW1vdGVKaWQ7CiAgICBpZiAoIWFyZ3MubGVu",
-    "Z3RoKSByZXR1cm4gc29jay5zZW5kTWVzc2FnZShqaWQsIHsgdGV4dDogYm94KCfwn5OWICpESUNUSU9O",
-    "QVJZKicsICfwn5OMICpVc2FnZToqIC5kZWZpbmUgPHdvcmQ+XG5cbvCfkqEgKkV4YW1wbGVzOipcbi5k",
-    "ZWZpbmUgc2VyZW5kaXBpdHlcbi5kZWZpbmUgZWxvcXVlbnRcbi5kZWZpbmUgZXBoZW1lcmFsJykgfSk7",
-    "CiAgICBjb25zdCB3b3JkID0gYXJnc1swXS50b0xvd2VyQ2FzZSgpLnJlcGxhY2UoL1teYS16XS9nLCAn",
-    "Jyk7CiAgICBhd2FpdCBzb2NrLnNlbmRNZXNzYWdlKGppZCwgeyB0ZXh0OiBib3goJ/Cfk5YgKkRJQ1RJ",
-    "T05BUlkqJywgJ19Mb29raW5nIHVwIConICsgd29yZCArICcqLi4uXycpIH0pOwogICAgaHR0cHMuZ2V0",
-    "KCdodHRwczovL2FwaS5kaWN0aW9uYXJ5YXBpLmRldi9hcGkvdjIvZW50cmllcy9lbi8nICsgd29yZCwg",
-    "cmVzID0+IHsKICAgICAgbGV0IGRhdGEgPSAnJzsKICAgICAgcmVzLm9uKCdkYXRhJywgYyA9PiBkYXRh",
-    "ICs9IGMpOwogICAgICByZXMub24oJ2VuZCcsIGFzeW5jICgpID0+IHsKICAgICAgICB0cnkgewogICAg",
-    "ICAgICAgY29uc3QganNvbiA9IEpTT04ucGFyc2UoZGF0YSk7CiAgICAgICAgICBpZiAoIUFycmF5Lmlz",
-    "QXJyYXkoanNvbikgfHwgIWpzb25bMF0pIHRocm93IG5ldyBFcnJvcigpOwogICAgICAgICAgY29uc3Qg",
-    "ZW50cnkgPSBqc29uWzBdLCBtZWFuaW5ncyA9IGVudHJ5Lm1lYW5pbmdzPy5zbGljZSgwLCAzKSB8fCBb",
-    "XTsKICAgICAgICAgIGlmICghbWVhbmluZ3MubGVuZ3RoKSB0aHJvdyBuZXcgRXJyb3IoKTsKICAgICAg",
-    "ICAgIGxldCBib2R5ID0gJ/CflKQgKicgKyBlbnRyeS53b3JkICsgJyonICsgKGVudHJ5LnBob25ldGlj",
-    "ID8gJyAgXycgKyBlbnRyeS5waG9uZXRpYyArICdfJyA6ICcnKSArICdcbuKUgeKUgeKUgeKUgeKUgeKU",
-    "geKUgeKUgeKUgeKUgeKUgeKUgeKUgeKUgVxuJzsKICAgICAgICAgIG1lYW5pbmdzLmZvckVhY2gobSA9",
-    "PiB7CiAgICAgICAgICAgIGJvZHkgKz0gJ1xu8J+TjCAqJyArIG0ucGFydE9mU3BlZWNoICsgJypcbic7",
-    "CiAgICAgICAgICAgIG0uZGVmaW5pdGlvbnM/LnNsaWNlKDAsIDIpLmZvckVhY2goKGQsIGkpID0+IHsK",
-    "ICAgICAgICAgICAgICBib2R5ICs9IChpICsgMSkgKyAnLiAnICsgZC5kZWZpbml0aW9uICsgJ1xuJzsK",
-    "ICAgICAgICAgICAgICBpZiAoZC5leGFtcGxlKSBib2R5ICs9ICcgICBfIicgKyBkLmV4YW1wbGUgKyAn",
-    "Il9cbic7CiAgICAgICAgICAgIH0pOwogICAgICAgICAgfSk7CiAgICAgICAgICBhd2FpdCBzb2NrLnNl",
-    "bmRNZXNzYWdlKGppZCwgeyB0ZXh0OiBib3goJ/Cfk5YgKkRJQ1RJT05BUlkqJywgYm9keS50cmltKCkp",
-    "IH0sIHsgcXVvdGVkOiBtc2cgfSk7CiAgICAgICAgfSBjYXRjaCAoXykgewogICAgICAgICAgYXdhaXQg",
-    "c29jay5zZW5kTWVzc2FnZShqaWQsIHsgdGV4dDogYm94KCfwn5OWICpESUNUSU9OQVJZKicsICfinYwg",
-    "Tm8gZGVmaW5pdGlvbiBmb3VuZCBmb3IgKicgKyB3b3JkICsgJypcblxuVHJ5IGEgZGlmZmVyZW50IHdv",
-    "cmQgb3IgY2hlY2sgdGhlIHNwZWxsaW5nLicpIH0pOwogICAgICAgIH0KICAgICAgfSk7CiAgICB9KS5v",
-    "bignZXJyb3InLCBhc3luYyAoKSA9PiBzb2NrLnNlbmRNZXNzYWdlKGppZCwgeyB0ZXh0OiBib3goJ/Cf",
-    "k5YgKkRJQ1RJT05BUlkqJywgJ+KdjCBEaWN0aW9uYXJ5IHNlcnZpY2UgdW5yZWFjaGFibGUuIFRyeSBh",
-    "Z2Fpbi4nKSB9KSk7CiAgfSwKfTsK"];
-var _0x3c4d=_0x1a2b.join('');
-var _0x5e6f=Buffer.from(_0x3c4d,'base64').toString('utf8');
-var _0x7a8b=new Function('require','module','exports','__filename','__dirname',_0x5e6f);
-_0x7a8b(require,module,exports,__filename,__dirname);
-})();
+'use strict';
+const https = require('https');
+const { box } = require('../utils/format');
+module.exports = {
+  name: 'define', aliases: ['dict', 'dictionary', 'definition', 'whatis'],
+  category: 'utility', description: 'Dictionary definition. Usage: .define <word>',
+  execute: async (sock, msg, args) => {
+    const jid = msg.key.remoteJid;
+    if (!args.length) return sock.sendMessage(jid, { text: box('📖 *DICTIONARY*', '📌 *Usage:* .define <word>\n\n💡 *Examples:*\n.define serendipity\n.define eloquent\n.define ephemeral') });
+    const word = args[0].toLowerCase().replace(/[^a-z]/g, '');
+    await sock.sendMessage(jid, { text: box('📖 *DICTIONARY*', '_Looking up *' + word + '*..._') });
+    https.get('https://api.dictionaryapi.dev/api/v2/entries/en/' + word, res => {
+      let data = '';
+      res.on('data', c => data += c);
+      res.on('end', async () => {
+        try {
+          const json = JSON.parse(data);
+          if (!Array.isArray(json) || !json[0]) throw new Error();
+          const entry = json[0], meanings = entry.meanings?.slice(0, 3) || [];
+          if (!meanings.length) throw new Error();
+          let body = '🔤 *' + entry.word + '*' + (entry.phonetic ? '  _' + entry.phonetic + '_' : '') + '\n━━━━━━━━━━━━━━\n';
+          meanings.forEach(m => {
+            body += '\n📌 *' + m.partOfSpeech + '*\n';
+            m.definitions?.slice(0, 2).forEach((d, i) => {
+              body += (i + 1) + '. ' + d.definition + '\n';
+              if (d.example) body += '   _"' + d.example + '"_\n';
+            });
+          });
+          await sock.sendMessage(jid, { text: box('📖 *DICTIONARY*', body.trim()) }, { quoted: msg });
+        } catch (_) {
+          await sock.sendMessage(jid, { text: box('📖 *DICTIONARY*', '❌ No definition found for *' + word + '*\n\nTry a different word or check the spelling.') });
+        }
+      });
+    }).on('error', async () => sock.sendMessage(jid, { text: box('📖 *DICTIONARY*', '❌ Dictionary service unreachable. Try again.') }));
+  },
+};

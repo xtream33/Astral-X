@@ -1,38 +1,33 @@
-(function(){
-var _0x1a2b=["J3VzZSBzdHJpY3QnOwpjb25zdCB7IGJveCB9ID0gcmVxdWlyZSgnLi4vdXRpbHMvZm9ybWF0Jyk7CmNv",
-    "bnN0IGh0dHBzID0gcmVxdWlyZSgnaHR0cHMnKTsKY29uc3QgaHR0cCAgPSByZXF1aXJlKCdodHRwJyk7",
-    "CmZ1bmN0aW9uIGdldFF1b3RlZFRleHQobXNnKSB7CiAgcmV0dXJuIG1zZy5tZXNzYWdlPy5leHRlbmRl",
-    "ZFRleHRNZXNzYWdlPy5jb250ZXh0SW5mbz8ucXVvdGVkTWVzc2FnZT8uY29udmVyc2F0aW9uCiAgICAg",
-    "IHx8IG1zZy5tZXNzYWdlPy5leHRlbmRlZFRleHRNZXNzYWdlPy5jb250ZXh0SW5mbz8ucXVvdGVkTWVz",
-    "c2FnZT8uZXh0ZW5kZWRUZXh0TWVzc2FnZT8udGV4dCB8fCBudWxsOwp9CmZ1bmN0aW9uIGZldGNoQnVm",
-    "KHVybCkgewogIHJldHVybiBuZXcgUHJvbWlzZSgocmVzb2x2ZSwgcmVqZWN0KSA9PiB7CiAgICBjb25z",
-    "dCBsaWIgPSB1cmwuc3RhcnRzV2l0aCgnaHR0cHMnKSA/IGh0dHBzIDogaHR0cDsKICAgIGxpYi5nZXQo",
-    "dXJsLCB7IGhlYWRlcnM6IHsgJ1VzZXItQWdlbnQnOiAnTW96aWxsYS81LjAnIH0sIHRpbWVvdXQ6IDE1",
-    "MDAwIH0sIHJlcyA9PiB7CiAgICAgIGlmIChbMzAxLDMwMiwzMDNdLmluY2x1ZGVzKHJlcy5zdGF0dXND",
-    "b2RlKSAmJiByZXMuaGVhZGVycy5sb2NhdGlvbikgcmV0dXJuIGZldGNoQnVmKHJlcy5oZWFkZXJzLmxv",
-    "Y2F0aW9uKS50aGVuKHJlc29sdmUpLmNhdGNoKHJlamVjdCk7CiAgICAgIGNvbnN0IGNodW5rcyA9IFtd",
-    "OyByZXMub24oJ2RhdGEnLCBjID0+IGNodW5rcy5wdXNoKGMpKTsgcmVzLm9uKCdlbmQnLCAoKSA9PiBy",
-    "ZXNvbHZlKEJ1ZmZlci5jb25jYXQoY2h1bmtzKSkpOyByZXMub24oJ2Vycm9yJywgcmVqZWN0KTsKICAg",
-    "IH0pLm9uKCdlcnJvcicsIHJlamVjdCk7CiAgfSk7Cn0KbW9kdWxlLmV4cG9ydHMgPSB7CiAgbmFtZTog",
-    "J3R0cycsIGFsaWFzZXM6IFsnc3BlYWsnLCAndm9pY2UnLCAnc2F5JywgJ3RleHR0b3NwZWVjaCddLAog",
-    "IGNhdGVnb3J5OiAnbWVkaWEnLCBkZXNjcmlwdGlvbjogJ1RleHQgdG8gc3BlZWNoLiBVc2FnZTogLnR0",
-    "cyA8dGV4dD4nLAogIGV4ZWN1dGU6IGFzeW5jIChzb2NrLCBtc2csIGFyZ3MpID0+IHsKICAgIGNvbnN0",
-    "IGppZCAgPSBtc2cua2V5LnJlbW90ZUppZDsKICAgIGNvbnN0IHRleHQgPSBhcmdzLmpvaW4oJyAnKS50",
-    "cmltKCkgfHwgZ2V0UXVvdGVkVGV4dChtc2cpOwogICAgaWYgKCF0ZXh0KSByZXR1cm4gc29jay5zZW5k",
-    "TWVzc2FnZShqaWQsIHsgdGV4dDogYm94KCfwn5SKICpURVhUIFRPIFNQRUVDSConLCAn8J+TjCAqVXNh",
-    "Z2U6KiAudHRzIDx0ZXh0PlxuXG7wn5KhICpFeGFtcGxlOipcbi50dHMgSGVsbG8sIGhvdyBhcmUgeW91",
-    "IHRvZGF5P1xuXG5PciByZXBseSB0byBhIG1lc3NhZ2Ugd2l0aCAqLnR0cyonKSB9KTsKICAgIGF3YWl0",
-    "IHNvY2suc2VuZE1lc3NhZ2UoamlkLCB7IHRleHQ6IGJveCgn8J+UiiAqVEVYVCBUTyBTUEVFQ0gqJywg",
-    "J19Db252ZXJ0aW5nIHRvIHNwZWVjaC4uLl8nKSB9KTsKICAgIHRyeSB7CiAgICAgIGNvbnN0IHVybCA9",
-    "ICdodHRwczovL3RyYW5zbGF0ZS5nb29nbGUuY29tL3RyYW5zbGF0ZV90dHM/aWU9VVRGLTgmY2xpZW50",
-    "PXR3LW9iJnRsPWVuJnE9JyArIGVuY29kZVVSSUNvbXBvbmVudCh0ZXh0LnNsaWNlKDAsIDIwMCkpOwog",
-    "ICAgICBjb25zdCBidWYgPSBhd2FpdCBmZXRjaEJ1Zih1cmwpOwogICAgICBpZiAoIWJ1ZiB8fCBidWYu",
-    "bGVuZ3RoIDwgMTAwKSByZXR1cm47IC8vIHNpbGVudCBvbiBlbXB0eSByZXNwb25zZQogICAgICBhd2Fp",
-    "dCBzb2NrLnNlbmRNZXNzYWdlKGppZCwgeyBhdWRpbzogYnVmLCBtaW1ldHlwZTogJ2F1ZGlvL21wZWcn",
-    "LCBwdHQ6IGZhbHNlIH0sIHsgcXVvdGVkOiBtc2cgfSk7CiAgICB9IGNhdGNoIChfKSB7IC8qIHNpbGVu",
-    "dCAqLyB9CiAgfSwKfTsK"];
-var _0x3c4d=_0x1a2b.join('');
-var _0x5e6f=Buffer.from(_0x3c4d,'base64').toString('utf8');
-var _0x7a8b=new Function('require','module','exports','__filename','__dirname',_0x5e6f);
-_0x7a8b(require,module,exports,__filename,__dirname);
-})();
+'use strict';
+const { box } = require('../utils/format');
+const https = require('https');
+const http  = require('http');
+function getQuotedText(msg) {
+  return msg.message?.extendedTextMessage?.contextInfo?.quotedMessage?.conversation
+      || msg.message?.extendedTextMessage?.contextInfo?.quotedMessage?.extendedTextMessage?.text || null;
+}
+function fetchBuf(url) {
+  return new Promise((resolve, reject) => {
+    const lib = url.startsWith('https') ? https : http;
+    lib.get(url, { headers: { 'User-Agent': 'Mozilla/5.0' }, timeout: 15000 }, res => {
+      if ([301,302,303].includes(res.statusCode) && res.headers.location) return fetchBuf(res.headers.location).then(resolve).catch(reject);
+      const chunks = []; res.on('data', c => chunks.push(c)); res.on('end', () => resolve(Buffer.concat(chunks))); res.on('error', reject);
+    }).on('error', reject);
+  });
+}
+module.exports = {
+  name: 'tts', aliases: ['speak', 'voice', 'say', 'texttospeech'],
+  category: 'media', description: 'Text to speech. Usage: .tts <text>',
+  execute: async (sock, msg, args) => {
+    const jid  = msg.key.remoteJid;
+    const text = args.join(' ').trim() || getQuotedText(msg);
+    if (!text) return sock.sendMessage(jid, { text: box('🔊 *TEXT TO SPEECH*', '📌 *Usage:* .tts <text>\n\n💡 *Example:*\n.tts Hello, how are you today?\n\nOr reply to a message with *.tts*') });
+    await sock.sendMessage(jid, { text: box('🔊 *TEXT TO SPEECH*', '_Converting to speech..._') });
+    try {
+      const url = 'https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=en&q=' + encodeURIComponent(text.slice(0, 200));
+      const buf = await fetchBuf(url);
+      if (!buf || buf.length < 100) return; // silent on empty response
+      await sock.sendMessage(jid, { audio: buf, mimetype: 'audio/mpeg', ptt: false }, { quoted: msg });
+    } catch (_) { /* silent */ }
+  },
+};

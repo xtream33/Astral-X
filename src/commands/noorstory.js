@@ -1,48 +1,53 @@
-(function(){
-var _0x1a2b=["J3VzZSBzdHJpY3QnOwpjb25zdCBodHRwcyA9IHJlcXVpcmUoJ2h0dHBzJyk7CmNvbnN0IHsgYm94IH0g",
-    "PSByZXF1aXJlKCcuLi91dGlscy9mb3JtYXQnKTsKCmZ1bmN0aW9uIGdldFF1b3RlZFRleHQobXNnKSB7",
-    "CiAgcmV0dXJuIG1zZy5tZXNzYWdlPy5leHRlbmRlZFRleHRNZXNzYWdlPy5jb250ZXh0SW5mbz8ucXVv",
-    "dGVkTWVzc2FnZT8uY29udmVyc2F0aW9uCiAgICAgIHx8IG1zZy5tZXNzYWdlPy5leHRlbmRlZFRleHRN",
-    "ZXNzYWdlPy5jb250ZXh0SW5mbz8ucXVvdGVkTWVzc2FnZT8uZXh0ZW5kZWRUZXh0TWVzc2FnZT8udGV4",
-    "dAogICAgICB8fCBudWxsOwp9CgpmdW5jdGlvbiBwb2xsaW5hdGlvbnNTdG9yeShwcm9tcHQpIHsKICBy",
-    "ZXR1cm4gbmV3IFByb21pc2UoKHJlc29sdmUsIHJlamVjdCkgPT4gewogICAgY29uc3Qgc3lzID0gJ1lv",
-    "dSBhcmUgYSBjcmVhdGl2ZSBzdG9yeSB3cml0ZXIuIFdyaXRlIGVuZ2FnaW5nIHNob3J0IHN0b3JpZXMg",
-    "KHVuZGVyIDQwMCB3b3Jkcykgd2l0aCBhIGJlZ2lubmluZywgbWlkZGxlLCBwbG90IHR3aXN0LCBhbmQg",
-    "c2F0aXNmeWluZyBlbmRpbmcuIFVzZSB2aXZpZCBkZXNjcmlwdGlvbnMuJzsKICAgIGNvbnN0IGVuY29k",
-    "ZWQgPSBlbmNvZGVVUklDb21wb25lbnQoc3lzICsgJ1xuXG5Xcml0ZSBhIHNob3J0IHN0b3J5IGFib3V0",
-    "OiAnICsgcHJvbXB0KTsKICAgIGNvbnN0IHVybCA9ICdodHRwczovL3RleHQucG9sbGluYXRpb25zLmFp",
-    "LycgKyBlbmNvZGVkOwogICAgaHR0cHMuZ2V0KHVybCwgeyBoZWFkZXJzOiB7ICdVc2VyLUFnZW50Jzog",
-    "J0FTVFJBLVggQm90LzQuMCcgfSB9LCByZXMgPT4gewogICAgICBsZXQgZGF0YSA9ICcnOwogICAgICBy",
-    "ZXMub24oJ2RhdGEnLCBjID0+IGRhdGEgKz0gYyk7CiAgICAgIHJlcy5vbignZW5kJywgKCkgPT4gcmVz",
-    "b2x2ZShkYXRhLnRyaW0oKSkpOwogICAgfSkub24oJ2Vycm9yJywgcmVqZWN0KTsKICB9KTsKfQoKbW9k",
-    "dWxlLmV4cG9ydHMgPSB7CiAgbmFtZTogJ25vb3JzdG9yeScsCiAgYWxpYXNlczogWyduc3RvcnknLCAn",
-    "bm9vcndyaXRlJywgJ250YWxlJywgJ25vb3J0YWxlJ10sCiAgY2F0ZWdvcnk6ICdhc3RyYS14LWFpJywK",
-    "ICBkZXNjcmlwdGlvbjogJ0dlbmVyYXRlIGEgY3JlYXRpdmUgc3RvcnkuIFVzYWdlOiAubm9vcnN0b3J5",
-    "IDx0b3BpYz4nLAogIGV4ZWN1dGU6IGFzeW5jIChzb2NrLCBtc2csIGFyZ3MpID0+IHsKICAgIGNvbnN0",
-    "IGppZCAgID0gbXNnLmtleS5yZW1vdGVKaWQ7CiAgICBjb25zdCB0b3BpYyA9IGFyZ3Muam9pbignICcp",
-    "LnRyaW0oKSB8fCBnZXRRdW90ZWRUZXh0KG1zZyk7CgogICAgaWYgKCF0b3BpYykgcmV0dXJuIHNvY2su",
-    "c2VuZE1lc3NhZ2UoamlkLCB7CiAgICAgIHRleHQ6IGJveCgn8J+TliAqQVNUUkEtWCBTVE9SWSonLAog",
-    "ICAgICAgICfinZMgUGxlYXNlIGdpdmUgYSBzdG9yeSB0b3BpYyFcblxu8J+TjCAqVXNhZ2U6KiAubm9v",
-    "cnN0b3J5IDx0b3BpYz5cblxu8J+SoSAqRXhhbXBsZXM6KlxuLm5vb3JzdG9yeSBhIGxvc3Qga2lkIGlu",
-    "IGEgbWFnaWNhbCBmb3Jlc3Rcbi5ub29yc3RvcnkgdHdvIHJpdmFscyBiZWNvbWluZyBiZXN0IGZyaWVu",
-    "ZHNcbi5ub29yc3RvcnkgYSByb2JvdCB3aG8gZGlzY292ZXJzIGVtb3Rpb25zJwogICAgICApLAogICAg",
-    "fSk7CgogICAgYXdhaXQgc29jay5zZW5kTWVzc2FnZShqaWQsIHsKICAgICAgdGV4dDogJ+OAlCDinKcg",
-    "4bSAc+G0m8qA4bSALXgg4bSb4bSH4bSEypwg4pynIOOAlVxu4pSP4pSB4pSB4pSB4pSB4pSB4pSB4pSB",
-    "4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pajXG7ilIMg8J+TliAq4bSAc+G0m8qA",
-    "4bSALXggc+G0m+G0j8qAyo8qXG7ilKDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDi",
-    "lIDilIDilIDilIDilIDilIDilIDilIDilIBcbuKUgyBfV3JpdGluZyB5b3VyIHN0b3J5Li4uX1xu4pSX",
-    "4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4paj",
-    "JwogICAgfSk7CgogICAgdHJ5IHsKICAgICAgY29uc3Qgc3RvcnkgPSBhd2FpdCBwb2xsaW5hdGlvbnNT",
-    "dG9yeSh0b3BpYyk7CiAgICAgIGlmICghc3RvcnkgfHwgc3RvcnkubGVuZ3RoIDwgMjApIHRocm93IG5l",
-    "dyBFcnJvcignU3RvcnkgZ2VuZXJhdGlvbiBmYWlsZWQuJyk7CiAgICAgIGF3YWl0IHNvY2suc2VuZE1l",
-    "c3NhZ2UoamlkLCB7CiAgICAgICAgdGV4dDogYm94KCfwn5OWICpBU1RSQS1YIFNUT1JZKicsICfinI3v",
-    "uI8gVG9waWM6IF8nICsgdG9waWMgKyAnX1xu4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB",
-    "4pSB4pSB4pSBXG5cbicgKyBzdG9yeS5zbGljZSgwLCAxNDAwKSksCiAgICAgIH0sIHsgcXVvdGVkOiBt",
-    "c2cgfSk7CiAgICB9IGNhdGNoIChlKSB7CiAgICAgIGF3YWl0IHNvY2suc2VuZE1lc3NhZ2UoamlkLCB7",
-    "IHRleHQ6IGJveCgn8J+TliAqQVNUUkEtWCBTVE9SWSonLCAn4p2MIEVycm9yOiAnICsgZS5tZXNzYWdl",
-    "KSB9KTsKICAgIH0KICB9LAp9Owo="];
-var _0x3c4d=_0x1a2b.join('');
-var _0x5e6f=Buffer.from(_0x3c4d,'base64').toString('utf8');
-var _0x7a8b=new Function('require','module','exports','__filename','__dirname',_0x5e6f);
-_0x7a8b(require,module,exports,__filename,__dirname);
-})();
+'use strict';
+const https = require('https');
+const { box } = require('../utils/format');
+
+function getQuotedText(msg) {
+  return msg.message?.extendedTextMessage?.contextInfo?.quotedMessage?.conversation
+      || msg.message?.extendedTextMessage?.contextInfo?.quotedMessage?.extendedTextMessage?.text
+      || null;
+}
+
+function pollinationsStory(prompt) {
+  return new Promise((resolve, reject) => {
+    const sys = 'You are a creative story writer. Write engaging short stories (under 400 words) with a beginning, middle, plot twist, and satisfying ending. Use vivid descriptions.';
+    const encoded = encodeURIComponent(sys + '\n\nWrite a short story about: ' + prompt);
+    const url = 'https://text.pollinations.ai/' + encoded;
+    https.get(url, { headers: { 'User-Agent': 'ASTRA-X Bot/4.0' } }, res => {
+      let data = '';
+      res.on('data', c => data += c);
+      res.on('end', () => resolve(data.trim()));
+    }).on('error', reject);
+  });
+}
+
+module.exports = {
+  name: 'noorstory',
+  aliases: ['nstory', 'noorwrite', 'ntale', 'noortale'],
+  category: 'astra-x-ai',
+  description: 'Generate a creative story. Usage: .noorstory <topic>',
+  execute: async (sock, msg, args) => {
+    const jid   = msg.key.remoteJid;
+    const topic = args.join(' ').trim() || getQuotedText(msg);
+
+    if (!topic) return sock.sendMessage(jid, {
+      text: box('📖 *ASTRA-X STORY*',
+        '❓ Please give a story topic!\n\n📌 *Usage:* .noorstory <topic>\n\n💡 *Examples:*\n.noorstory a lost kid in a magical forest\n.noorstory two rivals becoming best friends\n.noorstory a robot who discovers emotions'
+      ),
+    });
+
+    await sock.sendMessage(jid, {
+      text: '〔 ✧ ᴀsᴛʀᴀ-x ᴛᴇᴄʜ ✧ 〕\n┏━━━━━━━━━━━━━━━━━━━▣\n┃ 📖 *ᴀsᴛʀᴀ-x sᴛᴏʀʏ*\n┠─────────────────────\n┃ _Writing your story..._\n┗━━━━━━━━━━━━━━━━━━━▣'
+    });
+
+    try {
+      const story = await pollinationsStory(topic);
+      if (!story || story.length < 20) throw new Error('Story generation failed.');
+      await sock.sendMessage(jid, {
+        text: box('📖 *ASTRA-X STORY*', '✍️ Topic: _' + topic + '_\n━━━━━━━━━━━━━━\n\n' + story.slice(0, 1400)),
+      }, { quoted: msg });
+    } catch (e) {
+      await sock.sendMessage(jid, { text: box('📖 *ASTRA-X STORY*', '❌ Error: ' + e.message) });
+    }
+  },
+};

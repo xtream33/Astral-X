@@ -1,62 +1,115 @@
-(function(){
-var _0x1a2b=["J3VzZSBzdHJpY3QnOwovKioKICogU3ViLUFkbWluIE1hbmFnZXIKICogT3duZXIgY3JlYXRlcyBzdWIt",
-    "YWRtaW5zIHdpdGggbGltaXRlZCBzZXNzaW9uIHNsb3RzIGFuZCBleHBpcnkKICovCmNvbnN0IGZzICAg",
-    "PSByZXF1aXJlKCdmcycpOwpjb25zdCBwYXRoID0gcmVxdWlyZSgncGF0aCcpOwpjb25zdCBjcnlwdG8g",
-    "PSByZXF1aXJlKCdjcnlwdG8nKTsKCmNvbnN0IEZJTEUgPSBwYXRoLmpvaW4oX19kaXJuYW1lLCAnLi4v",
-    "Li4vZGF0YS9zdWJfYWRtaW5zLmpzb24nKTsKCmZ1bmN0aW9uIGxvYWQoKSB7CiAgdHJ5IHsgcmV0dXJu",
-    "IGZzLmV4aXN0c1N5bmMoRklMRSkgPyBKU09OLnBhcnNlKGZzLnJlYWRGaWxlU3luYyhGSUxFLCd1dGY4",
-    "JykpIDoge307IH0KICBjYXRjaChfKSB7IHJldHVybiB7fTsgfQp9CmZ1bmN0aW9uIHNhdmUoZCkgewog",
-    "IHRyeSB7IGZzLndyaXRlRmlsZVN5bmMoRklMRSwgSlNPTi5zdHJpbmdpZnkoZCwgbnVsbCwgMikpOyB9",
-    "IGNhdGNoKF8pIHt9Cn0KCmZ1bmN0aW9uIGhhc2hQYXNzKHBhc3N3b3JkKSB7CiAgcmV0dXJuIGNyeXB0",
-    "by5jcmVhdGVIYXNoKCdzaGEyNTYnKS51cGRhdGUocGFzc3dvcmQgKyAnYXN0cmF4X3NhbHRfMjAyNicp",
-    "LmRpZ2VzdCgnaGV4Jyk7Cn0KCi8qKiBPd25lciBjcmVhdGVzIGEgc3ViLWFkbWluICovCmZ1bmN0aW9u",
-    "IGNyZWF0ZSh7IHVzZXJuYW1lLCBlbWFpbCwgcGFzc3dvcmQsIG1heFNlc3Npb25zIH0pIHsKICBjb25z",
-    "dCBkICAgPSBsb2FkKCk7CiAgY29uc3QgaWQgID0gJ3N1Yl8nICsgRGF0ZS5ub3coKTsKICBkW2lkXSA9",
-    "IHsKICAgIGlkLAogICAgdXNlcm5hbWU6ICAgIHVzZXJuYW1lLnRyaW0oKSwKICAgIGVtYWlsOiAgICAg",
-    "ICBlbWFpbC50cmltKCkudG9Mb3dlckNhc2UoKSwKICAgIHBhc3N3b3JkOiAgICBoYXNoUGFzcyhwYXNz",
-    "d29yZCksCiAgICBtYXhTZXNzaW9uczogcGFyc2VJbnQobWF4U2Vzc2lvbnMpIHx8IDEsCiAgICBhY3Rp",
-    "dmF0ZWRTZXNzaW9uczogW10sIC8vIHNlc3Npb24gSURzIHRoZXkgYWN0aXZhdGVkCiAgICBjcmVhdGVk",
-    "QXQ6ICAgbmV3IERhdGUoKS50b0lTT1N0cmluZygpLAogICAgYWN0aXZlOiAgICAgIHRydWUsCiAgfTsK",
-    "ICBzYXZlKGQpOwogIHJldHVybiBkW2lkXTsKfQoKLyoqIFZlcmlmeSBsb2dpbiBjcmVkZW50aWFscyAq",
-    "LwpmdW5jdGlvbiB2ZXJpZnkodXNlcm5hbWUsIHBhc3N3b3JkKSB7CiAgY29uc3QgZCA9IGxvYWQoKTsK",
-    "ICByZXR1cm4gT2JqZWN0LnZhbHVlcyhkKS5maW5kKGEgPT4KICAgIChhLnVzZXJuYW1lID09PSB1c2Vy",
-    "bmFtZSB8fCBhLmVtYWlsID09PSB1c2VybmFtZS50b0xvd2VyQ2FzZSgpKSAmJgogICAgYS5wYXNzd29y",
-    "ZCA9PT0gaGFzaFBhc3MocGFzc3dvcmQpICYmCiAgICBhLmFjdGl2ZQogICkgfHwgbnVsbDsKfQoKLyoq",
-    "IEdldCBzdWItYWRtaW4gYnkgaWQgKi8KZnVuY3Rpb24gZ2V0QnlJZChpZCkgICB7IHJldHVybiBsb2Fk",
-    "KClbaWRdIHx8IG51bGw7IH0KZnVuY3Rpb24gZ2V0QWxsKCkgICAgICB7IHJldHVybiBPYmplY3QudmFs",
-    "dWVzKGxvYWQoKSk7IH0KCi8qKiBDaGVjayBpZiBzdWItYWRtaW4gY2FuIGFjdGl2YXRlIG1vcmUgc2Vz",
-    "c2lvbnMgKi8KZnVuY3Rpb24gY2FuQWN0aXZhdGUoc3ViQWRtaW5JZCkgewogIGNvbnN0IGQgPSBsb2Fk",
-    "KCk7CiAgY29uc3QgYSA9IGRbc3ViQWRtaW5JZF07CiAgaWYgKCFhKSByZXR1cm4gZmFsc2U7CiAgLy8g",
-    "UmVtb3ZlIGV4cGlyZWQgKDMwLWRheSkgc2Vzc2lvbnMgZnJvbSB0aGVpciBjb3VudAogIGNvbnN0IHNz",
-    "ID0gcmVxdWlyZSgnLi9zZXNzaW9uU3RvcmUnKTsKICBjb25zdCBub3cgPSBEYXRlLm5vdygpOwogIGEu",
-    "YWN0aXZhdGVkU2Vzc2lvbnMgPSBhLmFjdGl2YXRlZFNlc3Npb25zLmZpbHRlcihzaWQgPT4gewogICAg",
-    "Y29uc3QgcmVjID0gc3MuZ2V0QnlTZXNzaW9uSWQoc2lkKTsKICAgIGlmICghcmVjKSByZXR1cm4gZmFs",
-    "c2U7CiAgICBpZiAoIXJlYy5hY3RpdmF0ZWRBdCkgcmV0dXJuIHRydWU7CiAgICBjb25zdCBhZ2UgPSBu",
-    "b3cgLSBuZXcgRGF0ZShyZWMuYWN0aXZhdGVkQXQpLmdldFRpbWUoKTsKICAgIHJldHVybiBhZ2UgPCAz",
-    "MCAqIDI0ICogNjAgKiA2MCAqIDEwMDA7IC8vIDMwIGRheXMKICB9KTsKICBzYXZlKGQpOwogIHJldHVy",
-    "biBhLmFjdGl2YXRlZFNlc3Npb25zLmxlbmd0aCA8IGEubWF4U2Vzc2lvbnM7Cn0KCi8qKiBSZWNvcmQg",
-    "YSBzZXNzaW9uIGFjdGl2YXRlZCBieSBzdWItYWRtaW4gKi8KZnVuY3Rpb24gcmVjb3JkQWN0aXZhdGlv",
-    "bihzdWJBZG1pbklkLCBzZXNzaW9uSWQpIHsKICBjb25zdCBkID0gbG9hZCgpOwogIGlmICghZFtzdWJB",
-    "ZG1pbklkXSkgcmV0dXJuOwogIGlmICghZFtzdWJBZG1pbklkXS5hY3RpdmF0ZWRTZXNzaW9ucy5pbmNs",
-    "dWRlcyhzZXNzaW9uSWQpKSB7CiAgICBkW3N1YkFkbWluSWRdLmFjdGl2YXRlZFNlc3Npb25zLnB1c2go",
-    "c2Vzc2lvbklkKTsKICB9CiAgc2F2ZShkKTsKfQoKLyoqIFJlbW92ZSBhIHNlc3Npb24gZnJvbSBzdWIt",
-    "YWRtaW4ncyBsaXN0ICovCmZ1bmN0aW9uIHJlbW92ZVNlc3Npb24oc3ViQWRtaW5JZCwgc2Vzc2lvbklk",
-    "KSB7CiAgY29uc3QgZCA9IGxvYWQoKTsKICBpZiAoIWRbc3ViQWRtaW5JZF0pIHJldHVybjsKICBkW3N1",
-    "YkFkbWluSWRdLmFjdGl2YXRlZFNlc3Npb25zID0gZFtzdWJBZG1pbklkXS5hY3RpdmF0ZWRTZXNzaW9u",
-    "cy5maWx0ZXIocyA9PiBzICE9PSBzZXNzaW9uSWQpOwogIHNhdmUoZCk7Cn0KCi8qKiBHZXQgc2Vzc2lv",
-    "bnMgYmVsb25naW5nIHRvIGEgc3ViLWFkbWluICovCmZ1bmN0aW9uIGdldE15U2Vzc2lvbnMoc3ViQWRt",
-    "aW5JZCkgewogIGNvbnN0IGQgPSBsb2FkKCk7CiAgcmV0dXJuIGRbc3ViQWRtaW5JZF0/LmFjdGl2YXRl",
-    "ZFNlc3Npb25zIHx8IFtdOwp9CgovKiogRGVsZXRlIHN1Yi1hZG1pbiAqLwpmdW5jdGlvbiByZW1vdmUo",
-    "aWQpIHsgY29uc3QgZCA9IGxvYWQoKTsgZGVsZXRlIGRbaWRdOyBzYXZlKGQpOyB9CgovKiogVG9nZ2xl",
-    "IGFjdGl2ZSAqLwpmdW5jdGlvbiB0b2dnbGUoaWQpIHsKICBjb25zdCBkID0gbG9hZCgpOwogIGlmIChk",
-    "W2lkXSkgeyBkW2lkXS5hY3RpdmUgPSAhZFtpZF0uYWN0aXZlOyBzYXZlKGQpOyB9CiAgcmV0dXJuIGRb",
-    "aWRdOwp9CgovKiogVXBkYXRlIG1heCBzZXNzaW9ucyAqLwpmdW5jdGlvbiBzZXRNYXgoaWQsIG1heCkg",
-    "ewogIGNvbnN0IGQgPSBsb2FkKCk7CiAgaWYgKGRbaWRdKSB7IGRbaWRdLm1heFNlc3Npb25zID0gcGFy",
-    "c2VJbnQobWF4KTsgc2F2ZShkKTsgfQp9Cgptb2R1bGUuZXhwb3J0cyA9IHsgY3JlYXRlLCB2ZXJpZnks",
-    "IGdldEJ5SWQsIGdldEFsbCwgY2FuQWN0aXZhdGUsIHJlY29yZEFjdGl2YXRpb24sIHJlbW92ZVNlc3Np",
-    "b24sIGdldE15U2Vzc2lvbnMsIHJlbW92ZSwgdG9nZ2xlLCBzZXRNYXgsIGhhc2hQYXNzIH07Cg=="];
-var _0x3c4d=_0x1a2b.join('');
-var _0x5e6f=Buffer.from(_0x3c4d,'base64').toString('utf8');
-var _0x7a8b=new Function('require','module','exports','__filename','__dirname',_0x5e6f);
-_0x7a8b(require,module,exports,__filename,__dirname);
-})();
+'use strict';
+/**
+ * Sub-Admin Manager
+ * Owner creates sub-admins with limited session slots and expiry
+ */
+const fs   = require('fs');
+const path = require('path');
+const crypto = require('crypto');
+
+const FILE = path.join(__dirname, '../../data/sub_admins.json');
+
+function load() {
+  try { return fs.existsSync(FILE) ? JSON.parse(fs.readFileSync(FILE,'utf8')) : {}; }
+  catch(_) { return {}; }
+}
+function save(d) {
+  try { fs.writeFileSync(FILE, JSON.stringify(d, null, 2)); } catch(_) {}
+}
+
+function hashPass(password) {
+  return crypto.createHash('sha256').update(password + 'astrax_salt_2026').digest('hex');
+}
+
+/** Owner creates a sub-admin */
+function create({ username, email, password, maxSessions }) {
+  const d   = load();
+  const id  = 'sub_' + Date.now();
+  d[id] = {
+    id,
+    username:    username.trim(),
+    email:       email.trim().toLowerCase(),
+    password:    hashPass(password),
+    maxSessions: parseInt(maxSessions) || 1,
+    activatedSessions: [], // session IDs they activated
+    createdAt:   new Date().toISOString(),
+    active:      true,
+  };
+  save(d);
+  return d[id];
+}
+
+/** Verify login credentials */
+function verify(username, password) {
+  const d = load();
+  return Object.values(d).find(a =>
+    (a.username === username || a.email === username.toLowerCase()) &&
+    a.password === hashPass(password) &&
+    a.active
+  ) || null;
+}
+
+/** Get sub-admin by id */
+function getById(id)   { return load()[id] || null; }
+function getAll()      { return Object.values(load()); }
+
+/** Check if sub-admin can activate more sessions */
+function canActivate(subAdminId) {
+  const d = load();
+  const a = d[subAdminId];
+  if (!a) return false;
+  // Remove expired (30-day) sessions from their count
+  const ss = require('./sessionStore');
+  const now = Date.now();
+  a.activatedSessions = a.activatedSessions.filter(sid => {
+    const rec = ss.getBySessionId(sid);
+    if (!rec) return false;
+    if (!rec.activatedAt) return true;
+    const age = now - new Date(rec.activatedAt).getTime();
+    return age < 30 * 24 * 60 * 60 * 1000; // 30 days
+  });
+  save(d);
+  return a.activatedSessions.length < a.maxSessions;
+}
+
+/** Record a session activated by sub-admin */
+function recordActivation(subAdminId, sessionId) {
+  const d = load();
+  if (!d[subAdminId]) return;
+  if (!d[subAdminId].activatedSessions.includes(sessionId)) {
+    d[subAdminId].activatedSessions.push(sessionId);
+  }
+  save(d);
+}
+
+/** Remove a session from sub-admin's list */
+function removeSession(subAdminId, sessionId) {
+  const d = load();
+  if (!d[subAdminId]) return;
+  d[subAdminId].activatedSessions = d[subAdminId].activatedSessions.filter(s => s !== sessionId);
+  save(d);
+}
+
+/** Get sessions belonging to a sub-admin */
+function getMySessions(subAdminId) {
+  const d = load();
+  return d[subAdminId]?.activatedSessions || [];
+}
+
+/** Delete sub-admin */
+function remove(id) { const d = load(); delete d[id]; save(d); }
+
+/** Toggle active */
+function toggle(id) {
+  const d = load();
+  if (d[id]) { d[id].active = !d[id].active; save(d); }
+  return d[id];
+}
+
+/** Update max sessions */
+function setMax(id, max) {
+  const d = load();
+  if (d[id]) { d[id].maxSessions = parseInt(max); save(d); }
+}
+
+module.exports = { create, verify, getById, getAll, canActivate, recordActivation, removeSession, getMySessions, remove, toggle, setMax, hashPass };

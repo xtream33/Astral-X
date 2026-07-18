@@ -1,52 +1,59 @@
-(function(){
-var _0x1a2b=["J3VzZSBzdHJpY3QnOwpjb25zdCB7IGFzayB9ID0gcmVxdWlyZSgnLi4vdXRpbHMvZ2VtaW5pJyk7Cgpm",
-    "dW5jdGlvbiBmZXRjaEpTT04odXJsKSB7CiAgY29uc3QgaHR0cHMgPSByZXF1aXJlKCdodHRwcycpOwog",
-    "IHJldHVybiBuZXcgUHJvbWlzZSgocmVzb2x2ZSwgcmVqZWN0KSA9PiB7CiAgICBodHRwcy5nZXQodXJs",
-    "LCB7IGhlYWRlcnM6IHsgJ1VzZXItQWdlbnQnOiAnTW96aWxsYS81LjAnIH0gfSwgcmVzID0+IHsKICAg",
-    "ICAgbGV0IGQgPSAnJzsKICAgICAgcmVzLm9uKCdkYXRhJywgYyA9PiBkICs9IGMpOwogICAgICByZXMu",
-    "b24oJ2VuZCcsICgpID0+IHsgdHJ5IHsgcmVzb2x2ZShKU09OLnBhcnNlKGQpKTsgfSBjYXRjaChlKSB7",
-    "IHJlamVjdChlKTsgfSB9KTsKICAgICAgcmVzLm9uKCdlcnJvcicsIHJlamVjdCk7CiAgICB9KS5vbign",
-    "ZXJyb3InLCByZWplY3QpOwogIH0pOwp9Cgptb2R1bGUuZXhwb3J0cyA9IHsKICBuYW1lOiAncGVyaW9k",
-    "aWMnLAogIGFsaWFzZXM6IFsnZWxlbWVudCcsICdhdG9tJywgJ2NoZW1pc3RyeScsICdjaGVtJ10sCiAg",
-    "Y2F0ZWdvcnk6ICdlZHVjYXRpb24nLAogIGRlc2NyaXB0aW9uOiAnR2V0IHBlcmlvZGljIHRhYmxlIGVs",
-    "ZW1lbnQgaW5mby4gVXNhZ2U6IC5wZXJpb2RpYyA8bmFtZSBvciBzeW1ib2w+JywKICBleGVjdXRlOiBh",
-    "c3luYyAoc29jaywgbXNnLCBhcmdzKSA9PiB7CiAgICBjb25zdCBqaWQgPSBtc2cua2V5LnJlbW90ZUpp",
-    "ZDsKICAgIGNvbnN0IHEgICA9IGFyZ3Muam9pbignICcpLnRyaW0oKTsKICAgIGlmICghcSkgcmV0dXJu",
-    "IHNvY2suc2VuZE1lc3NhZ2UoamlkLCB7IHRleHQ6ICfimpfvuI8gVXNhZ2U6ICoucGVyaW9kaWMgPGVs",
-    "ZW1lbnQgbmFtZSBvciBzeW1ib2w+KlxuXG5FeGFtcGxlczpcbuKAoiAucGVyaW9kaWMgR29sZFxu4oCi",
-    "IC5wZXJpb2RpYyBBdVxu4oCiIC5wZXJpb2RpYyBIeWRyb2dlblxu4oCiIC5wZXJpb2RpYyA3OScgfSk7",
-    "CiAgICBhd2FpdCBzb2NrLnNlbmRNZXNzYWdlKGppZCwgeyB0ZXh0OiAn4pqX77iPIF9Mb29raW5nIHVw",
-    "IGVsZW1lbnQ6IConICsgcSArICcqLi4uXycgfSk7CiAgICB0cnkgewogICAgICAvLyBUcnkgQVBJIGZp",
-    "cnN0CiAgICAgIGNvbnN0IGRhdGEgPSBhd2FpdCBmZXRjaEpTT04oJ2h0dHBzOi8vbmVlbHBhdGVsMDUu",
-    "cHl0aG9uYW55d2hlcmUuY29tL2VsZW1lbnQvYXRvbWljbnVtYmVyP2F0b21pY251bWJlcj0nICsKICAg",
-    "ICAgICBlbmNvZGVVUklDb21wb25lbnQocSkpLmNhdGNoKCgpID0+IG51bGwpOwoKICAgICAgaWYgKGRh",
-    "dGEgJiYgZGF0YS5uYW1lKSB7CiAgICAgICAgYXdhaXQgc29jay5zZW5kTWVzc2FnZShqaWQsIHsKICAg",
-    "ICAgICAgIHRleHQ6CiAgICAgICAgICAgICfimpfvuI8gKicgKyBkYXRhLm5hbWUgKyAnICgnICsgZGF0",
-    "YS5zeW1ib2wgKyAnKSpcbicgKwogICAgICAgICAgICAn4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB",
-    "4pSB4pSB4pSB4pSB4pSBXG4nICsKICAgICAgICAgICAgJ/CflKIgQXRvbWljIE51bWJlcjogKicgKyBk",
-    "YXRhLmF0b21pY251bWJlciArICcqXG4nICsKICAgICAgICAgICAgJ+Kalu+4jyBBdG9taWMgTWFzczog",
-    "ICAqJyArIGRhdGEuYXRvbWljbWFzcyArICcqXG4nICsKICAgICAgICAgICAgJ/Cfl4LvuI8gR3JvdXA6",
-    "ICAgICAgICAgKicgKyAoZGF0YS5ncm91cGJsb2NrIHx8ICdOL0EnKSArICcqXG4nICsKICAgICAgICAg",
-    "ICAgJ/CfjKHvuI8gTWVsdGluZyBQb2ludDogKicgKyAoZGF0YS5tZWx0aW5ncG9pbnQgfHwgJ04vQScp",
-    "ICsgJyBLKlxuJyArCiAgICAgICAgICAgICfwn5KnIEJvaWxpbmcgUG9pbnQ6IConICsgKGRhdGEuYm9p",
-    "bGluZ3BvaW50IHx8ICdOL0EnKSArICcgSypcbicgKwogICAgICAgICAgICAn8J+UrCBQaGFzZTogICAg",
-    "ICAgICAqJyArIChkYXRhLnN0YW5kYXJkc3RhdGUgfHwgJ04vQScpICsgJypcbicgKwogICAgICAgICAg",
-    "ICAn4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSB4pSBXG4nICsKICAgICAgICAg",
-    "ICAgJ19Qb3dlcmVkIGJ5IEFTVFJBLVhfJywKICAgICAgICB9KTsKICAgICAgfSBlbHNlIHsKICAgICAg",
-    "ICAvLyBGYWxsYmFjayB0byBHZW1pbmkKICAgICAgICBjb25zdCByZXBseSA9IGF3YWl0IGFzaygKICAg",
-    "ICAgICAgICdHaXZlIGRldGFpbGVkIGluZm9ybWF0aW9uIGFib3V0IHRoaXMgY2hlbWljYWwgZWxlbWVu",
-    "dDogJyArIHEgKwogICAgICAgICAgJ1xuXG5JbmNsdWRlOiBmdWxsIG5hbWUsIHN5bWJvbCwgYXRvbWlj",
-    "IG51bWJlciwgYXRvbWljIG1hc3MsIGdyb3VwLCBwZXJpb2QsIGVsZWN0cm9uIGNvbmZpZ3VyYXRpb24s",
-    "IGNvbW1vbiB1c2VzLCBmdW4gZmFjdHMuIEZvcm1hdCBjbGVhcmx5LicKICAgICAgICApOwogICAgICAg",
-    "IGF3YWl0IHNvY2suc2VuZE1lc3NhZ2UoamlkLCB7CiAgICAgICAgICB0ZXh0OiAn4pqX77iPICpFbGVt",
-    "ZW50OiAnICsgcSArICcqXG7ilIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilIHilIFc",
-    "blxuJyArIHJlcGx5ICsgJ1xuXG5fUG93ZXJlZCBieSBBU1RSQS1YXycsCiAgICAgICAgfSwgeyBxdW90",
-    "ZWQ6IG1zZyB9KTsKICAgICAgfQogICAgfSBjYXRjaCAoZSkgewogICAgICBhd2FpdCBzb2NrLnNlbmRN",
-    "ZXNzYWdlKGppZCwgeyB0ZXh0OiAn4p2MIEVsZW1lbnQgbm90IGZvdW5kOiAqJyArIHEgKyAnKlxuXG5U",
-    "cnkgdGhlIGZ1bGwgbmFtZSwgc3ltYm9sIG9yIGF0b21pYyBudW1iZXIuJyB9KTsKICAgIH0KICB9LAp9",
-    "Owo="];
-var _0x3c4d=_0x1a2b.join('');
-var _0x5e6f=Buffer.from(_0x3c4d,'base64').toString('utf8');
-var _0x7a8b=new Function('require','module','exports','__filename','__dirname',_0x5e6f);
-_0x7a8b(require,module,exports,__filename,__dirname);
-})();
+'use strict';
+const { ask } = require('../utils/gemini');
+
+function fetchJSON(url) {
+  const https = require('https');
+  return new Promise((resolve, reject) => {
+    https.get(url, { headers: { 'User-Agent': 'Mozilla/5.0' } }, res => {
+      let d = '';
+      res.on('data', c => d += c);
+      res.on('end', () => { try { resolve(JSON.parse(d)); } catch(e) { reject(e); } });
+      res.on('error', reject);
+    }).on('error', reject);
+  });
+}
+
+module.exports = {
+  name: 'periodic',
+  aliases: ['element', 'atom', 'chemistry', 'chem'],
+  category: 'education',
+  description: 'Get periodic table element info. Usage: .periodic <name or symbol>',
+  execute: async (sock, msg, args) => {
+    const jid = msg.key.remoteJid;
+    const q   = args.join(' ').trim();
+    if (!q) return sock.sendMessage(jid, { text: '⚗️ Usage: *.periodic <element name or symbol>*\n\nExamples:\n• .periodic Gold\n• .periodic Au\n• .periodic Hydrogen\n• .periodic 79' });
+    await sock.sendMessage(jid, { text: '⚗️ _Looking up element: *' + q + '*..._' });
+    try {
+      // Try API first
+      const data = await fetchJSON('https://neelpatel05.pythonanywhere.com/element/atomicnumber?atomicnumber=' +
+        encodeURIComponent(q)).catch(() => null);
+
+      if (data && data.name) {
+        await sock.sendMessage(jid, {
+          text:
+            '⚗️ *' + data.name + ' (' + data.symbol + ')*\n' +
+            '━━━━━━━━━━━━━━\n' +
+            '🔢 Atomic Number: *' + data.atomicnumber + '*\n' +
+            '⚖️ Atomic Mass:   *' + data.atomicmass + '*\n' +
+            '🗂️ Group:         *' + (data.groupblock || 'N/A') + '*\n' +
+            '🌡️ Melting Point: *' + (data.meltingpoint || 'N/A') + ' K*\n' +
+            '💧 Boiling Point: *' + (data.boilingpoint || 'N/A') + ' K*\n' +
+            '🔬 Phase:         *' + (data.standardstate || 'N/A') + '*\n' +
+            '━━━━━━━━━━━━━━\n' +
+            '_Powered by ASTRA-X_',
+        });
+      } else {
+        // Fallback to Gemini
+        const reply = await ask(
+          'Give detailed information about this chemical element: ' + q +
+          '\n\nInclude: full name, symbol, atomic number, atomic mass, group, period, electron configuration, common uses, fun facts. Format clearly.'
+        );
+        await sock.sendMessage(jid, {
+          text: '⚗️ *Element: ' + q + '*\n━━━━━━━━━━━━━━\n\n' + reply + '\n\n_Powered by ASTRA-X_',
+        }, { quoted: msg });
+      }
+    } catch (e) {
+      await sock.sendMessage(jid, { text: '❌ Element not found: *' + q + '*\n\nTry the full name, symbol or atomic number.' });
+    }
+  },
+};

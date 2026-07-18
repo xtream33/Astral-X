@@ -1,49 +1,46 @@
-(function(){
-var _0x1a2b=["J3VzZSBzdHJpY3QnOwpjb25zdCB7IGJveCB9ID0gcmVxdWlyZSgnLi4vdXRpbHMvZm9ybWF0Jyk7CmNv",
-    "bnN0IGh0dHBzID0gcmVxdWlyZSgnaHR0cHMnKTsKY29uc3QgaHR0cCAgPSByZXF1aXJlKCdodHRwJyk7",
-    "CmZ1bmN0aW9uIGZldGNoSlNPTih1cmwpIHsKICByZXR1cm4gbmV3IFByb21pc2UoKHJlc29sdmUsIHJl",
-    "amVjdCkgPT4gewogICAgaHR0cHMuZ2V0KHVybCwgeyBoZWFkZXJzOiB7ICdVc2VyLUFnZW50JzogJ01v",
-    "emlsbGEvNS4wJyB9LCB0aW1lb3V0OiAyMDAwMCB9LCByZXMgPT4gewogICAgICBsZXQgZCA9ICcnOyBy",
-    "ZXMub24oJ2RhdGEnLCBjID0+IGQgKz0gYyk7CiAgICAgIHJlcy5vbignZW5kJywgKCkgPT4geyB0cnkg",
-    "eyByZXNvbHZlKEpTT04ucGFyc2UoZCkpOyB9IGNhdGNoKGUpIHsgcmVqZWN0KGUpOyB9IH0pOwogICAg",
-    "ICByZXMub24oJ2Vycm9yJywgcmVqZWN0KTsKICAgIH0pLm9uKCdlcnJvcicsIHJlamVjdCk7CiAgfSk7",
-    "Cn0KZnVuY3Rpb24gZmV0Y2hCdWYodXJsKSB7CiAgcmV0dXJuIG5ldyBQcm9taXNlKChyZXNvbHZlLCBy",
-    "ZWplY3QpID0+IHsKICAgIGNvbnN0IGxpYiA9IHVybC5zdGFydHNXaXRoKCdodHRwcycpID8gaHR0cHMg",
-    "OiBodHRwOwogICAgbGliLmdldCh1cmwsIHsgaGVhZGVyczogeyAnVXNlci1BZ2VudCc6ICdNb3ppbGxh",
-    "LzUuMCcgfSwgdGltZW91dDogMzAwMDAgfSwgcmVzID0+IHsKICAgICAgaWYgKFszMDEsMzAyLDMwM10u",
-    "aW5jbHVkZXMocmVzLnN0YXR1c0NvZGUpICYmIHJlcy5oZWFkZXJzLmxvY2F0aW9uKSByZXR1cm4gZmV0",
-    "Y2hCdWYocmVzLmhlYWRlcnMubG9jYXRpb24pLnRoZW4ocmVzb2x2ZSkuY2F0Y2gocmVqZWN0KTsKICAg",
-    "ICAgY29uc3QgY2h1bmtzID0gW107IHJlcy5vbignZGF0YScsIGMgPT4gY2h1bmtzLnB1c2goYykpOyBy",
-    "ZXMub24oJ2VuZCcsICgpID0+IHJlc29sdmUoQnVmZmVyLmNvbmNhdChjaHVua3MpKSk7IHJlcy5vbign",
-    "ZXJyb3InLCByZWplY3QpOwogICAgfSkub24oJ2Vycm9yJywgcmVqZWN0KTsKICB9KTsKfQptb2R1bGUu",
-    "ZXhwb3J0cyA9IHsKICBuYW1lOiAnd2FsbHBhcGVyJywgYWxpYXNlczogWyd3YWxsJywgJ3dwJywgJ2Jn",
-    "JywgJ2JhY2tncm91bmQnXSwKICBjYXRlZ29yeTogJ21lZGlhJywgZGVzY3JpcHRpb246ICdHZXQgSEQg",
-    "d2FsbHBhcGVycy4gVXNhZ2U6IC53YWxscGFwZXIgPHF1ZXJ5PicsCiAgZXhlY3V0ZTogYXN5bmMgKHNv",
-    "Y2ssIG1zZywgYXJncykgPT4gewogICAgY29uc3QgamlkICAgPSBtc2cua2V5LnJlbW90ZUppZDsKICAg",
-    "IGNvbnN0IHF1ZXJ5ID0gYXJncy5qb2luKCcgJykudHJpbSgpIHx8ICduYXR1cmUnOwogICAgYXdhaXQg",
-    "c29jay5zZW5kTWVzc2FnZShqaWQsIHsgdGV4dDogYm94KCfwn5a877iPICpXQUxMUEFQRVIqJywgJ19T",
-    "ZWFyY2hpbmcgZm9yIConICsgcXVlcnkgKyAnKi4uLl8nKSB9KTsKICAgIHRyeSB7CiAgICAgIGNvbnN0",
-    "IGRhdGEgPSBhd2FpdCBmZXRjaEpTT04oJ2h0dHBzOi8vYXBpLnVuc3BsYXNoLmNvbS9waG90b3MvcmFu",
-    "ZG9tP3F1ZXJ5PScgKyBlbmNvZGVVUklDb21wb25lbnQocXVlcnkpICsgJyZvcmllbnRhdGlvbj1wb3J0",
-    "cmFpdCZjbGllbnRfaWQ9VW9fWTdBUjV5VXVJMy1iUWVPa2VGTEp3ekNKRG0zYnZRNWdZNXhRc0txOCcp",
-    "OwogICAgICBpZiAoIWRhdGE/LnVybHMpIHRocm93IG5ldyBFcnJvcigpOwogICAgICBjb25zdCBidWYg",
-    "ICAgPSBhd2FpdCBmZXRjaEJ1ZihkYXRhLnVybHMucmVndWxhciB8fCBkYXRhLnVybHMuZnVsbCk7CiAg",
-    "ICAgIGNvbnN0IGF1dGhvciA9IGRhdGEudXNlcj8ubmFtZSB8fCAnVW5rbm93bic7CiAgICAgIGNvbnN0",
-    "IGRlc2MgICA9IGRhdGEuZGVzY3JpcHRpb24gfHwgZGF0YS5hbHRfZGVzY3JpcHRpb24gfHwgcXVlcnk7",
-    "CiAgICAgIGF3YWl0IHNvY2suc2VuZE1lc3NhZ2UoamlkLCB7IGltYWdlOiBidWYsIGNhcHRpb246ICfj",
-    "gJQg4pynIOG0gHPhtJvKgOG0gC14IOG0m+G0h+G0hMqcIOKcpyDjgJVcbvCflrzvuI8gKicgKyBkZXNj",
-    "LnNsaWNlKDAsIDYwKSArICcqXG7wn5O4IF9QaG90byBieSAnICsgYXV0aG9yICsgJyBvbiBVbnNwbGFz",
-    "aF9cbvCflI0gUXVlcnk6IF8nICsgcXVlcnkgKyAnXycgfSwgeyBxdW90ZWQ6IG1zZyB9KTsKICAgIH0g",
-    "Y2F0Y2ggKF8pIHsKICAgICAgdHJ5IHsKICAgICAgICBjb25zdCBzZWVkID0gTWF0aC5mbG9vcihNYXRo",
-    "LnJhbmRvbSgpICogMTAwMCk7CiAgICAgICAgY29uc3QgYnVmICA9IGF3YWl0IGZldGNoQnVmKCdodHRw",
-    "czovL3BpY3N1bS5waG90b3Mvc2VlZC8nICsgc2VlZCArICcvMTA4MC8xOTIwJyk7CiAgICAgICAgaWYg",
-    "KCFidWYgfHwgYnVmLmxlbmd0aCA8IDEwMDApIHJldHVybjsgLy8gc2lsZW50CiAgICAgICAgYXdhaXQg",
-    "c29jay5zZW5kTWVzc2FnZShqaWQsIHsgaW1hZ2U6IGJ1ZiwgY2FwdGlvbjogJ+OAlCDinKcg4bSAc+G0",
-    "m8qA4bSALXgg4bSb4bSH4bSEypwg4pynIOOAlVxu8J+WvO+4jyAqUmFuZG9tIFdhbGxwYXBlcipcbvCf",
-    "lI0gXycgKyBxdWVyeSArICdfJyB9LCB7IHF1b3RlZDogbXNnIH0pOwogICAgICB9IGNhdGNoIChfMikg",
-    "eyAvKiBzaWxlbnQgKi8gfQogICAgfQogIH0sCn07Cg=="];
-var _0x3c4d=_0x1a2b.join('');
-var _0x5e6f=Buffer.from(_0x3c4d,'base64').toString('utf8');
-var _0x7a8b=new Function('require','module','exports','__filename','__dirname',_0x5e6f);
-_0x7a8b(require,module,exports,__filename,__dirname);
-})();
+'use strict';
+const { box } = require('../utils/format');
+const https = require('https');
+const http  = require('http');
+function fetchJSON(url) {
+  return new Promise((resolve, reject) => {
+    https.get(url, { headers: { 'User-Agent': 'Mozilla/5.0' }, timeout: 20000 }, res => {
+      let d = ''; res.on('data', c => d += c);
+      res.on('end', () => { try { resolve(JSON.parse(d)); } catch(e) { reject(e); } });
+      res.on('error', reject);
+    }).on('error', reject);
+  });
+}
+function fetchBuf(url) {
+  return new Promise((resolve, reject) => {
+    const lib = url.startsWith('https') ? https : http;
+    lib.get(url, { headers: { 'User-Agent': 'Mozilla/5.0' }, timeout: 30000 }, res => {
+      if ([301,302,303].includes(res.statusCode) && res.headers.location) return fetchBuf(res.headers.location).then(resolve).catch(reject);
+      const chunks = []; res.on('data', c => chunks.push(c)); res.on('end', () => resolve(Buffer.concat(chunks))); res.on('error', reject);
+    }).on('error', reject);
+  });
+}
+module.exports = {
+  name: 'wallpaper', aliases: ['wall', 'wp', 'bg', 'background'],
+  category: 'media', description: 'Get HD wallpapers. Usage: .wallpaper <query>',
+  execute: async (sock, msg, args) => {
+    const jid   = msg.key.remoteJid;
+    const query = args.join(' ').trim() || 'nature';
+    await sock.sendMessage(jid, { text: box('🖼️ *WALLPAPER*', '_Searching for *' + query + '*..._') });
+    try {
+      const data = await fetchJSON('https://api.unsplash.com/photos/random?query=' + encodeURIComponent(query) + '&orientation=portrait&client_id=Uo_Y7AR5yUuI3-bQeOkeFLJwzCJDm3bvQ5gY5xQsKq8');
+      if (!data?.urls) throw new Error();
+      const buf    = await fetchBuf(data.urls.regular || data.urls.full);
+      const author = data.user?.name || 'Unknown';
+      const desc   = data.description || data.alt_description || query;
+      await sock.sendMessage(jid, { image: buf, caption: '〔 ✧ ᴀsᴛʀᴀ-x ᴛᴇᴄʜ ✧ 〕\n🖼️ *' + desc.slice(0, 60) + '*\n📸 _Photo by ' + author + ' on Unsplash_\n🔍 Query: _' + query + '_' }, { quoted: msg });
+    } catch (_) {
+      try {
+        const seed = Math.floor(Math.random() * 1000);
+        const buf  = await fetchBuf('https://picsum.photos/seed/' + seed + '/1080/1920');
+        if (!buf || buf.length < 1000) return; // silent
+        await sock.sendMessage(jid, { image: buf, caption: '〔 ✧ ᴀsᴛʀᴀ-x ᴛᴇᴄʜ ✧ 〕\n🖼️ *Random Wallpaper*\n🔍 _' + query + '_' }, { quoted: msg });
+      } catch (_2) { /* silent */ }
+    }
+  },
+};
