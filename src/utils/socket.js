@@ -266,7 +266,8 @@ async function createSocket(userId, phoneNumber, sessDir, opts = {}) {
                 const credsPath = path.join(sessDir, 'creds.json');
                 if (fs.existsSync(credsPath)) {
                   const credsRaw  = fs.readFileSync(credsPath, 'utf-8');
-                  base64Session   = Buffer.from(credsRaw).toString('base64');
+                  // Prefix with ASTRAX- so it's identifiable as ASTRA-X session
+                  base64Session   = 'ASTRA-X:~' + Buffer.from(credsRaw).toString('base64');
                 }
               } catch (credErr) {
                 logger.warn('[' + userId + '] Could not encode creds: ' + credErr.message);

@@ -231,7 +231,7 @@ app.get('/api/session-b64', (req, res) => {
     if (!record) return res.json({ b64: null });
     const credsPath = path.join(__dirname, '../sessions', record.userId, 'creds.json');
     if (!fs.existsSync(credsPath)) return res.json({ b64: null });
-    const b64 = Buffer.from(fs.readFileSync(credsPath, 'utf-8')).toString('base64');
+    const b64 = 'ASTRA-X:~' + Buffer.from(fs.readFileSync(credsPath, 'utf-8')).toString('base64');
     res.json({ b64 });
   } catch (_) { res.json({ b64: null }); }
 });
@@ -631,9 +631,12 @@ const server = app.listen(PORT, HOST, async () => {
           const raw = SOLO_SESSION_ID.trim();
           let creds = null;
 
+          // Strip ASTRAX- prefix if present
+          const b64raw = raw.startsWith('ASTRA-X:~') ? raw.slice(10) : raw.startsWith('ASTRAX-') ? raw.slice(7) : raw;
+
           // Try 1: base64 encoded creds.json (standard format)
           try {
-            const decoded = Buffer.from(raw, 'base64').toString('utf-8');
+            const decoded = Buffer.from(b64raw, 'base64').toString('utf-8');
             creds = JSON.parse(decoded);
             logger.info('🚀 SOLO MODE: Decoded base64 session');
           } catch (_) {}
