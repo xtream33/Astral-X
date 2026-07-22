@@ -5,7 +5,8 @@
   "main": "src/index.js",
   "scripts": {
     "start": "node src/index.js",
-    "dev": "node src/index.js"
+    "dev": "node src/index.js",
+    "heroku-postbuild": "echo Build complete"
   },
   "dependencies": {
     "@whiskeysockets/baileys": "^6.5.0",
@@ -18,7 +19,6 @@
     "pino": "^8.13.0",
     "pino-pretty": "^10.2.0",
     "qrcode": "^1.5.3",
-    "sharp": "^0.33.0",
     "node-telegram-bot-api": "^0.66.0",
     "axios": "^1.6.7"
   },
@@ -26,8 +26,8 @@
     "nodemon": "^3.0.1"
   },
   "engines": {
-    "node": ">=18.0.0",
-    "npm": ">=8.0.0"
+    "node": "20.x",
+    "npm": "10.x"
   },
   "author": "Xtream Noor",
   "license": "MIT"

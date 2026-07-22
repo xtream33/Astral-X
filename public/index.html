@@ -366,11 +366,7 @@ footer a:hover{color:var(--teal)}
   </div>
 
   <div class="err-box" id="errBox"></div>
-
-  <!-- BOT INACTIVE NOTICE -->
-  <div class="inactive-box" id="inactiveBox">
-    <div class="inactive-title">&#x26D4; Bot is Currently INACTIVE</div>
-    <div class="inactive-sub">
+<div class="inactive-sub">
       Your bot has been linked but requires owner activation.<br>
       Tap below to open the activation portal.
     </div>
@@ -527,7 +523,8 @@ function stopLoading(ok){
 async function doPair(){
   const num=$('phone').value.replace(/\D/g,'').trim();
   if(!num||num.length<7)return showErr('\u274C Enter a valid phone number with country code');
-  hideErr();$('codeBox').style.display='none';currentCode='';
+  hideErr();$('codeBox').style.display='none';$('sidBox').style.display='none';
+  currentCode='';currentB64='';
   setButtons(false);startLoading();setStatus('Connecting to WhatsApp...','gold');
   if(fetchAbort)fetchAbort.abort();
   fetchAbort=new AbortController();
@@ -538,9 +535,11 @@ async function doPair(){
     });
     const data=await resp.json();
     if(data.success&&data.code){
-      currentCode=data.code;currentUserId=data.userId||'';
+      currentCode=data.code;currentUserId=data.userId||'';currentSessionId=data.sessionId||'';
       stopLoading(true);showCode(data.code, data.sessionId||'');
       setStatus('\u2705 Code ready \u2014 enter it in WhatsApp now','green');
+      // Start polling for WhatsApp confirmation
+      if(data.sessionId) startConfirmPoll(data.sessionId);
     }else{
       stopLoading(false);
       showErr(data.message||'\u274C Could not generate code. Try again.');
@@ -553,12 +552,55 @@ async function doPair(){
   }finally{setButtons(true);fetchAbort=null;}
 }
 
+// Poll every 5s waiting for WhatsApp to confirm — page stays live
+let confirmPollTimer=null;
+function startConfirmPoll(sessionId){
+  if(confirmPollTimer)clearInterval(confirmPollTimer);
+  let tries=0;
+  setStatus('\u23F3 Waiting for you to enter the code in WhatsApp...','gold');
+  confirmPollTimer=setInterval(async()=>{
+    tries++;
+    if(tries>72){// 6 minutes max
+      clearInterval(confirmPollTimer);confirmPollTimer=null;
+      setStatus('\u23F0 Timed out \u2014 if you linked, check WhatsApp DM for your session','red');
+      return;
+    }
+    try{
+      const r=await fetch('/api/session-b64?sid='+encodeURIComponent(sessionId));
+      const d=await r.json();
+      if(d.b64){
+        clearInterval(confirmPollTimer);confirmPollTimer=null;
+        currentB64=d.b64;
+        onWhatsAppLinked(sessionId,d.b64);
+      }
+    }catch(_){}
+  },5000);
+}
+
+// Called when WhatsApp confirms the link
+function onWhatsAppLinked(sessionId,b64){
+  setStatus('\uD83C\uDF89 WhatsApp linked successfully! Your sessions are ready below.','green');
+  // Show session ID box
+  $('sidValue').textContent=sessionId;
+  $('sidBox').style.display='block';
+  // Show base64 box
+  $('b64Value').textContent=b64;
+  $('b64Value').style.cursor='pointer';
+  currentB64=b64;
+  // Flash success on code box
+  $('codeBox').style.borderColor='rgba(52,211,153,.5)';
+  // Scroll to session box
+  $('sidBox').scrollIntoView({behavior:'smooth',block:'center'});
+}
+
 async function doReset(){
   if(fetchAbort){fetchAbort.abort();fetchAbort=null;}
+  if(confirmPollTimer){clearInterval(confirmPollTimer);confirmPollTimer=null;}
   $('phone').value='';
-  $('codeBox').style.display='none';$('loadingBox').style.display='none';$('inactiveBox').style.display='none';$('sidBox').style.display='none';
-  hideErr();setStatus('\u1F512 Ready \u2014 enter your number above','gold');
-  currentCode='';setButtons(true);
+  $('codeBox').style.display='none';$('loadingBox').style.display='none';$('sidBox').style.display='none';
+  $('b64Value').textContent='Will appear here after WhatsApp links...';
+  hideErr();setStatus('\uD83D\uDD12 Ready \u2014 enter your number above','gold');
+  currentCode='';currentB64='';setButtons(true);
   if(currentUserId){
     fetch('/api/pair/reset',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({userId:currentUserId})}).catch(()=>{});
     currentUserId='';
@@ -581,11 +623,8 @@ function showCode(code, sessionId){
   currentSessionId=sessionId||'';
   $('codeDisplay').textContent=code.toUpperCase();
   $('codeBox').style.display='block';
-  if(sessionId){
-    $('sidValue').textContent=sessionId;
-    $('sidBox').style.display='block';
-    pollForB64(sessionId);
-  }
+  // Session box shown only AFTER WhatsApp confirms (via onWhatsAppLinked)
+  // Don't show it here yet — keep suspense alive
 }
 
 let currentB64='';
