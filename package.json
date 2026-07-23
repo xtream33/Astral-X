@@ -6,7 +6,8 @@
   "scripts": {
     "start": "node src/index.js",
     "dev": "node src/index.js",
-    "heroku-postbuild": "echo Build complete"
+    "heroku-postbuild": "echo Build complete",
+    "postinstall": "echo Skipping optional native modules"
   },
   "dependencies": {
     "@whiskeysockets/baileys": "^6.5.0",
@@ -30,5 +31,9 @@
     "npm": "10.x"
   },
   "author": "Xtream Noor",
-  "license": "MIT"
+  "license": "MIT",
+  "optionalDependencies": {
+    "bufferutil": "^4.0.8",
+    "utf-8-validate": ">=5.0.2"
+  }
 }

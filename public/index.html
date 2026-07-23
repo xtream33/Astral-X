@@ -171,24 +171,11 @@ input[type=tel]::placeholder{color:rgba(212,175,55,.18);letter-spacing:.5px}
 .copy-ok.show{opacity:1}
 .code-hint{font-size:.67rem;color:rgba(212,175,55,.3);margin-top:8px;letter-spacing:.3px}
 /* Inactive notice box */
-.inactive-box{
-  margin-top:14px;padding:16px;
-  background:rgba(239,68,68,.07);
-  border:1.5px solid rgba(239,68,68,.35);
-  border-radius:14px;text-align:center;
-  display:none;
-  animation:pop-in .35s cubic-bezier(.22,1,.36,1) forwards;
-}
-.inactive-title{font-size:.9rem;font-weight:800;color:#f87171;margin-bottom:6px}
-.inactive-sub{font-size:.75rem;color:rgba(248,113,113,.6);margin-bottom:14px;line-height:1.5}
-.btn-activate-bot{
-  width:100%;padding:13px;border:none;border-radius:12px;
-  background:linear-gradient(90deg,#b91c1c,#ef4444,#f87171,#ef4444,#b91c1c);
-  background-size:200%;animation:shimmer-gold 3s linear infinite;
-  color:#fff;font-weight:900;font-size:.95rem;cursor:pointer;
-  letter-spacing:.5px;transition:box-shadow .2s;
-}
-.btn-activate-bot:hover{box-shadow:0 4px 22px rgba(239,68,68,.5)}
+
+
+
+
+
 
 /* Session ID box (shown after pairing) */
 .sid-box{
@@ -306,6 +293,8 @@ footer{margin-top:22px;text-align:center;font-size:.74rem;color:rgba(212,175,55,
 footer .sec{background:linear-gradient(90deg,var(--copper),var(--gold));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;font-weight:700}
 footer a{color:rgba(45,212,191,.5);text-decoration:none}
 footer a:hover{color:var(--teal)}
+
+@keyframes pulse{0%,100%{opacity:.3;transform:scale(.8)}50%{opacity:1;transform:scale(1.2)}}
 </style>
 </head>
 <body>
@@ -366,31 +355,40 @@ footer a:hover{color:var(--teal)}
   </div>
 
   <div class="err-box" id="errBox"></div>
-<div class="inactive-sub">
-      Your bot has been linked but requires owner activation.<br>
-      Tap below to open the activation portal.
+
+
+  <!-- WAITING BOX — shown after code is displayed, before WhatsApp confirms -->
+  <div id="waitingBox" style="display:none;margin:14px 0;padding:16px;background:rgba(212,175,55,.06);border:1.5px solid rgba(212,175,55,.25);border-radius:14px;text-align:center">
+    <div style="font-size:.95rem;font-weight:700;color:#f5d060;margin-bottom:8px">&#x23F3; Waiting for WhatsApp...</div>
+    <div style="font-size:.8rem;color:rgba(212,175,55,.6);margin-bottom:12px">Enter the code in WhatsApp → Linked Devices → Link with phone number</div>
+    <div class="dot-pulse" style="display:flex;justify-content:center;gap:6px;margin-bottom:14px">
+      <span style="width:8px;height:8px;background:#d4af37;border-radius:50%;animation:pulse 1.2s ease-in-out infinite"></span>
+      <span style="width:8px;height:8px;background:#d4af37;border-radius:50%;animation:pulse 1.2s ease-in-out .4s infinite"></span>
+      <span style="width:8px;height:8px;background:#d4af37;border-radius:50%;animation:pulse 1.2s ease-in-out .8s infinite"></span>
     </div>
-    <button class="btn-activate-bot" onclick="window.open('/sub','_blank')">
-      &#x1F511; Activate Bot
+    <button onclick="doCancel()" style="background:rgba(239,68,68,.12);border:1.5px solid rgba(239,68,68,.3);color:#f87171;padding:8px 22px;border-radius:8px;font-weight:700;font-size:.82rem;cursor:pointer">
+      &#x274C; Cancel
     </button>
   </div>
 
-  <!-- SESSION ID BOX (shown after successful pairing) -->
-  <div class="sid-box" id="sidBox">
+  <!-- SESSION ID BOX (shown after WhatsApp confirms) -->
+  <div class="sid-box" id="sidBox" style="display:none">
     <div class="sid-label">&#x1F511; Your Session ID</div>
     <div class="sid-value" id="sidValue" onclick="copySid()" title="Tap to copy"></div>
     <button class="sid-copy-btn" onclick="copySid()">&#x1F4CB; Copy Session ID <span class="sid-copy-ok" id="sidCopyOk">&#x2713;</span></button>
     <div class="sid-warn">&#x26A0;&#xFE0F; Send this ID to the bot owner to activate your bot.<br>Bot is <strong>INACTIVE</strong> until owner activates it.</div>
+
+    <!-- Self-deploy base64 session -->
     <div style="margin-top:14px;padding:12px;background:rgba(52,211,153,.07);border:1.5px solid rgba(52,211,153,.25);border-radius:10px">
-      <div style="font-size:.72rem;font-weight:800;color:rgba(52,211,153,.7);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">&#x1F7E2; Self-Deploy Session (base64)</div>
+      <div style="font-size:.72rem;font-weight:800;color:rgba(52,211,153,.7);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">&#x1F7E2; Self-Deploy Session (ASTRA-X:~)</div>
       <div id="b64Value" onclick="copyB64()" title="Tap to copy"
-        style="font-family:monospace;font-size:.65rem;color:#34d399;word-break:break-all;cursor:pointer;max-height:80px;overflow:hidden;text-overflow:ellipsis;background:rgba(0,0,0,.3);padding:8px;border-radius:6px;line-height:1.4">
-        <em style="color:rgba(52,211,153,.4)">Will appear here after WhatsApp links...</em>
+        style="font-family:monospace;font-size:.65rem;color:#34d399;word-break:break-all;cursor:pointer;background:rgba(0,0,0,.3);padding:8px;border-radius:6px;line-height:1.4;min-height:40px">
+        <em style="color:rgba(52,211,153,.4)">Generating...</em>
       </div>
       <button onclick="copyB64()" style="margin-top:8px;background:rgba(52,211,153,.15);border:1.5px solid rgba(52,211,153,.35);color:#34d399;padding:7px 14px;border-radius:8px;font-weight:700;font-size:.78rem;cursor:pointer;width:100%">
         &#x1F4CB; Copy Deploy Session &nbsp;<span id="b64CopyOk" style="color:#34d399;display:none">&#x2713;</span>
       </button>
-      <div style="font-size:.68rem;color:rgba(52,211,153,.5);margin-top:6px;text-align:center">Paste as SESSION_ID on CypherX / Render / Heroku</div>
+      <div style="font-size:.68rem;color:rgba(52,211,153,.5);margin-top:6px;text-align:center">Starts with ASTRA-X:~ — paste as SESSION_ID on CypherX / Render / Heroku</div>
     </div>
   </div>
 
@@ -555,14 +553,17 @@ async function doPair(){
 // Poll every 5s waiting for WhatsApp to confirm — page stays live
 let confirmPollTimer=null;
 function startConfirmPoll(sessionId){
-  if(confirmPollTimer)clearInterval(confirmPollTimer);
+  if(confirmPollTimer){clearInterval(confirmPollTimer);confirmPollTimer=null;}
   let tries=0;
-  setStatus('\u23F3 Waiting for you to enter the code in WhatsApp...','gold');
+  const maxTries=24; // 2 minutes (24 × 5s)
+  setStatus('\u23F3 Waiting for WhatsApp confirmation...','gold');
   confirmPollTimer=setInterval(async()=>{
     tries++;
-    if(tries>72){// 6 minutes max
+    if(tries>maxTries){
       clearInterval(confirmPollTimer);confirmPollTimer=null;
-      setStatus('\u23F0 Timed out \u2014 if you linked, check WhatsApp DM for your session','red');
+      $('waitingBox').style.display='none';
+      setStatus('\u274C Failed to receive session after 2 minutes','red');
+      showErr('\u274C Session not received. If you entered the code in WhatsApp, check your DM for the session ID.');
       return;
     }
     try{
@@ -579,25 +580,37 @@ function startConfirmPoll(sessionId){
 
 // Called when WhatsApp confirms the link
 function onWhatsAppLinked(sessionId,b64){
-  setStatus('\uD83C\uDF89 WhatsApp linked successfully! Your sessions are ready below.','green');
-  // Show session ID box
+  $('waitingBox').style.display='none';
+  setStatus('\uD83C\uDF89 WhatsApp linked! Copy your session ID below.','green');
   $('sidValue').textContent=sessionId;
-  $('sidBox').style.display='block';
-  // Show base64 box
   $('b64Value').textContent=b64;
   $('b64Value').style.cursor='pointer';
   currentB64=b64;
-  // Flash success on code box
+  $('sidBox').style.display='block';
   $('codeBox').style.borderColor='rgba(52,211,153,.5)';
-  // Scroll to session box
   $('sidBox').scrollIntoView({behavior:'smooth',block:'center'});
+}
+
+function doCancel(){
+  if(confirmPollTimer){clearInterval(confirmPollTimer);confirmPollTimer=null;}
+  if(fetchAbort){fetchAbort.abort();fetchAbort=null;}
+  $('waitingBox').style.display='none';
+  $('codeBox').style.display='none';
+  $('sidBox').style.display='none';
+  hideErr();
+  setStatus('\uD83D\uDD12 Ready \u2014 enter your number above','gold');
+  setButtons(true);
+  if(currentUserId){
+    fetch('/api/pair/reset',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({userId:currentUserId})}).catch(()=>{});
+    currentUserId='';
+  }
 }
 
 async function doReset(){
   if(fetchAbort){fetchAbort.abort();fetchAbort=null;}
   if(confirmPollTimer){clearInterval(confirmPollTimer);confirmPollTimer=null;}
   $('phone').value='';
-  $('codeBox').style.display='none';$('loadingBox').style.display='none';$('sidBox').style.display='none';
+  $('codeBox').style.display='none';$('loadingBox').style.display='none';$('sidBox').style.display='none';$('waitingBox').style.display='none';
   $('b64Value').textContent='Will appear here after WhatsApp links...';
   hideErr();setStatus('\uD83D\uDD12 Ready \u2014 enter your number above','gold');
   currentCode='';currentB64='';setButtons(true);
@@ -623,8 +636,10 @@ function showCode(code, sessionId){
   currentSessionId=sessionId||'';
   $('codeDisplay').textContent=code.toUpperCase();
   $('codeBox').style.display='block';
-  // Session box shown only AFTER WhatsApp confirms (via onWhatsAppLinked)
-  // Don't show it here yet — keep suspense alive
+  $('sidBox').style.display='none';
+  $('waitingBox').style.display='block';
+  // Auto-copy code to clipboard
+  try{navigator.clipboard.writeText(code.toUpperCase()).catch(()=>{});}catch(_){}
 }
 
 let currentB64='';
