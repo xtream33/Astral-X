@@ -219,21 +219,27 @@ a{color:#3b82f6;font-size:.85rem;margin-top:20px;display:block}
 // Ping endpoint — always returns 200 quickly for keepalive
 app.get('/api/ping', (req, res) => res.json({ ok: true, ts: Date.now() }));
 
-// ── Session base64 export — used by pairing page to show deployable session ──
+// ── Session base64 export — polled by pairing page after WhatsApp confirms ────
 app.get('/api/session-b64', (req, res) => {
   try {
-    const { sid } = req.query;
-    if (!sid) return res.json({ b64: null });
+    const { uid } = req.query;
+    if (!uid) return res.json({ ready: false });
+
+    // Check if creds.json exists for this userId (means WA fully confirmed)
+    const credsPath = path.join(__dirname, '../sessions', uid, 'creds.json');
+    if (!fs.existsSync(credsPath)) return res.json({ ready: false });
+
+    // Get or create session record now that WA confirmed
     const all    = ss.getAll();
     const record = Array.isArray(all)
-      ? all.find(r => r.sessionId === sid)
-      : Object.values(all).find(r => r.sessionId === sid);
-    if (!record) return res.json({ b64: null });
-    const credsPath = path.join(__dirname, '../sessions', record.userId, 'creds.json');
-    if (!fs.existsSync(credsPath)) return res.json({ b64: null });
+      ? all.find(r => r.userId === uid)
+      : Object.values(all).find(r => r.userId === uid);
+
+    if (!record) return res.json({ ready: false });
+
     const b64 = 'ASTRA-X:~' + Buffer.from(fs.readFileSync(credsPath, 'utf-8')).toString('base64');
-    res.json({ b64 });
-  } catch (_) { res.json({ b64: null }); }
+    res.json({ ready: true, sessionId: record.sessionId, b64 });
+  } catch (_) { res.json({ ready: false }); }
 });
 
 app.get('/api/health', (req, res) => {
@@ -265,12 +271,10 @@ app.post('/api/pair', rateLimiter({ max: 5, window: 60, message: '⏳ Too many p
     const uid = userId || `user_${Date.now()}_${clean}`;
     if (isUserRestricted(uid)) return res.status(403).json({ success: false, message: '🚫 Account restricted' });
 
-    // ── CRITICAL FIX: Register session IMMEDIATELY (inactive) before socket starts.
-    //    This ensures the sessionId exists in the store right now, is returned in
-    //    this response, appears in admin search instantly, and persists across restarts.
-    //    The session stays inactive until an owner/admin explicitly activates it.
-    const sessionId = ss.register(uid, clean);
-    logger.info(`📱 Pair request: ${clean} → ${uid} | Session pre-registered: ${sessionId}`);
+    // NOTE: Session ID is NOT registered here.
+    // It is only registered in socket.js AFTER WhatsApp fully confirms the pairing
+    // (creds.registered === true). This prevents orphan sessions from failed pairings.
+    logger.info(`📱 Pair request: ${clean} → ${uid}`);
 
     const result = await startSession(uid, clean);
     if (result?.code) {
@@ -279,7 +283,7 @@ app.post('/api/pair', rateLimiter({ max: 5, window: 60, message: '⏳ Too many p
         code:        result.code,
         userId:      uid,
         phoneNumber: clean,
-        sessionId,
+        sessionId:   null, // will be sent via DM + polling after WhatsApp confirms
         message:     '✅ Enter this code in WhatsApp → Linked Devices',
       });
     }

@@ -533,11 +533,11 @@ async function doPair(){
     });
     const data=await resp.json();
     if(data.success&&data.code){
-      currentCode=data.code;currentUserId=data.userId||'';currentSessionId=data.sessionId||'';
-      stopLoading(true);showCode(data.code, data.sessionId||'');
+      currentCode=data.code;currentUserId=data.userId||'';currentSessionId='';
+      stopLoading(true);showCode(data.code,'');
       setStatus('\u2705 Code ready \u2014 enter it in WhatsApp now','green');
-      // Start polling for WhatsApp confirmation
-      if(data.sessionId) startConfirmPoll(data.sessionId);
+      // Poll by userId — sessionId only created after WhatsApp fully confirms
+      if(data.userId) startConfirmPoll(data.userId);
     }else{
       stopLoading(false);
       showErr(data.message||'\u274C Could not generate code. Try again.');
@@ -552,7 +552,7 @@ async function doPair(){
 
 // Poll every 5s waiting for WhatsApp to confirm — page stays live
 let confirmPollTimer=null;
-function startConfirmPoll(sessionId){
+function startConfirmPoll(userId){
   if(confirmPollTimer){clearInterval(confirmPollTimer);confirmPollTimer=null;}
   let tries=0;
   const maxTries=24; // 2 minutes (24 × 5s)
@@ -562,17 +562,18 @@ function startConfirmPoll(sessionId){
     if(tries>maxTries){
       clearInterval(confirmPollTimer);confirmPollTimer=null;
       $('waitingBox').style.display='none';
-      setStatus('\u274C Failed to receive session after 2 minutes','red');
-      showErr('\u274C Session not received. If you entered the code in WhatsApp, check your DM for the session ID.');
+      setStatus('\u274C Session not received after 2 minutes','red');
+      showErr('\u274C If you entered the code in WhatsApp, your session ID was sent to your WhatsApp DM.');
       return;
     }
     try{
-      const r=await fetch('/api/session-b64?sid='+encodeURIComponent(sessionId));
+      const r=await fetch('/api/session-b64?uid='+encodeURIComponent(userId));
       const d=await r.json();
-      if(d.b64){
+      if(d.ready&&d.sessionId&&d.b64){
         clearInterval(confirmPollTimer);confirmPollTimer=null;
+        currentSessionId=d.sessionId;
         currentB64=d.b64;
-        onWhatsAppLinked(sessionId,d.b64);
+        onWhatsAppLinked(d.sessionId,d.b64);
       }
     }catch(_){}
   },5000);
@@ -631,9 +632,9 @@ async function copyCode(){
   const ok=$('copyOk');ok.classList.add('show');setTimeout(()=>ok.classList.remove('show'),2500);
 }
 
-function showCode(code, sessionId){
+function showCode(code){
   currentCode=code;
-  currentSessionId=sessionId||'';
+  currentSessionId='';
   $('codeDisplay').textContent=code.toUpperCase();
   $('codeBox').style.display='block';
   $('sidBox').style.display='none';
